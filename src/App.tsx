@@ -98,6 +98,8 @@ function App() {
   const [pomodoroIsBreak, setPomodoroIsBreak] = useState<boolean>(false);
   const [pomodoroSessionCount, setPomodoroSessionCount] = useState<number>(0);
   const [alertSoundType, setAlertSoundType] = useState<AlertSoundType>("beep");
+  const [pomodoroTaskId, setPomodoroTaskId] = useState<string | null>(null);
+  const [pomodoroTaskTitle, setPomodoroTaskTitle] = useState<string | null>(null);
 
   // 离线音频白噪音状态
   const [isPlayingNoise, setIsPlayingNoise] = useState<boolean>(false);
@@ -178,8 +180,12 @@ function App() {
     isBreak: boolean,
     fDur: number,
     bDur: number,
-    session: number
+    session: number,
+    tId?: string | null,
+    tTitle?: string | null
   ) => {
+    const finalTaskId = tId !== undefined ? tId : pomodoroTaskId;
+    const finalTaskTitle = tTitle !== undefined ? tTitle : pomodoroTaskTitle;
     const data = JSON.stringify({
       active,
       timeLeft,
@@ -187,8 +193,20 @@ function App() {
       focusDuration: fDur,
       breakDuration: bDur,
       sessionCount: session,
+      taskId: finalTaskId,
+      taskTitle: finalTaskTitle,
     });
     syncState("pomodoro", "pomodoro_sync", data);
+  };
+
+  const handleStartFocus = (taskId: string, taskTitle: string) => {
+    setPomodoroTaskId(taskId);
+    setPomodoroTaskTitle(taskTitle);
+    setPomodoroIsActive(true);
+    setPomodoroIsBreak(false);
+    const nextTime = focusDuration * 60;
+    setPomodoroTimeLeft(nextTime);
+    syncPomodoro(true, nextTime, false, focusDuration, breakDuration, pomodoroSessionCount, taskId, taskTitle);
   };
 
   // 白噪音物理合成引擎调用
@@ -228,7 +246,9 @@ function App() {
                   false,
                   focusDuration,
                   breakDuration,
-                  pomodoroSessionCount
+                  pomodoroSessionCount,
+                  null,
+                  null
                 );
               }, 50);
               return nextTime;
@@ -246,6 +266,8 @@ function App() {
                 id: Date.now().toString(),
                 timestamp: Date.now(),
                 duration: focusDuration,
+                taskId: pomodoroTaskId || undefined,
+                taskTitle: pomodoroTaskTitle || undefined,
               };
               setPomodoroLogs((prevLogs) => {
                 const updated = [newLog, ...prevLogs];
@@ -254,8 +276,12 @@ function App() {
               });
               syncState(newLog.id, "add_pomodoro_log", JSON.stringify(newLog));
 
+              // Clear active task focus
+              setPomodoroTaskId(null);
+              setPomodoroTaskTitle(null);
+
               setTimeout(() => {
-                syncPomodoro(false, nextTime, true, focusDuration, breakDuration, nextSession);
+                syncPomodoro(false, nextTime, true, focusDuration, breakDuration, nextSession, null, null);
               }, 50);
               return nextTime;
             }
@@ -274,13 +300,29 @@ function App() {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [pomodoroIsActive, pomodoroIsBreak, focusDuration, breakDuration, pomodoroSessionCount]);
+  }, [pomodoroIsActive, pomodoroIsBreak, focusDuration, breakDuration, pomodoroSessionCount, pomodoroTaskId, pomodoroTaskTitle]);
 
   // 组件卸载时释放音视频资源
   useEffect(() => {
     return () => {
       audioEngine.close();
     };
+  }, []);
+
+  // 晚安模式自动检测与主题切换
+  useEffect(() => {
+    const checkSunsetTheme = () => {
+      const currentHour = new Date().getHours();
+      const isSunset = currentHour >= 18 || currentHour < 6;
+      if (isSunset) {
+        document.documentElement.classList.add("theme-sunset");
+      } else {
+        document.documentElement.classList.remove("theme-sunset");
+      }
+    };
+    checkSunsetTheme();
+    const interval = setInterval(checkSunsetTheme, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -510,6 +552,8 @@ function App() {
           setFocusDuration(data.focusDuration);
           setBreakDuration(data.breakDuration);
           setPomodoroSessionCount(data.sessionCount);
+          setPomodoroTaskId(data.taskId || null);
+          setPomodoroTaskTitle(data.taskTitle || null);
         } catch (e) {
           console.error("解析番茄钟同步数据失败", e);
         }
@@ -939,6 +983,11 @@ function App() {
         saveTasks={saveTasks}
         syncState={syncState}
         customizationConfig={customizationConfig}
+        pomodoroTaskId={pomodoroTaskId}
+        pomodoroTaskTitle={pomodoroTaskTitle}
+        setPomodoroTaskId={setPomodoroTaskId}
+        setPomodoroTaskTitle={setPomodoroTaskTitle}
+        handleStartFocus={handleStartFocus}
       />
     );
   }
@@ -988,6 +1037,10 @@ function App() {
           handleToggleWidgetLock={handleToggleWidgetLock}
           isWidgetLocked={isWidgetLocked}
           resetTasks={resetTasks}
+          pomodoroTaskId={pomodoroTaskId}
+          pomodoroTaskTitle={pomodoroTaskTitle}
+          setPomodoroTaskId={setPomodoroTaskId}
+          setPomodoroTaskTitle={setPomodoroTaskTitle}
         />
 
         {/* 主工作区 */}
@@ -1056,7 +1109,7 @@ function App() {
 
           {/* 各 Tab 内容渲染 */}
           {activeTab === "matrix" && (
-            <MatrixView tasks={tasks} handleComplete={handleComplete} qColors={customizationConfig.qColors} />
+            <MatrixView tasks={tasks} handleComplete={handleComplete} qColors={customizationConfig.qColors} handleStartFocus={handleStartFocus} />
           )}
 
           {activeTab === "list" && (
@@ -1073,6 +1126,7 @@ function App() {
               editingNotes={editingNotes}
               setEditingNotes={setEditingNotes}
               handleSaveNotes={handleSaveNotes}
+              handleStartFocus={handleStartFocus}
             />
           )}
 

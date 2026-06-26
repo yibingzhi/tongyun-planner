@@ -44,8 +44,15 @@ interface SidebarProps {
     isBreak: boolean,
     fDur: number,
     bDur: number,
-    session: number
+    session: number,
+    tId?: string | null,
+    tTitle?: string | null
   ) => void;
+
+  pomodoroTaskId: string | null;
+  pomodoroTaskTitle: string | null;
+  setPomodoroTaskId: React.Dispatch<React.SetStateAction<string | null>>;
+  setPomodoroTaskTitle: React.Dispatch<React.SetStateAction<string | null>>;
 
   // 白噪音状态与控制
   isPlayingNoise: boolean;
@@ -96,6 +103,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   handleToggleWidgetLock,
   isWidgetLocked,
   resetTasks,
+  pomodoroTaskId,
+  pomodoroTaskTitle,
+  setPomodoroTaskId,
+  setPomodoroTaskTitle,
 }) => {
   return (
     <aside className="w-72 flex-shrink-0 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-6 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
@@ -213,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* 番茄专注时钟 */}
-        <div className="px-4 py-3 rounded-2xl bg-white/70 border border-[#EFEBE4] shadow-sm backdrop-blur-sm space-y-2">
+        <div data-task-id={pomodoroTaskId || ""} className="px-4 py-3 rounded-2xl bg-white/70 border border-[#EFEBE4] shadow-sm backdrop-blur-sm space-y-2">
           <div className="flex justify-between items-center text-[9px] font-extrabold text-[#A34E36] tracking-wider uppercase">
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-[#A34E36]" />
@@ -221,6 +232,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
             <span>第 {pomodoroSessionCount} 番茄</span>
           </div>
+
+          {pomodoroTaskTitle && (
+            <div className="text-[9.5px] font-bold text-slate-500 max-w-full truncate bg-[#FAF8F5]/80 px-2 py-0.5 rounded border border-[#EFEBE4] text-center" title={pomodoroTaskTitle}>
+              📌 专注中: {pomodoroTaskTitle}
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             {/* 时间及调节控件 */}
@@ -343,13 +360,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   setPomodoroIsActive(false);
                   const nextTime = pomodoroIsBreak ? breakDuration * 60 : focusDuration * 60;
                   setPomodoroTimeLeft(nextTime);
+                  setPomodoroTaskId(null);
+                  setPomodoroTaskTitle(null);
                   syncPomodoro(
                     false,
                     nextTime,
                     pomodoroIsBreak,
                     focusDuration,
                     breakDuration,
-                    pomodoroSessionCount
+                    pomodoroSessionCount,
+                    null,
+                    null
                   );
                 }}
                 className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"

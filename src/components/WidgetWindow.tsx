@@ -54,7 +54,9 @@ interface WidgetWindowProps {
     isBreak: boolean,
     fDur: number,
     bDur: number,
-    session: number
+    session: number,
+    tId?: string | null,
+    tTitle?: string | null
   ) => void;
 
   // 状态同步
@@ -70,6 +72,11 @@ interface WidgetWindowProps {
     dueDate?: string
   ) => Promise<void>;
   customizationConfig?: CustomizationConfig;
+  pomodoroTaskId: string | null;
+  pomodoroTaskTitle: string | null;
+  setPomodoroTaskId: React.Dispatch<React.SetStateAction<string | null>>;
+  setPomodoroTaskTitle: React.Dispatch<React.SetStateAction<string | null>>;
+  handleStartFocus: (taskId: string, taskTitle: string) => void;
 }
 
 export const WidgetWindow: React.FC<WidgetWindowProps> = ({
@@ -100,6 +107,11 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   saveTasks,
   syncState,
   customizationConfig,
+  pomodoroTaskId,
+  pomodoroTaskTitle,
+  setPomodoroTaskId,
+  setPomodoroTaskTitle,
+  handleStartFocus,
 }) => {
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
@@ -361,6 +373,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
         ) : widgetView === "timer" ? (
           /* 挂件内番茄钟视图 */
           <div
+            data-task-id={pomodoroTaskId || ""}
             onPointerDown={(e) => e.stopPropagation()}
             className="w-full h-full flex flex-col items-center justify-center py-4 text-slate-700"
           >
@@ -368,6 +381,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               <div className="text-[10px] font-extrabold text-[#A34E36] tracking-wider uppercase bg-[#FCF2F0]/80 border border-[#F5DFDB] px-3 py-1 rounded-full shadow-sm">
                 {pomodoroIsBreak ? "休息时间 🌿" : "专注时间 🎯"}
               </div>
+
+              {pomodoroTaskTitle && (
+                <div className="text-[9px] font-bold text-slate-500 max-w-[130px] truncate text-center bg-slate-100/60 px-2.5 py-0.5 rounded border border-slate-200/50" title={pomodoroTaskTitle}>
+                  📌 {pomodoroTaskTitle}
+                </div>
+              )}
 
               {/* 倒计时圆圈 card */}
               <div className="w-32 h-32 rounded-full border-4 border-[#FAF8F5] flex flex-col items-center justify-center relative shadow-sm bg-white/60">
@@ -526,13 +545,17 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                     setPomodoroIsActive(false);
                     const nextTime = pomodoroIsBreak ? breakDuration * 60 : focusDuration * 60;
                     setPomodoroTimeLeft(nextTime);
+                    setPomodoroTaskId(null);
+                    setPomodoroTaskTitle(null);
                     syncPomodoro(
                       false,
                       nextTime,
                       pomodoroIsBreak,
                       focusDuration,
                       breakDuration,
-                      pomodoroSessionCount
+                      pomodoroSessionCount,
+                      null,
+                      null
                     );
                   }}
                   className="w-8 h-8 rounded-full border border-[#EFEBE4] hover:bg-slate-50 bg-white flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all shadow-sm cursor-pointer"
@@ -664,6 +687,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               progressPercentage={progressPercentage}
               qColors={customizationConfig?.qColors}
               cardBackground={customizationConfig?.cardBackground}
+              onStartFocus={handleStartFocus}
             />
           </div>
         ) : (

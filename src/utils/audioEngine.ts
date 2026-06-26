@@ -267,6 +267,99 @@ export class AudioEngine {
     }
   }
 
+  public playPaperSwipeSound(): void {
+    try {
+      const ctx = this.init();
+      const now = ctx.currentTime;
+      const bufferSize = 0.12 * ctx.sampleRate; // 120ms
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(600, now);
+      filter.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+
+      const gainNode = ctx.createGain();
+      gainNode.gain.setValueAtTime(0.001, now);
+      gainNode.gain.linearRampToValueAtTime(0.04, now + 0.03);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      noise.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      noise.start(now);
+      noise.stop(now + 0.12);
+    } catch (e) {
+      // Ignored
+    }
+  }
+
+  public playStickSound(): void {
+    try {
+      const ctx = this.init();
+      const now = ctx.currentTime;
+
+      // Click transient 1 (high-pitched sticky tape tap)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(1600, now);
+      osc1.frequency.exponentialRampToValueAtTime(400, now + 0.03);
+      gain1.gain.setValueAtTime(0.05, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.03);
+
+      // Click transient 2 (deeper stick/clip tap at +0.03s)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(600, now + 0.03);
+      osc2.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+      gain2.gain.setValueAtTime(0.08, now + 0.03);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.03);
+      osc2.stop(now + 0.08);
+    } catch (e) {
+      // Ignored
+    }
+  }
+
+  public playPopSound(): void {
+    try {
+      const ctx = this.init();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(1300, now + 0.08);
+
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch (e) {
+      // Ignored
+    }
+  }
+
   public close(): void {
     this.stopNoise();
     if (this.ctx) {

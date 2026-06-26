@@ -12,9 +12,10 @@ interface MatrixViewProps {
     "urgent-not-important": string;
     "not-urgent-not-important": string;
   };
+  handleStartFocus: (taskId: string, taskTitle: string) => void;
 }
 
-export const MatrixView: React.FC<MatrixViewProps> = ({ tasks, handleComplete, qColors }) => {
+export const MatrixView: React.FC<MatrixViewProps> = ({ tasks, handleComplete, qColors, handleStartFocus }) => {
   const quadrants = [
     {
       id: "urgent-important",
@@ -121,12 +122,21 @@ export const MatrixView: React.FC<MatrixViewProps> = ({ tasks, handleComplete, q
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleComplete(task.id)}
-                      className={`text-[10px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2.5 py-1 rounded-lg transition-all font-bold cursor-pointer`}
-                    >
-                      完成
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleStartFocus(task.id, task.title)}
+                        className={`text-[10px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} p-1 rounded-lg transition-all font-bold cursor-pointer flex items-center justify-center`}
+                        title="开始专注该任务"
+                      >
+                        ⏱️
+                      </button>
+                      <button
+                        onClick={() => handleComplete(task.id)}
+                        className={`text-[10px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2.5 py-1 rounded-lg transition-all font-bold cursor-pointer`}
+                      >
+                        完成
+                      </button>
+                    </div>
                   </div>
                 );
               })

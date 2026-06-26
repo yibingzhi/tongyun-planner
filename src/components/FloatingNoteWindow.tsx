@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { NOTE_COLORS } from "./StickyNotesView";
 import { StickyPin } from "./StickyPin";
 import { invoke } from "@tauri-apps/api/core";
+import { audioEngine } from "../utils/audioEngine";
 
 interface FloatingNoteWindowProps {
   noteId: string;
@@ -15,6 +16,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   const [isFolded, setIsFolded] = useState(false);
 
   const handleToggleFold = () => {
+    audioEngine.playStickSound();
     setIsFolded((prev) => {
       const nextFolded = !prev;
       import("@tauri-apps/api/webviewWindow").then((m) => {
@@ -99,6 +101,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   };
 
   const handleColorChange = (newColor: string) => {
+    audioEngine.playStickSound();
     setColor(newColor);
     
     const localNotes = localStorage.getItem("aero_sticky_notes");

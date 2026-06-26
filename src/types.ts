@@ -17,6 +17,8 @@ export interface PomodoroLog {
   id: string;
   timestamp: number;
   duration: number;
+  taskId?: string;
+  taskTitle?: string;
 }
 
 export interface StickyNote {

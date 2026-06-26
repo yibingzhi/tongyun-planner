@@ -17,6 +17,7 @@ interface ListViewProps {
   editingNotes: string;
   setEditingNotes: (notes: string) => void;
   handleSaveNotes: (id: string, notes: string) => void;
+  handleStartFocus: (taskId: string, taskTitle: string) => void;
 }
 
 export const ListView: React.FC<ListViewProps> = ({
@@ -32,6 +33,7 @@ export const ListView: React.FC<ListViewProps> = ({
   editingNotes,
   setEditingNotes,
   handleSaveNotes,
+  handleStartFocus,
 }) => {
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
@@ -114,6 +116,13 @@ export const ListView: React.FC<ListViewProps> = ({
                 </div>
 
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStartFocus(task.id, task.title)}
+                    className="text-xs px-3 py-2 rounded-lg border border-[#EFEBE4] hover:bg-[#F0F5F1] hover:text-[#4D7C5D] hover:border-[#C4D7B2] bg-transparent text-slate-500 font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    title="开始专注于此待办"
+                  >
+                    ⏱️ 专注
+                  </button>
                   <button
                     onClick={() => {
                       setExpandedNoteId(expandedNoteId === task.id ? null : task.id);

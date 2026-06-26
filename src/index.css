@@ -276,4 +276,52 @@ html, body, #root {
   font-family: Georgia, Cambria, 'Times New Roman', 'Noto Serif SC', serif !important;
 }
 
+/* 晚安模式 (Sunset Night Mode) 暖色手账材质与微发光效果 */
+.theme-sunset {
+  background-color: #FAF4EB !important;
+}
 
+.theme-sunset body {
+  background-color: #FAF4EB !important;
+}
+
+.theme-sunset .glassmorphism {
+  background: rgba(255, 250, 240, 0.85) !important;
+  border: 1px dashed rgba(253, 186, 116, 0.45) !important; /* 手绘虚线质感 */
+  box-shadow: 0 10px 30px -10px rgba(180, 110, 50, 0.15), 
+              0 0 20px 2px rgba(254, 215, 170, 0.25), 
+              0 1px 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+.theme-sunset .glassmorphism-dark {
+  background: rgba(255, 247, 230, 0.9) !important;
+  border: 1.5px dashed rgba(253, 186, 116, 0.5) !important; /* 手绘虚线质感 */
+  box-shadow: 0 12px 35px -8px rgba(180, 110, 50, 0.2), 
+              0 0 25px 3px rgba(254, 215, 170, 0.3), 
+              0 1px 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+/* 晕染水彩渐变背景 (日落色调) */
+.theme-sunset .bg-watercolor-pattern {
+  background: radial-gradient(circle at 15% 20%, rgba(254, 215, 170, 0.9) 0%, transparent 55%),
+              radial-gradient(circle at 85% 80%, rgba(253, 186, 116, 0.85) 0%, transparent 55%),
+              radial-gradient(circle at 50% 50%, rgba(255, 237, 213, 0.8) 0%, transparent 65%),
+              #FAF4EB !important;
+}
+
+/* 温暖手绘软虚线边框 */
+.theme-sunset aside, 
+.theme-sunset main, 
+.theme-sunset .border-\[\#EFEBE4\] {
+  border-color: rgba(217, 119, 6, 0.18) !important;
+}
+
+/* 日落夜间模式边缘柔和烘托晕染 */
+.theme-sunset::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 65%, rgba(251, 191, 36, 0.04) 100%);
+  z-index: 9999;
+}

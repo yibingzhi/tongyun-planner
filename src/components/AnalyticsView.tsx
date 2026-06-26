@@ -29,6 +29,35 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const avgDuration =
     pomodoroLogs.length > 0 ? Math.round(totalDuration / pomodoroLogs.length) : 0;
 
+  // 按照 taskId 统计番茄钟数量和时长
+  interface TaskStats {
+    taskId: string;
+    taskTitle: string;
+    tomatoCount: number;
+    totalDuration: number;
+  }
+
+  const taskStatsMap: { [key: string]: TaskStats } = {};
+
+  pomodoroLogs.forEach((log) => {
+    const tId = log.taskId || "general";
+    const tTitle = log.taskTitle || "自主专注 / 其它未关联任务";
+
+    if (!taskStatsMap[tId]) {
+      taskStatsMap[tId] = {
+        taskId: tId,
+        taskTitle: tTitle,
+        tomatoCount: 0,
+        totalDuration: 0,
+      };
+    }
+    taskStatsMap[tId].tomatoCount += 1;
+    taskStatsMap[tId].totalDuration += log.duration;
+  });
+
+  const taskStatsList = Object.values(taskStatsMap).sort((a, b) => b.totalDuration - a.totalDuration);
+  const maxDuration = taskStatsList.length > 0 ? taskStatsList[0].totalDuration : 1;
+
   // 渲染番茄热力图算法
   const renderHeatmap = () => {
     const today = new Date();
@@ -260,6 +289,45 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* 任务维度专注排行 */}
+      <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm">
+        <div className="pb-3.5 border-b border-[#EFEBE4] mb-4">
+          <h3 className="text-xs font-bold text-[#2D323A] flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-[#A34E36]" />
+            <span>任务维度专注时间分布 (Tomato Focus Breakdown)</span>
+          </h3>
+        </div>
+        <div className="space-y-4">
+          {taskStatsList.length > 0 ? (
+            taskStatsList.map((stat) => {
+              const percentage = Math.round((stat.totalDuration / maxDuration) * 100);
+              return (
+                <div key={stat.taskId} className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                  <div className="md:w-1/4 text-xs font-bold text-slate-700 truncate" title={stat.taskTitle}>
+                    {stat.taskTitle}
+                  </div>
+                  <div className="flex-grow flex items-center gap-3">
+                    <div className="flex-grow h-3 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/40">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#B2C8DF] to-[#C4D7B2] rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-extrabold text-slate-500 min-w-[80px] text-right">
+                      {stat.tomatoCount} 番茄 • {stat.totalDuration} 分钟
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+              暂无专注数据，在待办任务上点击 ⏱️ 开始你的第一个番茄钟吧！
+            </div>
+          )}
         </div>
       </div>
     </div>
