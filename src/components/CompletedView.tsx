@@ -42,7 +42,7 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
                   <Check className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-455 line-through decoration-slate-300">
+                  <h4 className="text-sm font-bold text-slate-500 line-through decoration-slate-300">
                     {task.title}
                   </h4>
                   <div className="flex items-center gap-2 mt-0.5">

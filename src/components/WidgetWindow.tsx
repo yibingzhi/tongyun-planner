@@ -210,7 +210,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           >
             <div className="space-y-2 overflow-y-auto pr-0.5 custom-scrollbar">
               <div>
-                <label className="text-[8px] font-extrabold text-slate-455 uppercase tracking-wider block mb-0.5">
+                <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
                   任务名称
                 </label>
                 <input
@@ -224,7 +224,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[8px] font-extrabold text-slate-455 uppercase tracking-wider block mb-0.5">
+                <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
                   详情描述 (可选)
                 </label>
                 <input
@@ -236,18 +236,18 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[8px] font-extrabold text-slate-455 uppercase tracking-wider block mb-0.5">
+                <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
                   截止日期
                 </label>
                 <input
                   type="date"
                   value={newWidgetDueDate}
                   onChange={(e) => setNewWidgetDueDate(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-850 focus:outline-none focus:border-[#4D7C5D] font-medium cursor-pointer"
+                  className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#4D7C5D] font-medium cursor-pointer"
                 />
               </div>
               <div>
-                <label className="text-[8px] font-extrabold text-slate-455 uppercase tracking-wider block mb-1">
+                <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-1">
                   优先级象限
                 </label>
                 <CustomSelect
@@ -298,7 +298,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {task.description && (
-                          <p className="text-[9px] text-slate-450 truncate font-medium">
+                          <p className="text-[9px] text-slate-400 truncate font-medium">
                             {task.description}
                           </p>
                         )}
@@ -351,7 +351,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-[8px] text-slate-455 font-extrabold mt-1 uppercase tracking-wider">
+                <div className="flex justify-between text-[8px] text-slate-500 font-extrabold mt-1 uppercase tracking-wider">
                   <span>完成进度 {completedTasks.length}</span>
                   <span>{progressPercentage}%</span>
                 </div>
@@ -535,8 +535,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                       pomodoroSessionCount
                     );
                   }}
-                  className="w-8 h-8 rounded-full border border-[#EFEBE4] hover:bg-slate-50 bg-white flex items-center justify-center text-slate-400 hover:text-slate-650 transition-all shadow-sm cursor-pointer"
-                  title="重置"
+                  className="w-8 h-8 rounded-full border border-[#EFEBE4] hover:bg-slate-50 bg-white flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all shadow-sm cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -618,7 +617,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                           handleDeleteNote(note.id);
                           setSelectedWidgetNoteId(null);
                         }}
-                        className="text-slate-400 hover:text-red-550 p-0.5 rounded cursor-pointer"
+                        className="text-slate-400 hover:text-red-500 p-0.5 rounded cursor-pointer"
                         title="删除便签"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -694,7 +693,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       <div className="w-full pt-2 border-t border-slate-200 flex items-center justify-between pointer-events-auto">
         <div
           data-tauri-drag-region
-          className="text-[8px] text-slate-455 font-extrabold uppercase tracking-wider cursor-move py-1 pr-3"
+          className="text-[8px] text-slate-500 font-extrabold uppercase tracking-wider cursor-move py-1 pr-3"
         >
           待办任务: {tasks.length}
         </div>
@@ -765,7 +764,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
         </div>
         <div
           data-tauri-drag-region
-          className="text-[8px] text-slate-455 font-extrabold cursor-move py-1 pl-3"
+          className="text-[8px] text-slate-500 font-extrabold cursor-move py-1 pl-3"
         >
           进度: {progressPercentage}%
         </div>

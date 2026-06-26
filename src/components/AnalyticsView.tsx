@@ -209,7 +209,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               <BarChart3 className="w-4 h-4 text-[#4D7C5D]" />
               <span>番茄专注热力图 (最近 18 周)</span>
             </h3>
-            <div className="flex items-center gap-1 text-[8px] text-slate-450 font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold uppercase tracking-wider">
               <span>少</span>
               <div className="w-2.5 h-2.5 rounded bg-white/50 border border-slate-200" />
               <div className="w-2.5 h-2.5 rounded bg-[#C4D7B2]/40" />

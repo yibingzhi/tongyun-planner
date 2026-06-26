@@ -228,7 +228,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <div className="min-w-0 flex-grow">
                     <h4 className="text-xs font-bold text-[#2D323A] truncate">{task.title}</h4>
                     {task.description && (
-                      <p className="text-[9px] text-slate-450 truncate mt-0.5">
+                      <p className="text-[9px] text-slate-400 truncate mt-0.5">
                         {task.description}
                       </p>
                     )}

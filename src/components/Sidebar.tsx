@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   resetTasks,
 }) => {
   return (
-    <aside className="w-68 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-6 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
+    <aside className="w-72 flex-shrink-0 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-6 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
       <div className="space-y-6 flex-shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-[8px] text-slate-550 font-bold uppercase tracking-wider">
+          <div className="flex justify-between items-center text-[8px] text-slate-500 font-bold uppercase tracking-wider">
             <span>已完成 {completedTasksCount}</span>
             <span>剩余待办 {tasksCount}</span>
           </div>
@@ -352,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     pomodoroSessionCount
                   );
                 }}
-                className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 title="重置"
               >
                 <RotateCcw className="w-3.5 h-3.5" />

@@ -72,7 +72,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = ({
             <StickyNote className="w-4 h-4 text-[#8B6E3C]" />
             <span>随手便签墙 ({stickyNotes.length})</span>
           </h3>
-          <p className="text-[10px] text-slate-455 mt-0.5">
+          <p className="text-[10px] text-slate-500 mt-0.5">
             直接修改内容，选择不同色系进行便签分类，保存你的工作备忘与随想。
           </p>
         </div>

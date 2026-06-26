@@ -122,14 +122,14 @@ export const ListView: React.FC<ListViewProps> = ({
                     className={`text-xs px-3.5 py-2 rounded-lg border transition-all cursor-pointer font-bold ${
                       expandedNoteId === task.id
                         ? "bg-[#FAF5ED] text-[#8B6E3C] border-[#EFE5D3]"
-                        : "bg-transparent text-slate-400 border-[#EFEBE4] hover:bg-[#FAF8F5] hover:text-slate-650"
+                        : "bg-transparent text-slate-400 border-[#EFEBE4] hover:bg-[#FAF8F5] hover:text-slate-600"
                     }`}
                   >
                     {task.notes ? "编辑备注" : "添加备注"}
                   </button>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="text-xs hover:text-red-655 border border-[#EFEBE4] hover:border-red-100 hover:bg-red-50 p-2 rounded-lg bg-transparent text-slate-400 transition-all cursor-pointer"
+                    className="text-xs hover:text-red-600 border border-[#EFEBE4] hover:border-red-100 hover:bg-red-50 p-2 rounded-lg bg-transparent text-slate-400 transition-all cursor-pointer"
                     title="删除任务"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -147,7 +147,7 @@ export const ListView: React.FC<ListViewProps> = ({
                     value={editingNotes}
                     onChange={(e) => setEditingNotes(e.target.value)}
                     placeholder="在此处添加任务备忘或备注细则..."
-                    className="w-full bg-[#FAF8F5]/60 border border-[#EFEBE4] px-3 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-450 focus:outline-none focus:border-[#4D7C5D] transition-all resize-none h-24 custom-scrollbar"
+                    className="w-full bg-[#FAF8F5]/60 border border-[#EFEBE4] px-3 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-all resize-none h-24 custom-scrollbar"
                     autoFocus
                   />
                   <div className="flex gap-2 mt-2 justify-end">

@@ -173,6 +173,11 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
               {task.description}
             </p>
           )}
+          {task.notes && (
+            <p className="text-[10px] text-[#8B6E3C] mt-1.5 line-clamp-2 leading-relaxed italic font-semibold whitespace-pre-wrap">
+              📝 {task.notes}
+            </p>
+          )}
         </div>
 
         {/* 进度条显示 */}
@@ -184,7 +189,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <div className="flex justify-between items-center text-[7px] text-slate-450 mt-0.5 font-extrabold uppercase tracking-wider">
+            <div className="flex justify-between items-center text-[7px] text-slate-400 mt-0.5 font-extrabold uppercase tracking-wider">
               <span>今日进度</span>
               <span className="text-slate-600">{progressPercentage}%</span>
             </div>
