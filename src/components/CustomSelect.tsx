@@ -2,20 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import type { SelectOption } from "../constants";
 
-interface CustomSelectProps<TValue extends string = string> {
+interface CustomSelectProps<TValue extends string | number = string | number> {
   value: TValue;
   onChange: (value: TValue) => void;
   options: SelectOption<TValue>[];
   className?: string;
   dropdownAlign?: "left" | "right" | "top";
+  disabled?: boolean;
 }
 
-export function CustomSelect<TValue extends string = string>({
+export function CustomSelect<TValue extends string | number = string | number>({
   value,
   onChange,
   options,
   className = "",
   dropdownAlign = "left",
+  disabled = false,
 }: CustomSelectProps<TValue>) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,11 +44,16 @@ export function CustomSelect<TValue extends string = string>({
     <div ref={containerRef} className={`relative inline-block ${className}`}>
       <button
         type="button"
+        disabled={disabled}
         onClick={(event) => {
           event.stopPropagation();
           setIsOpen((current) => !current);
         }}
-        className="w-full flex items-center justify-between bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] px-3.5 py-2.5 rounded-xl text-xs text-[#2D323A] transition-all focus:outline-none cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+        className={`w-full flex items-center justify-between border px-3.5 py-2.5 rounded-xl text-xs transition-all focus:outline-none shadow-[0_1px_2px_rgba(0,0,0,0.02)] ${
+          disabled
+            ? "bg-slate-50 border-[#EFEBE4] text-slate-400 cursor-not-allowed opacity-60"
+            : "bg-white border-[#EFEBE4] hover:border-[#4D7C5D] text-[#2D323A] cursor-pointer"
+        }`}
       >
         <span className="truncate font-semibold">{selectedOption?.label}</span>
         <svg
@@ -61,7 +68,7 @@ export function CustomSelect<TValue extends string = string>({
 
       {isOpen && (
         <div
-          className={`absolute z-50 w-full min-w-[170px] bg-white border border-[#EFEBE4] rounded-xl shadow-[0_10px_25px_-5px_rgba(154,142,128,0.18)] py-1.5 text-xs text-slate-700 overflow-hidden ${
+          className={`absolute z-50 w-full min-w-[170px] bg-white border border-[#EFEBE4] rounded-xl shadow-[0_10px_25px_-5px_rgba(154,142,128,0.18)] py-1.5 text-xs text-slate-700 overflow-y-auto max-h-[200px] custom-scrollbar ${
             dropdownAlign === "right" ? "right-0" : "left-0"
           } ${dropdownAlign === "top" ? "bottom-full mb-1.5 mt-0" : "mt-1.5"}`}
         >

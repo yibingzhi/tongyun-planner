@@ -46,6 +46,19 @@ export interface CustomizationConfig {
   interfaceGlass?: "light" | "matte" | "solid";
   watercolorStyle?: "oasis" | "aurora" | "sunny" | "none";
   fontFamily?: "sans" | "rounded" | "serif";
+
+  // Sunset Night Mode settings
+  enableSunsetMode?: boolean;
+  sunsetStartHour?: number;
+  sunsetEndHour?: number;
+  sunsetWarmth?: number; // 0 to 100
+
+  // AI Agent settings
+  aiApiKey?: string;
+  aiEndpoint?: string;
+  aiModel?: string;
+  aiAutoCategorize?: boolean;
+  aiCustomPrompt?: string;
 }
 
 export interface WebDavConfig {

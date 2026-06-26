@@ -1,6 +1,6 @@
 import type { TaskCategory } from "./types";
 
-export interface SelectOption<TValue extends string = string> {
+export interface SelectOption<TValue extends string | number = string | number> {
   value: TValue;
   label: string;
 }

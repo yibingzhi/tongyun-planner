@@ -174,7 +174,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   return (
     <div
       onPointerDown={handleMouseDownDrag}
-      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-opacity duration-500 ${
+      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-opacity duration-500 theme-glass-${customizationConfig?.interfaceGlass || "matte"} theme-font-${customizationConfig?.fontFamily || "sans"} ${
         isWidgetLocked ? "opacity-20 hover:opacity-60" : "opacity-100"
       }`}
     >

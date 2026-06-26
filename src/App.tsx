@@ -14,7 +14,7 @@ import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
 import { QuickAddTask } from "./components/QuickAddTask";
 import { WidgetWindow } from "./components/WidgetWindow";
-import { PersonalizationView } from "./components/PersonalizationView";
+import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { audioEngine } from "./utils/audioEngine";
 import type { WebDavConfig } from "./types";
@@ -62,6 +62,15 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   interfaceGlass: "matte",
   watercolorStyle: "oasis",
   fontFamily: "sans",
+  enableSunsetMode: true,
+  sunsetStartHour: 18,
+  sunsetEndHour: 6,
+  sunsetWarmth: 50,
+  aiApiKey: "",
+  aiEndpoint: "https://api.openai.com/v1",
+  aiModel: "gpt-4o",
+  aiAutoCategorize: false,
+  aiCustomPrompt: "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。",
 };
 
 function App() {
@@ -312,18 +321,37 @@ function App() {
   // 晚安模式自动检测与主题切换
   useEffect(() => {
     const checkSunsetTheme = () => {
+      const enabled = customizationConfig.enableSunsetMode !== false;
+      if (!enabled) {
+        document.documentElement.classList.remove("theme-sunset");
+        return;
+      }
+      
       const currentHour = new Date().getHours();
-      const isSunset = currentHour >= 18 || currentHour < 6;
+      const start = customizationConfig.sunsetStartHour ?? 18;
+      const end = customizationConfig.sunsetEndHour ?? 6;
+      
+      let isSunset = false;
+      if (start > end) {
+        // Over midnight (e.g. 18:00 to 06:00)
+        isSunset = currentHour >= start || currentHour < end;
+      } else {
+        // Same day (e.g. 08:00 to 18:00)
+        isSunset = currentHour >= start && currentHour < end;
+      }
+
       if (isSunset) {
         document.documentElement.classList.add("theme-sunset");
+        document.documentElement.style.setProperty("--sunset-warmth", `${customizationConfig.sunsetWarmth ?? 50}%`);
       } else {
         document.documentElement.classList.remove("theme-sunset");
       }
     };
+    
     checkSunsetTheme();
     const interval = setInterval(checkSunsetTheme, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [customizationConfig.enableSunsetMode, customizationConfig.sunsetStartHour, customizationConfig.sunsetEndHour, customizationConfig.sunsetWarmth]);
 
   useEffect(() => {
     const label = getCurrentWebviewWindow().label;
@@ -697,16 +725,71 @@ function App() {
     syncState(id, "snooze");
   };
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const classifyCategoryWithAI = async (title: string, desc: string): Promise<Task["category"] | null> => {
+    const apiKey = customizationConfig.aiApiKey;
+    const endpoint = customizationConfig.aiEndpoint || "https://api.openai.com/v1";
+    const model = customizationConfig.aiModel || "gpt-4o";
+    const prompt = customizationConfig.aiCustomPrompt || 
+      "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。";
+
+    if (!apiKey) return null;
+
+    try {
+      const url = endpoint.endsWith("/") ? `${endpoint}chat/completions` : `${endpoint}/chat/completions`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            {
+              role: "system",
+              content: prompt,
+            },
+            {
+              role: "user",
+              content: `任务标题: ${title}\n描述: ${desc || "无"}`,
+            },
+          ],
+          temperature: 0.1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
+      const resData = await response.json();
+      const content = resData.choices?.[0]?.message?.content?.trim() || "";
+      
+      const matched = ["urgent-important", "important-not-urgent", "urgent-not-important", "not-urgent-not-important"].find(
+        (cat) => content.includes(cat)
+      );
+      if (matched) {
+        return matched as Task["category"];
+      }
+    } catch (err) {
+      console.error("AI 智能象限分类调用失败:", err);
+    }
+    return null;
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    const taskId = Date.now().toString();
+    const initialCategory = newCategory;
+
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: taskId,
       title: newTitle,
       description: newDesc || undefined,
       notes: newNotes || undefined,
-      category: newCategory,
+      category: initialCategory,
       dueDate: newDueDate || undefined,
     };
 
@@ -725,9 +808,33 @@ function App() {
       newTask.notes || "",
       newTask.dueDate
     );
+
+    const titleToClassify = newTitle;
+    const descToClassify = newDesc;
+
     setNewTitle("");
     setNewDesc("");
     setNewNotes("");
+
+    if (customizationConfig.aiAutoCategorize && customizationConfig.aiApiKey) {
+      const aiCategory = await classifyCategoryWithAI(titleToClassify, descToClassify);
+      if (aiCategory && aiCategory !== initialCategory) {
+        setTasks((prev) => {
+          const updated = prev.map((t) => (t.id === taskId ? { ...t, category: aiCategory } : t));
+          saveTasks(updated);
+          return updated;
+        });
+        syncState(
+          taskId,
+          "add",
+          newTask.title,
+          newTask.description || "",
+          aiCategory,
+          newTask.notes || "",
+          newTask.dueDate
+        );
+      }
+    }
   };
 
   const handleAddNote = () => {
@@ -1174,11 +1281,14 @@ function App() {
           )}
 
           {activeTab === "settings" && (
-            <PersonalizationView
+            <SettingsView
               config={customizationConfig}
               onChange={handleConfigChange}
               onBackupToCloud={handleBackupToCloud}
               onRestoreFromCloud={handleRestoreFromCloud}
+              alertSoundType={alertSoundType}
+              setAlertSoundType={setAlertSoundType}
+              resetTasks={resetTasks}
             />
           )}
 

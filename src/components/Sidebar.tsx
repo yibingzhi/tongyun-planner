@@ -12,7 +12,7 @@ import {
   Coffee,
   Unlock,
   Lock,
-  Palette,
+  Settings,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -218,8 +218,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
             }`}
           >
-            <Palette className="w-4 h-4" />
-            装扮
+            <Settings className="w-4 h-4" />
+            系统设置
           </button>
         </nav>
 
