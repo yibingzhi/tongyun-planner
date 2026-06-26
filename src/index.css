@@ -14,6 +14,11 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html.transparent-window,
+html.transparent-window body {
+  background-color: transparent !important;
+}
+
 /* 优雅精致的现代自定义滚动条 */
 ::-webkit-scrollbar {
   width: 5px;

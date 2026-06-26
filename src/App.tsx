@@ -356,6 +356,9 @@ function App() {
   useEffect(() => {
     const label = getCurrentWebviewWindow().label;
     setWindowLabel(label);
+    if (label !== "main") {
+      document.documentElement.classList.add("transparent-window");
+    }
 
     if (typeof Notification !== "undefined" && Notification.permission !== "granted" && Notification.permission !== "denied") {
       Notification.requestPermission();
@@ -1012,6 +1015,7 @@ function App() {
         transparent: true,
         alwaysOnTop: true,
         skipTaskbar: true,
+        shadow: false,
       });
       
       noteWindow.once("tauri://error", () => {
