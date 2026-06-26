@@ -14,7 +14,7 @@ interface CalendarViewProps {
   setNewDueDate: (date: string) => void;
 }
 
-export const CalendarView: React.FC<CalendarViewProps> = ({
+export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   tasks,
   handleComplete,
   calendarYear,
@@ -268,4 +268,4 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
     </div>
   );
-};
+});

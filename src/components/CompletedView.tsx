@@ -9,7 +9,7 @@ interface CompletedViewProps {
   handleDeleteTask: (id: string) => void;
 }
 
-export const CompletedView: React.FC<CompletedViewProps> = ({
+export const CompletedView: React.FC<CompletedViewProps> = React.memo(({
   completedTasks,
   handleClearCompleted,
   handleUndoComplete,
@@ -82,4 +82,4 @@ export const CompletedView: React.FC<CompletedViewProps> = ({
       )}
     </div>
   );
-};
+});

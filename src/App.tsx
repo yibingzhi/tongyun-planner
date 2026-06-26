@@ -129,10 +129,10 @@ function App() {
   const storeRef = useRef<Awaited<ReturnType<typeof load>> | null>(null);
   const timerIntervalRef = useRef<any>(null);
 
-  const saveStickyNotes = (updatedNotes: StickyNote[]) => {
+  const saveStickyNotes = useCallback((updatedNotes: StickyNote[]) => {
     setStickyNotes(updatedNotes);
     localStorage.setItem("aero_sticky_notes", JSON.stringify(updatedNotes));
-  };
+  }, []);
 
   const saveTasks = useCallback(async (updatedTasks: Task[]) => {
     localStorage.setItem("aero_todos", JSON.stringify(updatedTasks));
@@ -156,7 +156,7 @@ function App() {
     totalCount === 0 ? 0 : Math.round((completedTasks.length / totalCount) * 100);
 
   // 辅助同步状态到另一个窗口
-  const syncState = async (
+  const syncState = useCallback(async (
     taskId: string,
     action: string,
     title: string = "",
@@ -181,9 +181,9 @@ function App() {
     } catch (e) {
       console.error("同步窗口状态失败", e);
     }
-  };
+  }, []);
 
-  const syncPomodoro = (
+  const syncPomodoro = useCallback((
     active: boolean,
     timeLeft: number,
     isBreak: boolean,
@@ -206,9 +206,9 @@ function App() {
       taskTitle: finalTaskTitle,
     });
     syncState("pomodoro", "pomodoro_sync", data);
-  };
+  }, [pomodoroTaskId, pomodoroTaskTitle, syncState]);
 
-  const handleStartFocus = (taskId: string, taskTitle: string) => {
+  const handleStartFocus = useCallback((taskId: string, taskTitle: string) => {
     setPomodoroTaskId(taskId);
     setPomodoroTaskTitle(taskTitle);
     setPomodoroIsActive(true);
@@ -216,7 +216,7 @@ function App() {
     const nextTime = focusDuration * 60;
     setPomodoroTimeLeft(nextTime);
     syncPomodoro(true, nextTime, false, focusDuration, breakDuration, pomodoroSessionCount, taskId, taskTitle);
-  };
+  }, [focusDuration, breakDuration, pomodoroSessionCount, syncPomodoro]);
 
   // 白噪音物理合成引擎调用
   const startNoise = (type: string, volume: number) => {
@@ -663,7 +663,7 @@ function App() {
     };
   }, []);
 
-  const handleComplete = (id: string) => {
+  const handleComplete = useCallback((id: string) => {
     setTasks((prev) => {
       const completedItem = prev.find((t) => t.id === id);
       const updated = prev.filter((t) => t.id !== id);
@@ -679,9 +679,9 @@ function App() {
       return updated;
     });
     syncState(id, "complete");
-  };
+  }, [saveTasks, saveCompleted, syncState]);
 
-  const handleUndoComplete = (id: string) => {
+  const handleUndoComplete = useCallback((id: string) => {
     setCompletedTasks((cPrev) => {
       const restoredItem = cPrev.find((t) => t.id === id);
       const cUpdated = cPrev.filter((t) => t.id !== id);
@@ -697,9 +697,9 @@ function App() {
       return cUpdated;
     });
     syncState(id, "undo_complete");
-  };
+  }, [saveTasks, saveCompleted, syncState]);
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = useCallback((id: string) => {
     setTasks((prev) => {
       const updated = prev.filter((t) => t.id !== id);
       saveTasks(updated);
@@ -711,9 +711,9 @@ function App() {
       return updated;
     });
     syncState(id, "delete");
-  };
+  }, [saveTasks, saveCompleted, syncState]);
 
-  const handleSnooze = (id: string) => {
+  const handleSnooze = useCallback((id: string) => {
     setTasks((prev) => {
       const updated = [...prev];
       const item = updated.find((t) => t.id === id);
@@ -726,9 +726,9 @@ function App() {
       return prev;
     });
     syncState(id, "snooze");
-  };
+  }, [saveTasks, syncState]);
 
-  const classifyCategoryWithAI = async (title: string, desc: string): Promise<Task["category"] | null> => {
+  const classifyCategoryWithAI = useCallback(async (title: string, desc: string): Promise<Task["category"] | null> => {
     const apiKey = customizationConfig.aiApiKey;
     const endpoint = customizationConfig.aiEndpoint || "https://api.openai.com/v1";
     const model = customizationConfig.aiModel || "gpt-4o";
@@ -778,9 +778,9 @@ function App() {
       console.error("AI 智能象限分类调用失败:", err);
     }
     return null;
-  };
+  }, [customizationConfig.aiApiKey, customizationConfig.aiEndpoint, customizationConfig.aiModel, customizationConfig.aiCustomPrompt]);
 
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleAddTask = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
@@ -838,9 +838,9 @@ function App() {
         );
       }
     }
-  };
+  }, [newTitle, newDesc, newNotes, newCategory, newDueDate, saveTasks, customizationConfig, classifyCategoryWithAI, syncState]);
 
-  const handleAddNote = () => {
+  const handleAddNote = useCallback(() => {
     const newNote = {
       id: Date.now().toString(),
       text: "",
@@ -850,53 +850,61 @@ function App() {
           ? Math.floor(Math.random() * 3) + 1
           : -(Math.floor(Math.random() * 3) + 1),
     };
-    const updated = [newNote, ...stickyNotes];
-    saveStickyNotes(updated);
+    setStickyNotes((prev) => {
+      const updated = [newNote, ...prev];
+      saveStickyNotes(updated);
+      return updated;
+    });
     syncState(newNote.id, "add_note", JSON.stringify(newNote));
-  };
+  }, [saveStickyNotes, syncState]);
 
-  const handleEditNoteText = (id: string, text: string) => {
-    const updated = stickyNotes.map((n) => (n.id === id ? { ...n, text } : n));
-    setStickyNotes(updated);
-    localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
+  const handleEditNoteText = useCallback((id: string, text: string) => {
+    setStickyNotes((prev) => {
+      const updated = prev.map((n) => (n.id === id ? { ...n, text } : n));
+      localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
+      return updated;
+    });
     syncState(id, "edit_note_text", text);
-  };
+  }, [syncState]);
 
-  const handleChangeNoteColor = (id: string, color: string) => {
-    const updated = stickyNotes.map((n) => (n.id === id ? { ...n, color } : n));
-    saveStickyNotes(updated);
+  const handleChangeNoteColor = useCallback((id: string, color: string) => {
+    setStickyNotes((prev) => {
+      const updated = prev.map((n) => (n.id === id ? { ...n, color } : n));
+      saveStickyNotes(updated);
+      return updated;
+    });
     syncState(id, "change_note_color", color);
-  };
+  }, [saveStickyNotes, syncState]);
 
-  const handleDeleteNote = (id: string) => {
-    const updated = stickyNotes.filter((n) => n.id !== id);
-    saveStickyNotes(updated);
+  const handleDeleteNote = useCallback((id: string) => {
+    setStickyNotes((prev) => {
+      const updated = prev.filter((n) => n.id !== id);
+      saveStickyNotes(updated);
+      return updated;
+    });
     syncState(id, "delete_note");
-  };
+  }, [saveStickyNotes, syncState]);
 
-  const handleToggleWidget = async () => {
+  const handleToggleWidget = useCallback(async () => {
     try {
       await invoke("toggle_widget_window");
     } catch (e) {
       console.error("切换挂件状态失败", e);
     }
-  };
+  }, []);
 
-  const handleToggleWidgetLock = async (forceState?: boolean) => {
-    const nextState = forceState !== undefined ? forceState : !isWidgetLocked;
-    setIsWidgetLocked(nextState);
-    try {
-      const win = getCurrentWebviewWindow();
-      if (nextState) {
-        await win.setAlwaysOnTop(true);
-      }
+  const handleToggleWidgetLock = useCallback(async (forceState?: boolean) => {
+    setIsWidgetLocked((prev) => {
+      const nextState = forceState !== undefined ? forceState : !prev;
+      getCurrentWebviewWindow().setAlwaysOnTop(nextState).catch((e) => {
+        console.error("设置窗口置顶失败", e);
+      });
       syncState("widget_lock", nextState ? "lock_widget" : "unlock_widget");
-    } catch (e) {
-      console.error("切换挂件锁定失败", e);
-    }
-  };
+      return nextState;
+    });
+  }, [syncState]);
 
-  const resetTasks = () => {
+  const resetTasks = useCallback(() => {
     setTasks(INITIAL_TASKS);
     setCompletedTasks([]);
     saveTasks(INITIAL_TASKS);
@@ -928,21 +936,21 @@ function App() {
     ];
     setStickyNotes(defaultNotes);
     localStorage.setItem("aero_sticky_notes", JSON.stringify(defaultNotes));
-  };
+  }, [saveTasks, saveCompleted, syncState]);
 
-  const handleClearCompleted = () => {
+  const handleClearCompleted = useCallback(() => {
     setCompletedTasks([]);
     saveCompleted([]);
     syncState("clear_completed", "clear_completed");
-  };
+  }, [saveCompleted, syncState]);
 
-  const handleConfigChange = (newConfig: CustomizationConfig) => {
+  const handleConfigChange = useCallback((newConfig: CustomizationConfig) => {
     setCustomizationConfig(newConfig);
     localStorage.setItem("aero_customization_config", JSON.stringify(newConfig));
     syncState("settings", "settings_sync", JSON.stringify(newConfig));
-  };
+  }, [syncState]);
 
-  const handleSaveNotes = (id: string, notes: string) => {
+  const handleSaveNotes = useCallback((id: string, notes: string) => {
     setTasks((prev) => {
       const updated = prev.map((t) => (t.id === id ? { ...t, notes: notes || undefined } : t));
       saveTasks(updated);
@@ -950,9 +958,9 @@ function App() {
     });
     setExpandedNoteId(null);
     syncState(id, "update_notes");
-  };
+  }, [saveTasks, syncState]);
 
-  const handleBackupToCloud = async (config: WebDavConfig) => {
+  const handleBackupToCloud = useCallback(async (config: WebDavConfig) => {
     const backupData = {
       tasks,
       completedTasks,
@@ -962,9 +970,9 @@ function App() {
     };
     const { webdavUpload } = await import("./utils/webdav");
     await webdavUpload(config, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
-  };
+  }, [tasks, completedTasks, stickyNotes, customizationConfig]);
 
-  const handleRestoreFromCloud = async (config: WebDavConfig) => {
+  const handleRestoreFromCloud = useCallback(async (config: WebDavConfig) => {
     const { webdavDownload } = await import("./utils/webdav");
     const jsonStr = await webdavDownload(config, "qiyun_list_backup.json");
     const data = JSON.parse(jsonStr);
@@ -998,7 +1006,7 @@ function App() {
     } else {
       throw new Error("备份数据格式不正确");
     }
-  };
+  }, [saveTasks, saveCompleted, saveStickyNotes, syncState]);
 
   const handlePinNoteToDesktop = async (id: string) => {
     try {

@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import { StickyNote, Plus, Trash2, Pin } from "lucide-react";
 import type { StickyNote as StickyNoteType } from "../types";
 import { StickyPin } from "./StickyPin";
@@ -55,7 +56,7 @@ interface StickyNotesViewProps {
   onPinNoteToDesktop?: (id: string) => void;
 }
 
-export const StickyNotesView: React.FC<StickyNotesViewProps> = ({
+export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
   stickyNotes,
   handleAddNote,
   handleEditNoteText,
@@ -168,4 +169,4 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = ({
       )}
     </div>
   );
-};
+});

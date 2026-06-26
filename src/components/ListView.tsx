@@ -20,7 +20,7 @@ interface ListViewProps {
   handleStartFocus: (taskId: string, taskTitle: string) => void;
 }
 
-export const ListView: React.FC<ListViewProps> = ({
+export const ListView: React.FC<ListViewProps> = React.memo(({
   tasks,
   searchQuery,
   setSearchQuery,
@@ -186,4 +186,4 @@ export const ListView: React.FC<ListViewProps> = ({
       )}
     </div>
   );
-};
+});

@@ -15,7 +15,7 @@ interface MatrixViewProps {
   handleStartFocus: (taskId: string, taskTitle: string) => void;
 }
 
-export const MatrixView: React.FC<MatrixViewProps> = ({ tasks, handleComplete, qColors, handleStartFocus }) => {
+export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handleComplete, qColors, handleStartFocus }) => {
   const quadrants = [
     {
       id: "urgent-important",
@@ -151,4 +151,4 @@ export const MatrixView: React.FC<MatrixViewProps> = ({ tasks, handleComplete, q
       })}
     </div>
   );
-};
+});

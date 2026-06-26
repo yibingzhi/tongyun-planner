@@ -36,7 +36,7 @@ interface SettingsViewProps {
   resetTasks: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({
+export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   config,
   onChange,
   onBackupToCloud,
@@ -736,4 +736,4 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
     </div>
   );
-};
+});

@@ -18,7 +18,7 @@ interface QuickAddTaskProps {
   setNewCategory: (c: Task["category"]) => void;
 }
 
-export const QuickAddTask: React.FC<QuickAddTaskProps> = ({
+export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   handleAddTask,
   newTitle,
   setNewTitle,
@@ -101,4 +101,4 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       </div>
     </form>
   );
-};
+});

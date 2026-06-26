@@ -8,7 +8,7 @@ interface AnalyticsViewProps {
   completedTasks: Task[];
 }
 
-export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
+export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   pomodoroLogs,
   tasks,
   completedTasks,
@@ -332,4 +332,4 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       </div>
     </div>
   );
-};
+});
