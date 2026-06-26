@@ -24,7 +24,9 @@ export class AudioEngine {
       const data = buffer.getChannelData(0);
 
       this.gain = ctx.createGain();
-      this.gain.gain.setValueAtTime(volume, ctx.currentTime);
+      // 音量渐入 (0.5s)
+      this.gain.gain.setValueAtTime(0, ctx.currentTime);
+      this.gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.5);
       this.gain.connect(ctx.destination);
 
       this.source = ctx.createBufferSource();
@@ -132,27 +134,60 @@ export class AudioEngine {
   }
 
   public stopNoise(): void {
-    if (this.source) {
-      try {
-        this.source.stop();
-      } catch (e) {
-        // Ignored
-      }
-      this.source.disconnect();
+    if (this.gain && this.ctx) {
+      const ctx = this.ctx;
+      const gainNode = this.gain;
+      const sourceNode = this.source;
+      const lfoNode = this.lfo;
+
+      // 音量渐隐 (0.4s)
+      gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+
+      setTimeout(() => {
+        try {
+          sourceNode?.stop();
+        } catch (e) {
+          // Ignored
+        }
+        sourceNode?.disconnect();
+
+        try {
+          lfoNode?.stop();
+        } catch (e) {
+          // Ignored
+        }
+        lfoNode?.disconnect();
+
+        gainNode.disconnect();
+      }, 450);
+
       this.source = null;
-    }
-    if (this.lfo) {
-      try {
-        this.lfo.stop();
-      } catch (e) {
-        // Ignored
-      }
-      this.lfo.disconnect();
       this.lfo = null;
-    }
-    if (this.gain) {
-      this.gain.disconnect();
       this.gain = null;
+    } else {
+      if (this.source) {
+        try {
+          this.source.stop();
+        } catch (e) {
+          // Ignored
+        }
+        this.source.disconnect();
+        this.source = null;
+      }
+      if (this.lfo) {
+        try {
+          this.lfo.stop();
+        } catch (e) {
+          // Ignored
+        }
+        this.lfo.disconnect();
+        this.lfo = null;
+      }
+      if (this.gain) {
+        this.gain.disconnect();
+        this.gain = null;
+      }
     }
   }
 

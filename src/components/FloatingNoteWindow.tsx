@@ -12,6 +12,24 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   const [text, setText] = useState("");
   const [color, setColor] = useState("tea");
   const [pinType, setPinType] = useState<"pin" | "tape" | "clip" | "heart" | "smiley">("pin");
+  const [isFolded, setIsFolded] = useState(false);
+
+  const handleToggleFold = () => {
+    setIsFolded((prev) => {
+      const nextFolded = !prev;
+      import("@tauri-apps/api/webviewWindow").then((m) => {
+        import("@tauri-apps/api/dpi").then((dpi) => {
+          const appWindow = m.getCurrentWebviewWindow();
+          if (nextFolded) {
+            appWindow.setSize(new dpi.LogicalSize(240, 60));
+          } else {
+            appWindow.setSize(new dpi.LogicalSize(240, 240));
+          }
+        });
+      });
+      return nextFolded;
+    });
+  };
 
   // Load initial data from localStorage
   useEffect(() => {
@@ -175,6 +193,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   return (
     <div
       onPointerDown={handleMouseDownDrag}
+      onDoubleClick={handleToggleFold}
       className="w-screen h-screen bg-transparent p-3.5 flex flex-col justify-between overflow-hidden cursor-move relative select-none"
     >
       <div
@@ -185,6 +204,21 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
         {/* Custom drag bar and close button */}
         <div className="absolute top-2 right-2.5 z-20 flex items-center gap-1.5">
           <button
+            onClick={handleToggleFold}
+            className="w-4 h-4 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            title={isFolded ? "展开便签" : "折叠便签"}
+          >
+            {isFolded ? (
+              <svg className="w-2.5 h-2.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            ) : (
+              <svg className="w-2.5 h-2.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            )}
+          </button>
+          <button
             onClick={handleClose}
             className="w-4 h-4 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
             title="关闭便签贴"
@@ -194,26 +228,34 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
         </div>
 
         {/* Text Area */}
-        <textarea
-          value={text}
-          onChange={(e) => handleTextChange(e.target.value)}
-          placeholder="随手记些什么吧..."
-          className={`w-full bg-transparent resize-none focus:outline-none text-xs font-semibold leading-relaxed placeholder-slate-400/60 custom-scrollbar flex-grow cursor-text ${theme.text}`}
-          style={{ minHeight: "100px" }}
-        />
+        {!isFolded ? (
+          <textarea
+            value={text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder="随手记些什么吧..."
+            className={`w-full bg-transparent resize-none focus:outline-none text-xs font-semibold leading-relaxed placeholder-slate-400/60 custom-scrollbar flex-grow cursor-text ${theme.text}`}
+            style={{ minHeight: "100px" }}
+          />
+        ) : (
+          <div className={`text-[10px] font-extrabold truncate pr-10 mt-1 cursor-pointer ${theme.text}`}>
+            {text.trim() || "(双击展开便签)"}
+          </div>
+        )}
 
         {/* Color circles */}
-        <div className="flex items-center gap-2 pt-2 border-t border-dashed border-slate-200/40">
-          {Object.entries(NOTE_COLORS).map(([colorKey, t]) => (
-            <button
-              key={colorKey}
-              onClick={() => handleColorChange(colorKey)}
-              className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
-                color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
-              }`}
-            />
-          ))}
-        </div>
+        {!isFolded && (
+          <div className="flex items-center gap-2 pt-2 border-t border-dashed border-slate-200/40">
+            {Object.entries(NOTE_COLORS).map(([colorKey, t]) => (
+              <button
+                key={colorKey}
+                onClick={() => handleColorChange(colorKey)}
+                className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
+                  color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -138,7 +138,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const allTotalCount = tasks.length + completedTasks.length;
 
   return (
-    <div className="flex flex-col gap-4 flex-grow z-10 relative select-none">
+    <div className="animate-fade-in-up flex flex-col gap-4 flex-grow z-10 relative select-none">
       {/* Top Metrics Cards Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Total Focus Time */}
