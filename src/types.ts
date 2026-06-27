@@ -61,7 +61,6 @@ export interface CustomizationConfig {
   aiEndpoint?: string;
   aiModel?: string;
   aiAutoCategorize?: boolean;
-  aiCustomPrompt?: string;
 }
 
 export interface WebDavConfig {

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon } from "lucide-react";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2 } from "lucide-react";
 import type { CustomizationConfig, WebDavConfig, AlertSoundType } from "../types";
 import { PLANNER_COLORS } from "../constants";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
 import { CustomSelect } from "./CustomSelect";
+import { testAIConnection } from "../utils/aiEngine";
 
 const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).map((_, i) => ({
   value: i,
@@ -57,6 +58,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("qiyun_webdav_user") || "");
   const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("qiyun_webdav_pass") || "");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAiTesting, setIsAiTesting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const handleSaveWebDav = (url: string, user: string, pass: string) => {
@@ -131,6 +133,32 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
     onChange(newConfig);
   };
 
+  const handleSaveAiConfig = () => {
+    onChange({ ...config });
+    triggerToast("AI 配置已保存 ✓", "success");
+  };
+
+  const handleTestAiConnection = async () => {
+    if (!config.aiApiKey?.trim()) {
+      triggerToast("请先填写 API Key", "error");
+      return;
+    }
+    if (config.aiModel === "custom" || !config.aiModel?.trim()) {
+      triggerToast("请先选择或填写模型名称", "error");
+      return;
+    }
+    setIsAiTesting(true);
+    try {
+      const reply = await testAIConnection(config);
+      triggerToast(`连接成功！模型回复：${reply.slice(0, 40)}${reply.length > 40 ? "…" : ""}`, "success");
+    } catch (e: any) {
+      console.error(e);
+      triggerToast(`连接失败: ${e.message || e}`, "error");
+    } finally {
+      setIsAiTesting(false);
+    }
+  };
+
   const quadrants = [
     { id: "urgent-important", label: "I. 重要且紧急" },
     { id: "important-not-urgent", label: "II. 重要不紧急" },
@@ -147,11 +175,16 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   };
 
   const q1Color = PLANNER_COLORS[config.qColors["urgent-important"]] || PLANNER_COLORS.rose;
+  const showLivePreview = subTab === "personalization";
 
   return (
     <div className="animate-fade-in-up grid grid-cols-1 lg:grid-cols-5 gap-6 flex-grow select-none">
       {/* 左侧配置栏 */}
-      <div className="lg:col-span-3 rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col gap-5 shadow-sm backdrop-blur-sm">
+      <div
+        className={`rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col gap-5 shadow-sm backdrop-blur-sm ${
+          showLivePreview ? "lg:col-span-3" : "lg:col-span-5"
+        }`}
+      >
         {/* 二级菜单页签 */}
         <div className="flex flex-wrap gap-2 pb-3.5 border-b border-[#EFEBE4]">
           {[
@@ -453,7 +486,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
         {/* 3. AI 助手设定面签 */}
         {subTab === "ai" && (
-          <div className="space-y-4 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
+          <div className="space-y-4 flex-grow overflow-y-auto max-h-[520px] pr-1 custom-scrollbar">
             {/* 提示信息 */}
             <div className="bg-[#FAF5ED] border border-[#EFE5D3] p-4 rounded-2xl flex items-start gap-3">
               <Sparkles className="w-5 h-5 text-[#8B6E3C] mt-0.5" />
@@ -566,20 +599,29 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               );
             })()}
 
-            {/* Custom System Prompt */}
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                分类指导 System Prompt 提示词模板
-              </label>
-              <textarea
-                value={
-                  config.aiCustomPrompt ||
-                  "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。"
-                }
-                onChange={(e) => handleStyleChange("aiCustomPrompt", e.target.value)}
-                placeholder="在此处自定义大模型分类决策指示词模板..."
-                className="w-full bg-white border border-[#EFEBE4] px-3 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] h-20 resize-none custom-scrollbar"
-              />
+            {/* 保存 & 测试连接 */}
+            <div className="flex gap-3 pt-1 sticky bottom-0 bg-white/90 backdrop-blur-sm pb-1">
+              <button
+                type="button"
+                onClick={handleSaveAiConfig}
+                className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                保存配置
+              </button>
+              <button
+                type="button"
+                onClick={handleTestAiConnection}
+                disabled={isAiTesting}
+                className="flex-1 bg-[#8B6E3C] hover:bg-[#725A31] disabled:bg-slate-300 text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+              >
+                {isAiTesting ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Link2 className="w-3.5 h-3.5" />
+                )}
+                测试连接
+              </button>
             </div>
           </div>
         )}
@@ -729,7 +771,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
         )}
       </div>
 
-      {/* 右侧实时预览面板 */}
+      {/* 右侧实时预览面板 — 仅个性装扮页展示 */}
+      {showLivePreview && (
       <div className="lg:col-span-2 rounded-2xl bg-[#F4EFEA]/40 border border-[#EFEBE4] p-5 flex flex-col items-center justify-center gap-5 shadow-sm backdrop-blur-sm relative min-h-[360px]">
         <span className="absolute top-3.5 left-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
           🔮 实时手账效果预览 (Live Preview)
@@ -788,6 +831,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 });

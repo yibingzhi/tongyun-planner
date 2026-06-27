@@ -71,7 +71,6 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiEndpoint: "https://api.openai.com/v1",
   aiModel: "gpt-4o",
   aiAutoCategorize: false,
-  aiCustomPrompt: "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。",
 };
 
 function App() {

@@ -1,4 +1,5 @@
 import type { CustomizationConfig, Task } from "../types";
+import { DEFAULT_AI_CLASSIFY_PROMPT } from "../constants";
 
 /**
  * 辅助清洗 AI 返回的 JSON 字符串，防止 Markdown 代码块标记（```json）导致 JSON.parse 报错。
@@ -102,6 +103,12 @@ export async function callAI(
   }
 }
 
+/** 测试 AI 接口连通性（发送极简探针请求） */
+export async function testAIConnection(config: CustomizationConfig): Promise<string> {
+  const result = await callAI(config, "你是一个测试助手。", "请只回复：连接成功");
+  return result.trim();
+}
+
 /**
  * 1. AI 智能划分子视图分类 (Eisenhower Category Selection)
  */
@@ -110,9 +117,7 @@ export async function classifyCategory(
   title: string,
   desc: string
 ): Promise<Task["category"] | null> {
-  const systemPrompt =
-    config.aiCustomPrompt ||
-    "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔四象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 中的一个词，不要带任何标点或多余文字。";
+  const systemPrompt = DEFAULT_AI_CLASSIFY_PROMPT;
   const userPrompt = `任务标题: ${title}\n描述: ${desc || "无"}`;
 
   try {
