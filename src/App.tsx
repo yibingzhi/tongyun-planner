@@ -567,18 +567,20 @@ function App() {
           localStorage.setItem("aero_todos", JSON.stringify(updated));
           return updated;
         });
-      } else if (payload.action === "toggle_favorite") {
+      } else if (payload.action === "favorite_sync") {
+        const isFav = payload.title === "true";
         setTasks((prev) => {
           const updated = prev.map((t) =>
-            t.id === payload.task_id ? { ...t, isFavorite: !t.isFavorite } : t
+            t.id === payload.task_id ? { ...t, isFavorite: isFav } : t
           );
           localStorage.setItem("aero_todos", JSON.stringify(updated));
           return updated;
         });
-      } else if (payload.action === "toggle_pin") {
+      } else if (payload.action === "pin_sync") {
+        const isPin = payload.title === "true";
         setTasks((prev) => {
           const updated = prev.map((t) =>
-            t.id === payload.task_id ? { ...t, isPinned: !t.isPinned } : t
+            t.id === payload.task_id ? { ...t, isPinned: isPin } : t
           );
           localStorage.setItem("aero_todos", JSON.stringify(updated));
           return updated;
@@ -726,20 +728,34 @@ function App() {
 
   const handleToggleFavorite = useCallback((id: string) => {
     setTasks((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, isFavorite: !t.isFavorite } : t));
+      const task = prev.find((t) => t.id === id);
+      if (!task) return prev;
+      const nextFav = !task.isFavorite;
+
+      setTimeout(() => {
+        syncState(id, "favorite_sync", nextFav ? "true" : "false");
+      }, 0);
+
+      const updated = prev.map((t) => (t.id === id ? { ...t, isFavorite: nextFav } : t));
       saveTasks(updated);
       return updated;
     });
-    syncState(id, "toggle_favorite");
   }, [saveTasks, syncState]);
 
   const handleTogglePin = useCallback((id: string) => {
     setTasks((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, isPinned: !t.isPinned } : t));
+      const task = prev.find((t) => t.id === id);
+      if (!task) return prev;
+      const nextPin = !task.isPinned;
+
+      setTimeout(() => {
+        syncState(id, "pin_sync", nextPin ? "true" : "false");
+      }, 0);
+
+      const updated = prev.map((t) => (t.id === id ? { ...t, isPinned: nextPin } : t));
       saveTasks(updated);
       return updated;
     });
-    syncState(id, "toggle_pin");
   }, [saveTasks, syncState]);
 
   const handleDeleteTask = useCallback((id: string) => {
