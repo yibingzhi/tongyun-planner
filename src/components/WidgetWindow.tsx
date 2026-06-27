@@ -30,6 +30,7 @@ interface WidgetWindowProps {
   handleToggleWidgetLock: (forceState?: boolean) => Promise<void>;
   handleComplete: (id: string) => void;
   handleSnooze: (id: string) => void;
+  handleToggleFavorite: (id: string) => void;
 
   // 便签控制
   handleAddNote: () => void;
@@ -112,6 +113,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   setPomodoroTaskId,
   setPomodoroTaskTitle,
   handleStartFocus,
+  handleToggleFavorite,
 }) => {
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
@@ -174,9 +176,11 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   return (
     <div
       onPointerDown={handleMouseDownDrag}
-      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-opacity duration-500 theme-glass-${customizationConfig?.interfaceGlass || "matte"} theme-font-${customizationConfig?.fontFamily || "sans"} ${
-        isWidgetLocked ? "opacity-20 hover:opacity-60" : "opacity-100"
-      }`}
+      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-opacity duration-500 ${
+        isWidgetLocked 
+          ? "opacity-20 hover:opacity-60 theme-glass-solid" 
+          : `theme-glass-${customizationConfig?.interfaceGlass || "matte"}`
+      } theme-font-${customizationConfig?.fontFamily || "sans"}`}
     >
       {/* 顶部标题栏 */}
       <div className="w-full flex items-center justify-between pb-2 border-b border-slate-200 pointer-events-auto">
@@ -688,6 +692,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               qColors={customizationConfig?.qColors}
               cardBackground={customizationConfig?.cardBackground}
               onStartFocus={handleStartFocus}
+              onToggleFavorite={handleToggleFavorite}
             />
           </div>
         ) : (

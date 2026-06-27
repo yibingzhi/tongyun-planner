@@ -1,7 +1,8 @@
-import React from "react";
-import { Heart, Calendar, Clock, Layers3 } from "lucide-react";
-import type { Task } from "../types";
+import React, { useState } from "react";
+import { Heart, Calendar, Clock, Layers3, Maximize2, Minimize2 } from "lucide-react";
+import type { Task, TaskCategory } from "../types";
 import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
+import { QuickAddTask } from "./QuickAddTask";
 
 interface MatrixViewProps {
   tasks: Task[];
@@ -13,9 +14,29 @@ interface MatrixViewProps {
     "not-urgent-not-important": string;
   };
   handleStartFocus: (taskId: string, taskTitle: string) => void;
+  handleAddTask: (taskData: {
+    title: string;
+    description: string;
+    notes: string;
+    category: Task["category"];
+    dueDate: string;
+  }) => void;
+  handleToggleFavorite: (id: string) => void;
+  handleTogglePin: (id: string) => void;
 }
 
-export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handleComplete, qColors, handleStartFocus }) => {
+export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ 
+  tasks, 
+  handleComplete, 
+  qColors, 
+  handleStartFocus,
+  handleAddTask,
+  handleToggleFavorite,
+  handleTogglePin,
+}) => {
+  // State to support full screen expand/collapse for a specific quadrant
+  const [expandedQuadrant, setExpandedQuadrant] = useState<TaskCategory | null>(null);
+
   const quadrants = [
     {
       id: "urgent-important",
@@ -46,7 +67,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handle
     },
     {
       id: "not-urgent-not-important",
-      label: "IV. 不紧急不重要",
+      label: "IV. 不重要不紧急",
       defaultBg: "bg-[#FAF5ED]",
       defaultBorder: "border-[#EFE5D3]",
       defaultText: "text-[#8B6E3C]",
@@ -55,10 +76,26 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handle
     },
   ] as const;
 
+  // Filter quadrants if one is maximized
+  const activeQuadrants = expandedQuadrant
+    ? quadrants.filter((q) => q.id === expandedQuadrant)
+    : quadrants;
+
   return (
-    <div className="animate-fade-in-up grid grid-cols-2 gap-4 flex-grow select-none">
-      {quadrants.map((quad) => {
-        const quadrantTasks = tasks.filter((t) => t.category === quad.id);
+    <div 
+      className={`animate-fade-in-up select-none flex-grow ${
+        expandedQuadrant ? "flex flex-col" : "grid grid-cols-2 gap-4"
+      }`}
+    >
+      {activeQuadrants.map((quad) => {
+        // Sort quadrant tasks by putting pinned tasks at the very top
+        const quadrantTasks = tasks
+          .filter((t) => t.category === quad.id)
+          .sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return 0;
+          });
 
         const colorKey = qColors ? qColors[quad.id] : null;
         const customColor = colorKey ? PLANNER_COLORS[colorKey] : null;
@@ -70,9 +107,14 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handle
         return (
           <div
             key={quad.id}
-            className={`rounded-2xl border ${borderClass} ${bgClass} shadow-[0_8px_20px_-8px_rgba(154,142,128,0.08)] transition-all duration-300 p-5 flex flex-col gap-3.5 min-h-[220px] relative overflow-hidden backdrop-blur-sm hover:-translate-y-0.5`}
+            className={`rounded-2xl border ${borderClass} ${bgClass} shadow-[0_8px_20px_-8px_rgba(154,142,128,0.08)] transition-all duration-300 p-5 flex flex-col gap-3 relative overflow-hidden backdrop-blur-sm ${
+              expandedQuadrant 
+                ? "flex-grow min-h-[460px] shadow-md border-[#C4D7B2]" 
+                : "min-h-[220px] max-h-[300px] hover:-translate-y-0.5"
+            }`}
           >
-            <div className={`flex items-center justify-between border-b ${borderClass} pb-2.5 z-10`}>
+            {/* Quadrant Header */}
+            <div className={`flex items-center justify-between border-b ${borderClass} pb-2 z-10`}>
               <div className="flex items-center gap-2">
                 <div className={`w-5 h-5 rounded-md ${bgClass} flex items-center justify-center border ${borderClass} ${textClass}`}>
                   {quad.icon}
@@ -81,67 +123,130 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ tasks, handle
                   {quad.label}
                 </span>
               </div>
-              <span className={`text-[9px] ${bgClass} border ${borderClass} ${textClass} px-2.5 py-0.5 rounded-full font-bold`}>
-                {quadrantTasks.length} 待办
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-[9px] ${bgClass} border ${borderClass} ${textClass} px-2.5 py-0.5 rounded-full font-bold`}>
+                  {quadrantTasks.length} 待办
+                </span>
+                
+                {/* Maximize / Collapse toggle buttons */}
+                <button
+                  onClick={() => setExpandedQuadrant(expandedQuadrant ? null : quad.id)}
+                  className={`p-1 rounded-lg hover:bg-white/75 transition-colors border ${borderClass} text-slate-400 hover:text-slate-600 cursor-pointer`}
+                  title={expandedQuadrant ? "收缩看板" : "最大化聚焦此象限"}
+                >
+                  {expandedQuadrant ? (
+                    <Minimize2 className="w-3 h-3" />
+                  ) : (
+                    <Maximize2 className="w-3 h-3" />
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="flex-grow space-y-2.5 overflow-y-auto max-h-[190px] pr-1 z-10 custom-scrollbar">
+
+            {/* Inline Quick Add Component (Context-Aware) */}
+            <div className="z-10">
+              <QuickAddTask
+                handleAddTask={handleAddTask}
+                defaultCategory={quad.id}
+                compact={true}
+                placeholder={`添加任务到「${quad.label.split(" ").slice(1).join("")}」...按回车保存`}
+              />
+            </div>
+
+            {/* Task list container */}
+            <div 
+              className={`flex-grow space-y-2 overflow-y-auto pr-1 z-10 custom-scrollbar ${
+                expandedQuadrant ? "max-h-[380px]" : "max-h-[190px]"
+              }`}
+            >
               {quadrantTasks.length > 0 ? (
                 quadrantTasks.map((task) => {
-                const countdown = getDueDateCountdown(task.dueDate);
-                const isOverdue = countdown?.isOverdue;
-                const cardBg = isOverdue ? "bg-[#FCF2F0]/50" : "bg-white/70";
-                const cardBorder = isOverdue ? "border-[#F5DFDB]" : borderClass;
-                return (
-                  <div
-                    key={task.id}
-                    className={`p-3.5 rounded-xl ${cardBg} border ${cardBorder} hover:border-slate-300 hover:bg-white hover:shadow-sm transition-all duration-300 flex justify-between items-center gap-3 relative overflow-hidden group`}
-                  >
-                    <div className="min-w-0 flex-grow">
-                      <h4 className={`text-xs font-bold text-[#2D323A] group-hover:${textClass} transition-colors truncate`}>
-                        {task.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        {task.description && (
-                          <p className="text-[10px] text-slate-500 truncate">{task.description}</p>
-                        )}
-                        {countdown && (
-                          (() => {
-                            const dateTextClass = countdown.isOverdue
-                              ? "text-[#A34E36] font-extrabold"
-                              : countdown.isToday
-                              ? "text-[#A64424] font-extrabold"
-                              : "text-slate-400 font-semibold";
-                            return (
-                              <span className={`text-[9px] flex items-center gap-1 ${dateTextClass}`}>
-                                📅 {task.dueDate?.split("-").slice(1).join("/")}
-                                <span className="opacity-80">({countdown.text})</span>
-                              </span>
-                            );
-                          })()
-                        )}
+                  const countdown = getDueDateCountdown(task.dueDate);
+                  const isOverdue = countdown?.isOverdue;
+                  const cardBg = isOverdue ? "bg-[#FCF2F0]/50" : "bg-white/70";
+                  const cardBorder = isOverdue ? "border-[#F5DFDB]" : borderClass;
+                  return (
+                    <div
+                      key={task.id}
+                      className={`p-2 py-2.5 px-3 rounded-xl ${cardBg} border ${cardBorder} hover:border-slate-300 hover:bg-white hover:shadow-xs transition-all duration-300 flex justify-between items-center gap-3 relative overflow-hidden group`}
+                    >
+                      <div className="min-w-0 flex-grow">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {task.isPinned && (
+                            <span className="text-[10px] text-[#8B6E3C] flex-shrink-0" title="已置顶">📌</span>
+                          )}
+                          <h4 className={`text-xs font-bold text-[#2D323A] group-hover:${textClass} transition-colors truncate`}>
+                            {task.title}
+                          </h4>
+                          {task.isFavorite && (
+                            <span className="text-[10px] text-[#E8A0BF] flex-shrink-0" title="已标星">♥</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                          {task.description && (
+                            <p className="text-[9.5px] text-slate-500 truncate flex-grow min-w-0">{task.description}</p>
+                          )}
+                          
+                          {/* Elegant Non-wrapping Pill Badge for Due Date (Bug Fix!) */}
+                          {countdown && (
+                            (() => {
+                              const badgeStyle = countdown.isOverdue
+                                ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] font-extrabold"
+                                : countdown.isToday
+                                ? "bg-[#FBECE5] border-[#F6DCD2] text-[#A64424] font-extrabold"
+                                : "bg-[#FAF8F5] border-[#EFEBE4] text-slate-500 font-semibold";
+                              return (
+                                <span className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${badgeStyle}`}>
+                                  📅 {task.dueDate?.split("-").slice(1).join("/")} ({countdown.text})
+                                </span>
+                              );
+                            })()
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Hover Actions: Only visible on row hover for TickTick-like clean look */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+                        {/* Pin Toggle Button */}
+                        <button
+                          onClick={() => handleTogglePin(task.id)}
+                          className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
+                          title={task.isPinned ? "取消置顶" : "置顶任务"}
+                        >
+                          <svg className={`w-3.5 h-3.5 ${task.isPinned ? "text-[#8B6E3C] fill-[#8B6E3C]" : "text-slate-300"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </button>
+
+                        {/* Favorite Toggle Button */}
+                        <button
+                          onClick={() => handleToggleFavorite(task.id)}
+                          className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400"
+                          title={task.isFavorite ? "取消星标" : "标记星标"}
+                        >
+                          <Heart className={`w-3.5 h-3.5 text-[#E8A0BF] transition-all ${task.isFavorite ? "fill-[#E8A0BF]" : "text-slate-300"}`} />
+                        </button>
+
+                        <button
+                          onClick={() => handleStartFocus(task.id, task.title)}
+                          className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-xs`}
+                          title="开始专注该任务"
+                        >
+                          ⏱️ 专注
+                        </button>
+                        
+                        <button
+                          onClick={() => handleComplete(task.id)}
+                          className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer shadow-xs`}
+                        >
+                          完成
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleStartFocus(task.id, task.title)}
-                        className={`text-[10px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} p-1 rounded-lg transition-all font-bold cursor-pointer flex items-center justify-center`}
-                        title="开始专注该任务"
-                      >
-                        ⏱️
-                      </button>
-                      <button
-                        onClick={() => handleComplete(task.id)}
-                        className={`text-[10px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2.5 py-1 rounded-lg transition-all font-bold cursor-pointer`}
-                      >
-                        完成
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })
               ) : (
-                <div className="h-full flex items-center justify-center py-8 text-slate-400 text-[10px] font-bold tracking-wider">
+                <div className="h-full flex items-center justify-center py-12 text-slate-400 text-[10px] font-bold tracking-wider">
                   本象限暂无待办
                 </div>
               )}

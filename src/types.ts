@@ -11,6 +11,8 @@ export interface Task {
   notes?: string;
   category: TaskCategory;
   dueDate?: string; // YYYY-MM-DD
+  isFavorite?: boolean;
+  isPinned?: boolean;
 }
 
 export interface PomodoroLog {

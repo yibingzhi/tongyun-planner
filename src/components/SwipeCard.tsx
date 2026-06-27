@@ -21,6 +21,7 @@ interface SwipeCardProps {
   };
   cardBackground?: "white" | "grid" | "lined" | "watercolor" | "doodle";
   onStartFocus?: (taskId: string, taskTitle: string) => void;
+  onToggleFavorite?: (taskId: string) => void;
 }
 
 export const SwipeCard: React.FC<SwipeCardProps> = ({
@@ -31,6 +32,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   qColors,
   cardBackground,
   onStartFocus,
+  onToggleFavorite,
 }) => {
   const x = useMotionValue(0);
   const controls = useAnimation();
@@ -163,7 +165,20 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
                 </span>
               );
             })()}
-            <Heart className="w-3.5 h-3.5 text-[#E8A0BF] hover:fill-[#E8A0BF] transition-colors" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite?.(task.id);
+              }}
+              className="hover:scale-110 transition-transform cursor-pointer"
+              title={task.isFavorite ? "取消星标" : "标记星标"}
+            >
+              <Heart 
+                className={`w-3.5 h-3.5 text-[#E8A0BF] transition-colors ${
+                  task.isFavorite ? "fill-[#E8A0BF]" : ""
+                }`} 
+              />
+            </button>
           </div>
         </div>
 

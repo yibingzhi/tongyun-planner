@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Calendar, Coffee } from "lucide-react";
 import type { Task } from "../types";
+import { QuickAddTask } from "./QuickAddTask";
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -11,7 +12,13 @@ interface CalendarViewProps {
   setCalendarMonth: React.Dispatch<React.SetStateAction<number>>;
   selectedCalendarDate: string;
   setSelectedCalendarDate: (date: string) => void;
-  setNewDueDate: (date: string) => void;
+  handleAddTask: (taskData: {
+    title: string;
+    description: string;
+    notes: string;
+    category: Task["category"];
+    dueDate: string;
+  }) => void;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
@@ -23,10 +30,24 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   setCalendarMonth,
   selectedCalendarDate,
   setSelectedCalendarDate,
-  setNewDueDate,
+  handleAddTask,
 }) => {
+  // Pre-group tasks by due date using useMemo to convert O(N) filters to O(1) lookups
+  const tasksByDueDate = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    tasks.forEach((task) => {
+      if (task.dueDate) {
+        if (!map[task.dueDate]) {
+          map[task.dueDate] = [];
+        }
+        map[task.dueDate].push(task);
+      }
+    });
+    return map;
+  }, [tasks]);
+
   const renderDayDots = (dateStr: string) => {
-    const dayTasks = tasks.filter((t) => t.dueDate === dateStr);
+    const dayTasks = tasksByDueDate[dateStr] || [];
     if (dayTasks.length === 0) return null;
 
     return dayTasks.slice(0, 3).map((t, idx) => (
@@ -132,7 +153,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     return dayElements;
   };
 
-  const selectedDayTasks = tasks.filter((t) => t.dueDate === selectedCalendarDate);
+  const selectedDayTasks = tasksByDueDate[selectedCalendarDate] || [];
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-4 flex-grow z-10 relative select-none">
@@ -253,17 +274,15 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
             )}
           </div>
 
-          {/* 快捷挂载 */}
-          <button
-            onClick={() => {
-              setNewDueDate(selectedCalendarDate);
-              const el = document.getElementById("main-add-title-input");
-              if (el) el.focus();
-            }}
-            className="mt-3 w-full bg-[#FAF5ED] hover:bg-[#FAF5ED]/85 text-[#8B6E3C] border border-[#EFE5D3] py-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
-          >
-            在本日快捷添加任务 +
-          </button>
+          {/* 极速行内添加栏 */}
+          <div className="mt-3">
+            <QuickAddTask
+              handleAddTask={handleAddTask}
+              defaultDueDate={selectedCalendarDate}
+              compact={true}
+              placeholder={`快速添加任务到本日...按回车保存`}
+            />
+          </div>
         </div>
       </div>
     </div>

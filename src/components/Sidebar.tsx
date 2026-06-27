@@ -71,7 +71,7 @@ interface SidebarProps {
   resetTasks: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar: React.FC<SidebarProps> = React.memo(({
   activeTab,
   setActiveTab,
   progressPercentage,
@@ -557,4 +557,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
     </aside>
   );
-};
+});

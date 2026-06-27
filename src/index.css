@@ -174,9 +174,13 @@ html.transparent-window body {
 
 .animate-float-slow {
   animation: float-slow 20s infinite ease-in-out;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 .animate-float-reverse {
   animation: float-reverse 22s infinite ease-in-out;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 /* 手账纸张边缘微投影 */

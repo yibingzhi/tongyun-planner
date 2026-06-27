@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Clock, CheckCircle2, Heart, Coffee, BarChart3 } from "lucide-react";
 import type { Task, PomodoroLog } from "../types";
 
@@ -13,52 +13,75 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   tasks,
   completedTasks,
 }) => {
-  // 累计专注时长
-  const totalDuration = pomodoroLogs.reduce((acc, curr) => acc + curr.duration, 0);
-  const totalHours = Math.floor(totalDuration / 60);
-  const totalMinutes = totalDuration % 60;
+  // Memoize top metrics cards
+  const { totalHours, totalMinutes, todayPomodoros, avgDuration } = useMemo(() => {
+    const totalDur = pomodoroLogs.reduce((acc, curr) => acc + curr.duration, 0);
+    const hours = Math.floor(totalDur / 60);
+    const minutes = totalDur % 60;
+    
+    const todayStr = new Date().toISOString().split("T")[0];
+    const todayPomos = pomodoroLogs.filter((log) => {
+      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+      return logDate === todayStr;
+    }).length;
 
-  // 今日完成番茄
-  const todayStr = new Date().toISOString().split("T")[0];
-  const todayPomodoros = pomodoroLogs.filter((log) => {
-    const logDate = new Date(log.timestamp).toISOString().split("T")[0];
-    return logDate === todayStr;
-  }).length;
+    const avgDur = pomodoroLogs.length > 0 ? Math.round(totalDur / pomodoroLogs.length) : 0;
+    
+    return {
+      totalHours: hours,
+      totalMinutes: minutes,
+      todayPomodoros: todayPomos,
+      avgDuration: avgDur,
+    };
+  }, [pomodoroLogs]);
 
-  // 平均单次时间
-  const avgDuration =
-    pomodoroLogs.length > 0 ? Math.round(totalDuration / pomodoroLogs.length) : 0;
+  // Memoize pomodoro counts by date for the heatmap (converts O(N) lookups to O(1))
+  const pomodoroCountsByDate = useMemo(() => {
+    const counts: Record<string, number> = {};
+    pomodoroLogs.forEach((log) => {
+      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+      counts[logDate] = (counts[logDate] || 0) + 1;
+    });
+    return counts;
+  }, [pomodoroLogs]);
 
-  // 按照 taskId 统计番茄钟数量和时长
-  interface TaskStats {
-    taskId: string;
-    taskTitle: string;
-    tomatoCount: number;
-    totalDuration: number;
-  }
-
-  const taskStatsMap: { [key: string]: TaskStats } = {};
-
-  pomodoroLogs.forEach((log) => {
-    const tId = log.taskId || "general";
-    const tTitle = log.taskTitle || "自主专注 / 其它未关联任务";
-
-    if (!taskStatsMap[tId]) {
-      taskStatsMap[tId] = {
-        taskId: tId,
-        taskTitle: tTitle,
-        tomatoCount: 0,
-        totalDuration: 0,
-      };
+  // Memoize task focus statistics
+  const { taskStatsList, maxDuration } = useMemo(() => {
+    interface TaskStats {
+      taskId: string;
+      taskTitle: string;
+      tomatoCount: number;
+      totalDuration: number;
     }
-    taskStatsMap[tId].tomatoCount += 1;
-    taskStatsMap[tId].totalDuration += log.duration;
-  });
 
-  const taskStatsList = Object.values(taskStatsMap).sort((a, b) => b.totalDuration - a.totalDuration);
-  const maxDuration = taskStatsList.length > 0 ? taskStatsList[0].totalDuration : 1;
+    const taskStatsMap: { [key: string]: TaskStats } = {};
 
-  // 渲染番茄热力图算法
+    pomodoroLogs.forEach((log) => {
+      const tId = log.taskId || "general";
+      const tTitle = log.taskTitle || "自主专注 / 其它未关联任务";
+
+      if (!taskStatsMap[tId]) {
+        taskStatsMap[tId] = {
+          taskId: tId,
+          taskTitle: tTitle,
+          tomatoCount: 0,
+          totalDuration: 0,
+        };
+      }
+      taskStatsMap[tId].tomatoCount += 1;
+      taskStatsMap[tId].totalDuration += log.duration;
+    });
+
+    const sortedList = Object.values(taskStatsMap).sort((a, b) => b.totalDuration - a.totalDuration);
+    const maxDur = sortedList.length > 0 ? sortedList[0].totalDuration : 1;
+    
+    return {
+      taskStatsList: sortedList,
+      maxDuration: maxDur,
+    };
+  }, [pomodoroLogs]);
+
+  // Heatmap rendering function using memoized map
   const renderHeatmap = () => {
     const today = new Date();
     const currentDayOfWeek = today.getDay();
@@ -74,11 +97,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
         cellDate.setDate(startOfGrid.getDate() + (w * 7 + d));
         const dateStr = cellDate.toISOString().split("T")[0];
 
-        // 检索该日完成的番茄钟
-        const count = pomodoroLogs.filter((log) => {
-          const logDate = new Date(log.timestamp).toISOString().split("T")[0];
-          return logDate === dateStr;
-        }).length;
+        // O(1) Map Lookup instead of O(N) Filter
+        const count = pomodoroCountsByDate[dateStr] || 0;
 
         // 软糯粉绿颜色阶梯
         let colorClass = "bg-white/50 border border-[#EFEBE4]/60";

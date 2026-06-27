@@ -4,6 +4,13 @@ export class AudioEngine {
   private lfo: OscillatorNode | null = null;
   private gain: GainNode | null = null;
 
+  // Cached noise buffers to prevent CPU-heavy procedural generation on every start
+  private brownBuffer: AudioBuffer | null = null;
+  private pinkBuffer: AudioBuffer | null = null;
+
+  // Handles state protection to prevent overlapping context states during fading out
+  private fadeTimeoutId: any = null;
+
   private init(): AudioContext {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -14,17 +21,92 @@ export class AudioEngine {
     return this.ctx;
   }
 
+  // Pre-generate and cache Brownian Noise buffer (O(N) generated once, O(1) thereafter)
+  private getBrownBuffer(ctx: AudioContext): AudioBuffer {
+    if (this.brownBuffer) return this.brownBuffer;
+    
+    const sampleRate = ctx.sampleRate;
+    const bufferSize = 2 * sampleRate;
+    const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      data[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = data[i];
+      data[i] *= 3.5;
+    }
+    
+    this.brownBuffer = buffer;
+    return buffer;
+  }
+
+  // Pre-generate and cache Pink Noise buffer (O(N) generated once, O(1) thereafter)
+  private getPinkBuffer(ctx: AudioContext): AudioBuffer {
+    if (this.pinkBuffer) return this.pinkBuffer;
+    
+    const sampleRate = ctx.sampleRate;
+    const bufferSize = 2 * sampleRate;
+    const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.969 * b2 + white * 0.153852;
+      b3 = 0.8665 * b3 + white * 0.3104856;
+      b4 = 0.55 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.016898;
+      data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+      data[i] *= 0.11;
+      b6 = white * 0.115926;
+    }
+    
+    this.pinkBuffer = buffer;
+    return buffer;
+  }
+
+  private stopNoiseImmediate(): void {
+    if (this.source) {
+      try {
+        this.source.stop();
+      } catch (e) {
+        // Ignored
+      }
+      this.source.disconnect();
+      this.source = null;
+    }
+    if (this.lfo) {
+      try {
+        this.lfo.stop();
+      } catch (e) {
+        // Ignored
+      }
+      this.lfo.disconnect();
+      this.lfo = null;
+    }
+    if (this.gain) {
+      this.gain.disconnect();
+      this.gain = null;
+    }
+  }
+
   public startNoise(type: string, volume: number): void {
-    this.stopNoise();
+    // Cancel any pending fade-out stops
+    if (this.fadeTimeoutId) {
+      clearTimeout(this.fadeTimeoutId);
+      this.fadeTimeoutId = null;
+    }
+    
+    this.stopNoiseImmediate();
+
     try {
       const ctx = this.init();
-      const sampleRate = ctx.sampleRate;
-      const bufferSize = 2 * sampleRate;
-      const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
-      const data = buffer.getChannelData(0);
-
       this.gain = ctx.createGain();
-      // 音量渐入 (0.5s)
+      // Smooth fade-in (0.5s)
       this.gain.gain.setValueAtTime(0, ctx.currentTime);
       this.gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.5);
       this.gain.connect(ctx.destination);
@@ -33,49 +115,19 @@ export class AudioEngine {
       this.source.loop = true;
 
       if (type === "brown") {
-        // Brownian Noise - 低沉低音
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          data[i] = (lastOut + 0.02 * white) / 1.02;
-          lastOut = data[i];
-          data[i] *= 3.5;
-        }
-        this.source.buffer = buffer;
+        this.source.buffer = this.getBrownBuffer(ctx);
         this.source.connect(this.gain);
       } else if (type === "pink") {
-        // Pink Noise - 近似风吹树叶的白噪音
-        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99886 * b0 + white * 0.0555179;
-          b1 = 0.99332 * b1 + white * 0.0750759;
-          b2 = 0.969 * b2 + white * 0.153852;
-          b3 = 0.8665 * b3 + white * 0.3104856;
-          b4 = 0.55 * b4 + white * 0.5329522;
-          b5 = -0.7616 * b5 - white * 0.016898;
-          data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-          data[i] *= 0.11;
-          b6 = white * 0.115926;
-        }
-        this.source.buffer = buffer;
+        this.source.buffer = this.getPinkBuffer(ctx);
         this.source.connect(this.gain);
       } else if (type === "ocean") {
-        // Ocean Waves - 利用 LFO 调制褐噪声频与增益
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          data[i] = (lastOut + 0.02 * white) / 1.02;
-          lastOut = data[i];
-          data[i] *= 3.5;
-        }
-        this.source.buffer = buffer;
+        this.source.buffer = this.getBrownBuffer(ctx);
 
         const waveGain = ctx.createGain();
         waveGain.gain.setValueAtTime(0.35, ctx.currentTime);
 
         this.lfo = ctx.createOscillator();
-        this.lfo.frequency.setValueAtTime(0.08, ctx.currentTime); // ~12秒一次呼吸涨退
+        this.lfo.frequency.setValueAtTime(0.08, ctx.currentTime); // ~12s cycle
 
         const lfoGain = ctx.createGain();
         lfoGain.gain.setValueAtTime(0.32, ctx.currentTime);
@@ -92,21 +144,7 @@ export class AudioEngine {
         filter.connect(waveGain);
         waveGain.connect(this.gain);
       } else if (type === "rain") {
-        // Rainfall - 高通及带通滤波粉噪，形成天然雨滴淅淅沥沥声
-        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-        for (let i = 0; i < bufferSize; i++) {
-          const white = Math.random() * 2 - 1;
-          b0 = 0.99886 * b0 + white * 0.0555179;
-          b1 = 0.99332 * b1 + white * 0.0750759;
-          b2 = 0.969 * b2 + white * 0.153852;
-          b3 = 0.8665 * b3 + white * 0.3104856;
-          b4 = 0.55 * b4 + white * 0.5329522;
-          b5 = -0.7616 * b5 - white * 0.016898;
-          data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-          data[i] *= 0.11;
-          b6 = white * 0.115926;
-        }
-        this.source.buffer = buffer;
+        this.source.buffer = this.getPinkBuffer(ctx);
 
         const hpFilter = ctx.createBiquadFilter();
         hpFilter.type = "highpass";
@@ -121,6 +159,7 @@ export class AudioEngine {
         hpFilter.connect(bpFilter);
         bpFilter.connect(this.gain);
       }
+      
       this.source.start();
     } catch (e) {
       console.error("启动白噪音发生器失败:", e);
@@ -134,17 +173,26 @@ export class AudioEngine {
   }
 
   public stopNoise(): void {
+    if (this.fadeTimeoutId) {
+      clearTimeout(this.fadeTimeoutId);
+      this.fadeTimeoutId = null;
+    }
+
     if (this.gain && this.ctx) {
       const ctx = this.ctx;
       const gainNode = this.gain;
       const sourceNode = this.source;
       const lfoNode = this.lfo;
 
-      // 音量渐隐 (0.4s)
-      gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      // Smooth fade-out (0.4s)
+      try {
+        gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      } catch (e) {
+        // Fallback if AudioContext is state issues
+      }
 
-      setTimeout(() => {
+      this.fadeTimeoutId = setTimeout(() => {
         try {
           sourceNode?.stop();
         } catch (e) {
@@ -159,35 +207,20 @@ export class AudioEngine {
         }
         lfoNode?.disconnect();
 
-        gainNode.disconnect();
+        try {
+          gainNode.disconnect();
+        } catch (e) {
+          // Ignored
+        }
+        
+        this.fadeTimeoutId = null;
       }, 450);
 
       this.source = null;
       this.lfo = null;
       this.gain = null;
     } else {
-      if (this.source) {
-        try {
-          this.source.stop();
-        } catch (e) {
-          // Ignored
-        }
-        this.source.disconnect();
-        this.source = null;
-      }
-      if (this.lfo) {
-        try {
-          this.lfo.stop();
-        } catch (e) {
-          // Ignored
-        }
-        this.lfo.disconnect();
-        this.lfo = null;
-      }
-      if (this.gain) {
-        this.gain.disconnect();
-        this.gain = null;
-      }
+      this.stopNoiseImmediate();
     }
   }
 
@@ -197,7 +230,6 @@ export class AudioEngine {
       const now = ctx.currentTime;
 
       if (soundType === "cuckoo") {
-        // 布谷鸟叫
         const osc1 = ctx.createOscillator();
         const gain1 = ctx.createGain();
         osc1.type = "sine";
@@ -220,7 +252,6 @@ export class AudioEngine {
         osc2.start(now + 0.18);
         osc2.stop(now + 0.5);
       } else if (soundType === "meow") {
-        // 猫咪喵喵叫
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "triangle";
@@ -247,7 +278,6 @@ export class AudioEngine {
         osc.start(now);
         osc.stop(now + 0.42);
       } else {
-        // 默认电子提示音
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
@@ -307,7 +337,6 @@ export class AudioEngine {
       const ctx = this.init();
       const now = ctx.currentTime;
 
-      // Click transient 1 (high-pitched sticky tape tap)
       const osc1 = ctx.createOscillator();
       const gain1 = ctx.createGain();
       osc1.type = "sine";
@@ -320,7 +349,6 @@ export class AudioEngine {
       osc1.start(now);
       osc1.stop(now + 0.03);
 
-      // Click transient 2 (deeper stick/clip tap at +0.03s)
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = "triangle";
@@ -362,6 +390,10 @@ export class AudioEngine {
 
   public close(): void {
     this.stopNoise();
+    if (this.fadeTimeoutId) {
+      clearTimeout(this.fadeTimeoutId);
+      this.fadeTimeoutId = null;
+    }
     if (this.ctx) {
       this.ctx.close().catch(() => {});
       this.ctx = null;

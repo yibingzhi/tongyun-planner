@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -12,7 +12,6 @@ import { CalendarView } from "./components/CalendarView";
 import { StickyNotesView } from "./components/StickyNotesView";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
-import { QuickAddTask } from "./components/QuickAddTask";
 import { WidgetWindow } from "./components/WidgetWindow";
 import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
@@ -83,12 +82,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // 添加任务表单状态
-  const [newTitle, setNewTitle] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newNotes, setNewNotes] = useState("");
-  const [newCategory, setNewCategory] = useState<Task["category"]>("urgent-important");
-  const [newDueDate, setNewDueDate] = useState<string>(new Date().toISOString().split("T")[0]);
+
 
   // 主页Tab
   const [activeTab, setActiveTab] = useState<AppTab>("matrix");
@@ -103,6 +97,7 @@ function App() {
   const [focusDuration, setFocusDuration] = useState<number>(25);
   const [breakDuration, setBreakDuration] = useState<number>(5);
   const [pomodoroTimeLeft, setPomodoroTimeLeft] = useState<number>(25 * 60);
+  const [pomodoroEndTime, setPomodoroEndTime] = useState<number | null>(null);
   const [pomodoroIsActive, setPomodoroIsActive] = useState<boolean>(false);
   const [pomodoroIsBreak, setPomodoroIsBreak] = useState<boolean>(false);
   const [pomodoroSessionCount, setPomodoroSessionCount] = useState<number>(0);
@@ -127,7 +122,6 @@ function App() {
 
   // Store 引用
   const storeRef = useRef<Awaited<ReturnType<typeof load>> | null>(null);
-  const timerIntervalRef = useRef<any>(null);
 
   const saveStickyNotes = useCallback((updatedNotes: StickyNote[]) => {
     setStickyNotes(updatedNotes);
@@ -195,9 +189,11 @@ function App() {
   ) => {
     const finalTaskId = tId !== undefined ? tId : pomodoroTaskId;
     const finalTaskTitle = tTitle !== undefined ? tTitle : pomodoroTaskTitle;
+    const endTime = active ? Date.now() + timeLeft * 1000 : null;
     const data = JSON.stringify({
       active,
       timeLeft,
+      endTime,
       isBreak,
       focusDuration: fDur,
       breakDuration: bDur,
@@ -215,6 +211,8 @@ function App() {
     setPomodoroIsBreak(false);
     const nextTime = focusDuration * 60;
     setPomodoroTimeLeft(nextTime);
+    const endTime = Date.now() + nextTime * 1000;
+    setPomodoroEndTime(endTime);
     syncPomodoro(true, nextTime, false, focusDuration, breakDuration, pomodoroSessionCount, taskId, taskTitle);
   }, [focusDuration, breakDuration, pomodoroSessionCount, syncPomodoro]);
 
@@ -232,22 +230,30 @@ function App() {
     audioEngine.playCompletionSound(soundType);
   };
 
-  // 番茄钟计时轮询逻辑
+  // 番茄钟计时轮询逻辑 (基于绝对结束时间戳 pomodoroEndTime 进行本地倒计时)
   useEffect(() => {
-    if (pomodoroIsActive) {
-      timerIntervalRef.current = setInterval(() => {
-        setPomodoroTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerIntervalRef.current!);
+    let interval: any = null;
+    if (pomodoroIsActive && pomodoroEndTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.max(0, Math.round((pomodoroEndTime - now) / 1000));
+        setPomodoroTimeLeft(diff);
+
+        if (diff <= 0) {
+          clearInterval(interval);
+          if (windowLabel === "main") {
+            // 仅在主窗口执行时间结束逻辑，防止多窗口重复运行
             playCompletionSound();
 
             if (pomodoroIsBreak) {
               setPomodoroIsBreak(false);
               setPomodoroIsActive(false);
+              setPomodoroEndTime(null);
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                 new Notification("专注时间到了！", { body: "休息结束啦，打起精神开始专注吧 🎯" });
               }
               const nextTime = focusDuration * 60;
+              setPomodoroTimeLeft(nextTime);
               setTimeout(() => {
                 syncPomodoro(
                   false,
@@ -260,16 +266,17 @@ function App() {
                   null
                 );
               }, 50);
-              return nextTime;
             } else {
               setPomodoroIsBreak(true);
               setPomodoroIsActive(false);
+              setPomodoroEndTime(null);
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
                 new Notification("番茄时间到啦！", { body: "太棒了！完成了一个番茄钟，喝口水休息一下吧 🌿" });
               }
               const nextSession = pomodoroSessionCount + 1;
               setPomodoroSessionCount(nextSession);
               const nextTime = breakDuration * 60;
+              setPomodoroTimeLeft(nextTime);
 
               const newLog = {
                 id: Date.now().toString(),
@@ -285,31 +292,33 @@ function App() {
               });
               syncState(newLog.id, "add_pomodoro_log", JSON.stringify(newLog));
 
-              // Clear active task focus
               setPomodoroTaskId(null);
               setPomodoroTaskTitle(null);
 
               setTimeout(() => {
                 syncPomodoro(false, nextTime, true, focusDuration, breakDuration, nextSession, null, null);
               }, 50);
-              return nextTime;
             }
           }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+        }
+      }, 250);
     }
-
     return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+      if (interval) clearInterval(interval);
     };
-  }, [pomodoroIsActive, pomodoroIsBreak, focusDuration, breakDuration, pomodoroSessionCount, pomodoroTaskId, pomodoroTaskTitle]);
+  }, [
+    pomodoroIsActive,
+    pomodoroEndTime,
+    pomodoroIsBreak,
+    focusDuration,
+    breakDuration,
+    pomodoroSessionCount,
+    pomodoroTaskId,
+    pomodoroTaskTitle,
+    windowLabel,
+    syncPomodoro,
+    syncState
+  ]);
 
   // 组件卸载时释放音视频资源
   useEffect(() => {
@@ -558,6 +567,22 @@ function App() {
           localStorage.setItem("aero_todos", JSON.stringify(updated));
           return updated;
         });
+      } else if (payload.action === "toggle_favorite") {
+        setTasks((prev) => {
+          const updated = prev.map((t) =>
+            t.id === payload.task_id ? { ...t, isFavorite: !t.isFavorite } : t
+          );
+          localStorage.setItem("aero_todos", JSON.stringify(updated));
+          return updated;
+        });
+      } else if (payload.action === "toggle_pin") {
+        setTasks((prev) => {
+          const updated = prev.map((t) =>
+            t.id === payload.task_id ? { ...t, isPinned: !t.isPinned } : t
+          );
+          localStorage.setItem("aero_todos", JSON.stringify(updated));
+          return updated;
+        });
       } else if (payload.action === "reset") {
         setTasks(INITIAL_TASKS);
         setCompletedTasks([]);
@@ -699,6 +724,24 @@ function App() {
     syncState(id, "undo_complete");
   }, [saveTasks, saveCompleted, syncState]);
 
+  const handleToggleFavorite = useCallback((id: string) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, isFavorite: !t.isFavorite } : t));
+      saveTasks(updated);
+      return updated;
+    });
+    syncState(id, "toggle_favorite");
+  }, [saveTasks, syncState]);
+
+  const handleTogglePin = useCallback((id: string) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, isPinned: !t.isPinned } : t));
+      saveTasks(updated);
+      return updated;
+    });
+    syncState(id, "toggle_pin");
+  }, [saveTasks, syncState]);
+
   const handleDeleteTask = useCallback((id: string) => {
     setTasks((prev) => {
       const updated = prev.filter((t) => t.id !== id);
@@ -780,20 +823,24 @@ function App() {
     return null;
   }, [customizationConfig.aiApiKey, customizationConfig.aiEndpoint, customizationConfig.aiModel, customizationConfig.aiCustomPrompt]);
 
-  const handleAddTask = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-
+  const handleAddTask = useCallback(async (taskData: {
+    title: string;
+    description: string;
+    notes: string;
+    category: Task["category"];
+    dueDate: string;
+  }) => {
+    const { title, description, notes, category, dueDate } = taskData;
     const taskId = Date.now().toString();
-    const initialCategory = newCategory;
+    const initialCategory = category;
 
     const newTask: Task = {
       id: taskId,
-      title: newTitle,
-      description: newDesc || undefined,
-      notes: newNotes || undefined,
+      title,
+      description: description || undefined,
+      notes: notes || undefined,
       category: initialCategory,
-      dueDate: newDueDate || undefined,
+      dueDate: dueDate || undefined,
     };
 
     setTasks((prev) => {
@@ -812,15 +859,8 @@ function App() {
       newTask.dueDate
     );
 
-    const titleToClassify = newTitle;
-    const descToClassify = newDesc;
-
-    setNewTitle("");
-    setNewDesc("");
-    setNewNotes("");
-
     if (customizationConfig.aiAutoCategorize && customizationConfig.aiApiKey) {
-      const aiCategory = await classifyCategoryWithAI(titleToClassify, descToClassify);
+      const aiCategory = await classifyCategoryWithAI(title, description);
       if (aiCategory && aiCategory !== initialCategory) {
         setTasks((prev) => {
           const updated = prev.map((t) => (t.id === taskId ? { ...t, category: aiCategory } : t));
@@ -838,7 +878,7 @@ function App() {
         );
       }
     }
-  }, [newTitle, newDesc, newNotes, newCategory, newDueDate, saveTasks, customizationConfig, classifyCategoryWithAI, syncState]);
+  }, [saveTasks, customizationConfig, classifyCategoryWithAI, syncState]);
 
   const handleAddNote = useCallback(() => {
     const newNote = {
@@ -1107,6 +1147,7 @@ function App() {
         setPomodoroTaskId={setPomodoroTaskId}
         setPomodoroTaskTitle={setPomodoroTaskTitle}
         handleStartFocus={handleStartFocus}
+        handleToggleFavorite={handleToggleFavorite}
       />
     );
   }
@@ -1228,7 +1269,15 @@ function App() {
 
           {/* 各 Tab 内容渲染 */}
           {activeTab === "matrix" && (
-            <MatrixView tasks={tasks} handleComplete={handleComplete} qColors={customizationConfig.qColors} handleStartFocus={handleStartFocus} />
+            <MatrixView 
+              tasks={tasks} 
+              handleComplete={handleComplete} 
+              qColors={customizationConfig.qColors} 
+              handleStartFocus={handleStartFocus}
+              handleAddTask={handleAddTask}
+              handleToggleFavorite={handleToggleFavorite}
+              handleTogglePin={handleTogglePin}
+            />
           )}
 
           {activeTab === "list" && (
@@ -1246,6 +1295,9 @@ function App() {
               setEditingNotes={setEditingNotes}
               handleSaveNotes={handleSaveNotes}
               handleStartFocus={handleStartFocus}
+              handleAddTask={handleAddTask}
+              handleToggleFavorite={handleToggleFavorite}
+              handleTogglePin={handleTogglePin}
             />
           )}
 
@@ -1259,7 +1311,7 @@ function App() {
               setCalendarMonth={setCalendarMonth}
               selectedCalendarDate={selectedCalendarDate}
               setSelectedCalendarDate={setSelectedCalendarDate}
-              setNewDueDate={setNewDueDate}
+              handleAddTask={handleAddTask}
             />
           )}
 
@@ -1301,23 +1353,6 @@ function App() {
               alertSoundType={alertSoundType}
               setAlertSoundType={setAlertSoundType}
               resetTasks={resetTasks}
-            />
-          )}
-
-          {/* 快速添加任务 (在相应Tab下渲染) */}
-          {(activeTab === "matrix" || activeTab === "list" || activeTab === "calendar") && (
-            <QuickAddTask
-              handleAddTask={handleAddTask}
-              newTitle={newTitle}
-              setNewTitle={setNewTitle}
-              newDesc={newDesc}
-              setNewDesc={setNewDesc}
-              newNotes={newNotes}
-              setNewNotes={setNewNotes}
-              newDueDate={newDueDate}
-              setNewDueDate={setNewDueDate}
-              newCategory={newCategory}
-              setNewCategory={setNewCategory}
             />
           )}
         </main>
