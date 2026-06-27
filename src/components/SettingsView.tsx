@@ -11,13 +11,20 @@ const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).m
   label: `${i.toString().padStart(2, "0")}:00`,
 }));
 
+const AI_PROVIDER_OPTIONS: SelectOption<string>[] = [
+  { value: "openai", label: "OpenAI / DeepSeek / Custom (兼容协议)" },
+  { value: "anthropic", label: "Anthropic Claude (原生协议)" }
+];
+
 const AI_MODEL_OPTIONS: SelectOption<string>[] = [
-  { value: "gpt-4o", label: "gpt-4o" },
-  { value: "gpt-4-turbo", label: "gpt-4-turbo" },
-  { value: "gpt-3.5-turbo", label: "gpt-3.5-turbo" },
-  { value: "gemini-2.5-pro", label: "gemini-2.5-pro" },
-  { value: "gemini-2.5-flash", label: "gemini-2.5-flash" },
-  { value: "custom", label: "custom / 其他自定义模型" },
+  { value: "gpt-4o", label: "gpt-4o (OpenAI)" },
+  { value: "gpt-4o-mini", label: "gpt-4o-mini (OpenAI)" },
+  { value: "deepseek-chat", label: "deepseek-chat (DeepSeek V3)" },
+  { value: "deepseek-reasoner", label: "deepseek-reasoner (DeepSeek R1)" },
+  { value: "claude-3-5-sonnet-20241022", label: "claude-3-5-sonnet (Claude)" },
+  { value: "claude-3-5-haiku-20241022", label: "claude-3-5-haiku (Claude)" },
+  { value: "gemini-2.5-flash", label: "gemini-2.5-flash (Gemini)" },
+  { value: "custom", label: "✏️ 自定义模型名称..." },
 ];
 
 const ALERT_SOUND_OPTIONS: SelectOption<AlertSoundType>[] = [
@@ -471,46 +478,93 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             </div>
 
             {/* API Endpoint & Key */}
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                  API Key / 大模型密钥
-                </label>
-                <input
-                  type="password"
-                  placeholder="sk-••••••••••••••••••••••••"
-                  value={config.aiApiKey || ""}
-                  onChange={(e) => handleStyleChange("aiApiKey", e.target.value)}
-                  className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
-                />
-              </div>
+            {(() => {
+              const isPresetModel = AI_MODEL_OPTIONS.some(opt => opt.value === config.aiModel && opt.value !== "custom");
+              const dropdownValue = isPresetModel ? (config.aiModel || "gpt-4o") : "custom";
+              return (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        AI 提供商 (AI Provider)
+                      </label>
+                      <CustomSelect
+                        value={config.aiProvider || "openai"}
+                        onChange={(val) => {
+                          handleStyleChange("aiProvider", val as "openai" | "anthropic");
+                          if (val === "anthropic" && !config.aiEndpoint) {
+                            handleStyleChange("aiEndpoint", "https://api.anthropic.com/v1/messages");
+                          } else if (val === "openai" && (!config.aiEndpoint || config.aiEndpoint.includes("anthropic"))) {
+                            handleStyleChange("aiEndpoint", "https://api.openai.com/v1");
+                          }
+                        }}
+                        options={AI_PROVIDER_OPTIONS}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        API Key / 大模型密钥
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="sk-••••••••••••••••••••••••"
+                        value={config.aiApiKey || ""}
+                        onChange={(e) => handleStyleChange("aiApiKey", e.target.value)}
+                        className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    API 中转端点 (Endpoint URL)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="https://api.openai.com/v1"
-                    value={config.aiEndpoint || ""}
-                    onChange={(e) => handleStyleChange("aiEndpoint", e.target.value)}
-                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        API 中转端点 (Endpoint URL)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={config.aiProvider === "anthropic" ? "https://api.anthropic.com/v1/messages" : "https://api.openai.com/v1"}
+                        value={config.aiEndpoint || ""}
+                        onChange={(e) => handleStyleChange("aiEndpoint", e.target.value)}
+                        className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        选择的 AI 模型 (Model)
+                      </label>
+                      <CustomSelect
+                        value={dropdownValue}
+                        onChange={(val) => {
+                          if (val === "custom") {
+                            handleStyleChange("aiModel", "custom");
+                          } else {
+                            handleStyleChange("aiModel", val);
+                          }
+                        }}
+                        options={AI_MODEL_OPTIONS}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {dropdownValue === "custom" && (
+                    <div className="bg-[#FAF8F5]/80 border border-[#EFEBE4] p-3 rounded-xl animate-fade-in-up">
+                      <label className="text-[10px] font-bold text-[#8B6E3C] uppercase block mb-1">
+                        输入您的自定义模型名称 (Model Name)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="例如: gpt-4o-mini 或 deepseek-reasoner 或 ollama/llama3"
+                        value={config.aiModel === "custom" ? "" : (config.aiModel || "")}
+                        onChange={(e) => handleStyleChange("aiModel", e.target.value)}
+                        className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    选择的 AI 模型 (Model)
-                  </label>
-                  <CustomSelect
-                    value={config.aiModel || "gpt-4o"}
-                    onChange={(val) => handleStyleChange("aiModel", val)}
-                    options={AI_MODEL_OPTIONS}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Custom System Prompt */}
             <div>

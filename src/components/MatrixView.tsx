@@ -187,7 +187,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                             <p className="text-[9.5px] text-slate-500 truncate flex-grow min-w-0">{task.description}</p>
                           )}
                           
-                          {/* Elegant Non-wrapping Pill Badge for Due Date (Bug Fix!) */}
+                          {/* Elegant Non-wrapping Pill Badge for Due Date */}
                           {countdown && (
                             (() => {
                               const badgeStyle = countdown.isOverdue
@@ -205,8 +205,8 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                         </div>
                       </div>
                       
-                      {/* Hover Actions: Only visible on row hover for TickTick-like clean look */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
+                      {/* Hover Actions: Only visible on row hover */}
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0">
                         {/* Pin Toggle Button */}
                         <button
                           onClick={() => handleTogglePin(task.id)}

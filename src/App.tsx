@@ -10,6 +10,8 @@ import { MatrixView } from "./components/MatrixView";
 import { ListView } from "./components/ListView";
 import { CalendarView } from "./components/CalendarView";
 import { StickyNotesView } from "./components/StickyNotesView";
+import { classifyCategory, extractTasksFromNote } from "./utils/aiEngine";
+import type { ExtractedTask } from "./utils/aiEngine";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
 import { WidgetWindow } from "./components/WidgetWindow";
@@ -81,9 +83,12 @@ function App() {
   // 列表筛选与搜索状态
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-
-
-
+  // AI 智能收集箱状态
+  const [aiInputText, setAiInputText] = useState("");
+  const [aiInputLoading, setAiInputLoading] = useState(false);
+  const [aiInputMessage, setAiInputMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [aiPreviewTasks, setAiPreviewTasks] = useState<ExtractedTask[]>([]);
+  const [showAiInbox, setShowAiInbox] = useState(false);
   // 主页Tab
   const [activeTab, setActiveTab] = useState<AppTab>("matrix");
   const [pomodoroLogs, setPomodoroLogs] = useState<PomodoroLog[]>([]);
@@ -585,6 +590,23 @@ function App() {
           localStorage.setItem("aero_todos", JSON.stringify(updated));
           return updated;
         });
+      } else if (payload.action === "update") {
+        setTasks((prev) => {
+          const updated = prev.map((t) =>
+            t.id === payload.task_id
+              ? {
+                  ...t,
+                  title: payload.title || t.title,
+                  description: payload.description || undefined,
+                  category: (payload.category as Task["category"]) || t.category,
+                  notes: payload.notes || undefined,
+                  dueDate: payload.due_date || undefined,
+                }
+              : t
+          );
+          localStorage.setItem("aero_todos", JSON.stringify(updated));
+          return updated;
+        });
       } else if (payload.action === "reset") {
         setTasks(INITIAL_TASKS);
         setCompletedTasks([]);
@@ -787,58 +809,6 @@ function App() {
     syncState(id, "snooze");
   }, [saveTasks, syncState]);
 
-  const classifyCategoryWithAI = useCallback(async (title: string, desc: string): Promise<Task["category"] | null> => {
-    const apiKey = customizationConfig.aiApiKey;
-    const endpoint = customizationConfig.aiEndpoint || "https://api.openai.com/v1";
-    const model = customizationConfig.aiModel || "gpt-4o";
-    const prompt = customizationConfig.aiCustomPrompt || 
-      "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。";
-
-    if (!apiKey) return null;
-
-    try {
-      const url = endpoint.endsWith("/") ? `${endpoint}chat/completions` : `${endpoint}/chat/completions`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            {
-              role: "system",
-              content: prompt,
-            },
-            {
-              role: "user",
-              content: `任务标题: ${title}\n描述: ${desc || "无"}`,
-            },
-          ],
-          temperature: 0.1,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-
-      const resData = await response.json();
-      const content = resData.choices?.[0]?.message?.content?.trim() || "";
-      
-      const matched = ["urgent-important", "important-not-urgent", "urgent-not-important", "not-urgent-not-important"].find(
-        (cat) => content.includes(cat)
-      );
-      if (matched) {
-        return matched as Task["category"];
-      }
-    } catch (err) {
-      console.error("AI 智能象限分类调用失败:", err);
-    }
-    return null;
-  }, [customizationConfig.aiApiKey, customizationConfig.aiEndpoint, customizationConfig.aiModel, customizationConfig.aiCustomPrompt]);
-
   const handleAddTask = useCallback(async (taskData: {
     title: string;
     description: string;
@@ -876,7 +846,7 @@ function App() {
     );
 
     if (customizationConfig.aiAutoCategorize && customizationConfig.aiApiKey) {
-      const aiCategory = await classifyCategoryWithAI(title, description);
+      const aiCategory = await classifyCategory(customizationConfig, title, description);
       if (aiCategory && aiCategory !== initialCategory) {
         setTasks((prev) => {
           const updated = prev.map((t) => (t.id === taskId ? { ...t, category: aiCategory } : t));
@@ -894,7 +864,7 @@ function App() {
         );
       }
     }
-  }, [saveTasks, customizationConfig, classifyCategoryWithAI, syncState]);
+  }, [saveTasks, customizationConfig, classifyCategory, syncState]);
 
   const handleAddNote = useCallback(() => {
     const newNote = {
@@ -1006,15 +976,122 @@ function App() {
     syncState("settings", "settings_sync", JSON.stringify(newConfig));
   }, [syncState]);
 
-  const handleSaveNotes = useCallback((id: string, notes: string) => {
+  const handleEditTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks((prev) => {
-      const updated = prev.map((t) => (t.id === id ? { ...t, notes: notes || undefined } : t));
+      const task = prev.find((t) => t.id === id);
+      if (!task) return prev;
+      const nextTask = { ...task, ...updates };
+
+      setTimeout(() => {
+        syncState(
+          id,
+          "update",
+          nextTask.title,
+          nextTask.description,
+          nextTask.category,
+          nextTask.notes,
+          nextTask.dueDate
+        );
+      }, 0);
+
+      const updated = prev.map((t) => (t.id === id ? nextTask : t));
       saveTasks(updated);
       return updated;
     });
-    setExpandedNoteId(null);
-    syncState(id, "update_notes");
   }, [saveTasks, syncState]);
+
+  const handleSaveNotes = useCallback((id: string, notes: string) => {
+    handleEditTask(id, { notes: notes || undefined });
+    setExpandedNoteId(null);
+  }, [handleEditTask]);
+
+  // Auto-dismiss AI messages after 5 seconds
+  useEffect(() => {
+    if (aiInputMessage) {
+      const timer = setTimeout(() => setAiInputMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [aiInputMessage]);
+
+  const handleAiBatchInput = useCallback(async () => {
+    if (!aiInputText.trim()) {
+      setAiInputMessage({ type: "error", text: "⚠️ 请先在输入框中写入您的日程规划内容！" });
+      return;
+    }
+    if (!customizationConfig.aiApiKey) {
+      setAiInputMessage({ type: "error", text: "API_KEY_MISSING" });
+      return;
+    }
+    setAiInputLoading(true);
+    setAiInputMessage(null);
+    try {
+      const tasksList = await extractTasksFromNote(customizationConfig, aiInputText);
+      if (tasksList && tasksList.length > 0) {
+        setAiPreviewTasks(tasksList);
+        setAiInputMessage(null);
+      } else {
+        setAiInputMessage({
+          type: "error",
+          text: "⚠️ AI 没能在您的输入中分析出明确的待办日程，请尝试更具体的描述 ☕",
+        });
+      }
+    } catch (e: any) {
+      if (e.message === "API_KEY_MISSING") {
+        setAiInputMessage({ type: "error", text: "API_KEY_MISSING" });
+      } else {
+        setAiInputMessage({ type: "error", text: `❌ AI 解析失败: ${e.message || e}` });
+      }
+    } finally {
+      setAiInputLoading(false);
+    }
+  }, [aiInputText, customizationConfig]);
+
+  const handleConfirmAiTasks = useCallback(() => {
+    if (aiPreviewTasks.length === 0) return;
+    setTasks((prev) => {
+      let updated = [...prev];
+      aiPreviewTasks.forEach((t, index) => {
+        const taskId = (Date.now() + index + Math.floor(Math.random() * 1000)).toString();
+        const newTask: Task = {
+          id: taskId,
+          title: t.title,
+          description: t.description || undefined,
+          notes: t.notes || undefined,
+          category: t.category,
+          dueDate: t.dueDate || undefined,
+        };
+        updated = [newTask, ...updated];
+
+        setTimeout(() => {
+          syncState(
+            newTask.id,
+            "add",
+            newTask.title,
+            newTask.description || "",
+            newTask.category,
+            newTask.notes || "",
+            newTask.dueDate
+          );
+        }, 0);
+      });
+      saveTasks(updated);
+      return updated;
+    });
+
+    const count = aiPreviewTasks.length;
+    setAiPreviewTasks([]);
+    setAiInputText("");
+    setAiInputMessage({
+      type: "success",
+      text: `🎉 AI 成功规划并录入 ${count} 项日程待办！`,
+    });
+  }, [aiPreviewTasks, saveTasks, syncState]);
+
+  useEffect(() => {
+    if (!aiInputMessage) return;
+    const timer = setTimeout(() => setAiInputMessage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [aiInputMessage]);
 
   const handleBackupToCloud = useCallback(async (config: WebDavConfig) => {
     const backupData = {
@@ -1244,6 +1321,21 @@ function App() {
                   : "规划今日待办，有条不紊，感受生活的从容与美好。"}
               </p>
             </div>
+
+            {/* AI Assistant Toggle Switch - only shown on Matrix or List views to minimize cognitive load! */}
+            {(activeTab === "matrix" || activeTab === "list") && (
+              <button
+                onClick={() => setShowAiInbox(!showAiInbox)}
+                className={`text-xs px-3.5 py-2 rounded-xl font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs select-none ${
+                  showAiInbox
+                    ? "bg-[#FCF2F0] text-[#A34E36] border-[#F5DFDB]"
+                    : "bg-white text-slate-500 border-[#EFEBE4] hover:bg-[#FAF8F5]"
+                }`}
+                title="开启/关闭 AI 灵感收集箱"
+              >
+                <span>🪄 {showAiInbox ? "关闭 AI 助手" : "AI 智能录入"}</span>
+              </button>
+            )}
           </header>
 
           {/* 今日数据统计摘要 */}
@@ -1282,6 +1374,176 @@ function App() {
               </div>
             </div>
           </div>
+
+          {/* AI 智能灵感收集箱 (AI Inbox) */}
+          {showAiInbox && (activeTab === "matrix" || activeTab === "list") && (
+            <div className="bg-white/60 border border-[#EFEBE4] p-4 rounded-2xl shadow-sm z-10 relative backdrop-blur-md flex flex-col gap-2.5 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
+                  🪄 AI 智能收集箱 (AI Inbox)
+                </span>
+              </div>
+
+              {/* 醒目的全宽提示横幅 */}
+              {aiInputMessage && (
+                <div className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between gap-2 animate-fade-in-up ${
+                  aiInputMessage.type === "success"
+                    ? "bg-[#E8F5E9] text-[#2E7D32] border border-[#C8E6C9]"
+                    : "bg-[#FFF3E0] text-[#E65100] border border-[#FFE0B2]"
+                }`}>
+                  <span>
+                    {aiInputMessage.text === "API_KEY_MISSING"
+                      ? "⚠️ 尚未配置 AI 大模型 API Key，请先前往「个性界面装扮」页面底部的 AI 设置区域填写。"
+                      : aiInputMessage.text}
+                  </span>
+                  {aiInputMessage.text === "API_KEY_MISSING" && (
+                    <button
+                      onClick={() => { setActiveTab("settings"); setShowAiInbox(false); setAiInputMessage(null); }}
+                      className="flex-shrink-0 px-3 py-1 rounded-lg bg-[#E65100] text-white text-[10px] font-bold hover:bg-[#BF360C] transition-colors cursor-pointer"
+                    >
+                      前往设置 →
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {aiPreviewTasks.length > 0 ? (
+                /* AI 提取结果预检与调整面板 */
+                <div className="flex flex-col gap-3 animate-fade-in-up">
+                  <div className="text-[10px] font-bold text-slate-500 mb-1 border-b border-[#EFEBE4] pb-1.5">
+                    📋 AI 预检与微调清单（点击任务项可自由修改，核对无误后一键导入）:
+                  </div>
+                  <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                    {aiPreviewTasks.map((t, idx) => (
+                      <div key={idx} className="p-3 bg-[#FAF8F5]/85 border border-[#EFEBE4] rounded-xl flex flex-col gap-2 shadow-2xs">
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={t.title}
+                            onChange={(e) => {
+                              const updated = [...aiPreviewTasks];
+                              updated[idx].title = e.target.value;
+                              setAiPreviewTasks(updated);
+                            }}
+                            className="flex-grow bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                            placeholder="任务名称"
+                          />
+                          <input
+                            type="date"
+                            value={t.dueDate}
+                            onChange={(e) => {
+                              const updated = [...aiPreviewTasks];
+                              updated[idx].dueDate = e.target.value;
+                              setAiPreviewTasks(updated);
+                            }}
+                            className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#4D7C5D] w-28 flex-shrink-0"
+                          />
+                          <select
+                            value={t.category}
+                            onChange={(e) => {
+                              const updated = [...aiPreviewTasks];
+                              updated[idx].category = e.target.value as Task["category"];
+                              setAiPreviewTasks(updated);
+                            }}
+                            className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-semibold focus:outline-none focus:border-[#4D7C5D] w-32 flex-shrink-0"
+                          >
+                            <option value="urgent-important">I. 重要且紧急</option>
+                            <option value="important-not-urgent">II. 重要不紧急</option>
+                            <option value="urgent-not-important">III. 紧急不重要</option>
+                            <option value="not-urgent-not-important">IV. 不重要不紧急</option>
+                          </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">任务说明/详情描述</label>
+                            <input
+                              type="text"
+                              value={t.description}
+                              onChange={(e) => {
+                                const updated = [...aiPreviewTasks];
+                                updated[idx].description = e.target.value;
+                                setAiPreviewTasks(updated);
+                              }}
+                              className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1 rounded-lg text-[10px] text-slate-600 focus:outline-none focus:border-[#4D7C5D]"
+                              placeholder="无详情说明"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">技术备忘/工单元数据</label>
+                            <input
+                              type="text"
+                              value={t.notes}
+                              onChange={(e) => {
+                                const updated = [...aiPreviewTasks];
+                                updated[idx].notes = e.target.value;
+                                setAiPreviewTasks(updated);
+                              }}
+                              className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1 rounded-lg text-[10px] text-slate-600 focus:outline-none focus:border-[#4D7C5D]"
+                              placeholder="无技术备注"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-1.5 border-t border-[#EFEBE4]">
+                    <button
+                      onClick={() => setAiPreviewTasks([])}
+                      className="text-[10px] text-slate-500 hover:text-slate-700 px-3.5 py-1.5 rounded-lg border border-[#EFEBE4] transition-colors cursor-pointer"
+                    >
+                      放弃并返回
+                    </button>
+                    <button
+                      onClick={handleConfirmAiTasks}
+                      className="text-[10px] text-white bg-[#4D7C5D] hover:bg-[#3F684C] px-4.5 py-1.5 rounded-lg font-bold transition-colors cursor-pointer shadow-xs"
+                    >
+                      确认并录入日程待办 (一键保存)
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* AI 原始记事输入框 */
+                <div className="flex gap-3">
+                  <textarea
+                    value={aiInputText}
+                    onChange={(e) => setAiInputText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault();
+                        handleAiBatchInput();
+                      }
+                    }}
+                    onFocus={() => aiInputMessage && setAiInputMessage(null)}
+                    placeholder="在此写下今天的所有规划与日程（如：下午3点开会讨论PPT，明早8点慢跑健身，周五前交述职报告）。AI 将自动分析到期日与四象限并一键直接存入日程...（按 Ctrl + Enter 智能规划录入）"
+                    className="flex-grow bg-[#FAF8F5]/80 border border-[#EFEBE4] px-3.5 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors resize-none h-14 custom-scrollbar font-semibold"
+                    disabled={aiInputLoading}
+                  />
+                  <button
+                    onClick={handleAiBatchInput}
+                    disabled={aiInputLoading}
+                    className={`px-4.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1.5 transition-all shadow-[0_2px_4px_rgba(77,124,93,0.1)] select-none ${
+                      aiInputLoading
+                        ? "bg-slate-300 border-slate-300 cursor-not-allowed"
+                        : "bg-[#4D7C5D] hover:bg-[#3F684C] border-[#4D7C5D] cursor-pointer hover:scale-102"
+                    }`}
+                  >
+                    {aiInputLoading ? (
+                      <>
+                        <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px] animate-spin">⏳</span>
+                        <span>规划中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🪄 智能规划录入</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 各 Tab 内容渲染 */}
           {activeTab === "matrix" && (

@@ -72,7 +72,8 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
     });
 
   return (
-    <div className="animate-fade-in-up rounded-2xl bg-white/70 border border-[#EFEBE4] p-6 flex flex-col gap-4 flex-grow overflow-y-auto max-h-[600px] custom-scrollbar select-none shadow-sm backdrop-blur-md">
+    <div className="animate-fade-in-up rounded-2xl bg-white/70 border border-[#EFEBE4] p-6 flex flex-col gap-4 flex-grow overflow-y-auto max-h-[600px] custom-scrollbar select-none shadow-sm backdrop-blur-md relative">
+      
       {/* 筛选与搜索 */}
       <div className="flex gap-3 pb-2 border-b border-[#EFEBE4] items-center">
         <div className="relative flex-grow">
@@ -91,7 +92,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
           options={FILTER_OPTIONS}
           className="w-48"
         />
-        {/* Star Filter Button (星标快速筛选) */}
+        {/* Star Filter Button */}
         <button
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
           className={`px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
@@ -124,7 +125,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
             return (
               <div
                 key={task.id}
-                className="rounded-xl bg-white/80 border border-[#EFEBE4]/80 hover:border-[#C4D7B2] hover:bg-white hover:shadow-xs transition-all duration-200 group"
+                className="rounded-xl bg-white/80 border border-[#EFEBE4]/80 hover:border-[#C4D7B2] hover:bg-white hover:shadow-xs transition-all duration-200 group relative"
               >
                 <div className="px-4 py-2.5 flex justify-between items-center gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-grow">
@@ -185,8 +186,8 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                     </div>
                   </div>
 
-                  {/* Hover-reveal actions panel to reduce clutter (TickTick-like design) */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0">
+                  {/* Hover-reveal actions panel */}
+                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0">
                     {/* Pin button */}
                     <button
                       onClick={() => handleTogglePin(task.id)}

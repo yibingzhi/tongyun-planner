@@ -56,6 +56,7 @@ export interface CustomizationConfig {
   sunsetWarmth?: number; // 0 to 100
 
   // AI Agent settings
+  aiProvider?: "openai" | "anthropic";
   aiApiKey?: string;
   aiEndpoint?: string;
   aiModel?: string;
