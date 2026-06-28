@@ -43,7 +43,15 @@ export interface StickyNote {
 
 export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
-export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "settings";
+export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "settings";
+
+export interface CountdownEvent {
+  id: string;
+  title: string;
+  targetDate: string; // YYYY-MM-DD
+  emoji?: string;
+  color?: string;
+}
 
 export type Locale = "zh-CN" | "en";
 

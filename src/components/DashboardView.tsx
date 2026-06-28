@@ -279,46 +279,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* History */}
-        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4.5 shadow-2xs hover:shadow-xs card-hover-lift backdrop-blur-xs flex flex-col justify-between min-h-[150px]">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 border-b border-slate-100/60 pb-1.5 mb-1.5">
-              <History className="w-3.5 h-3.5 text-[#8B6E3C]" />
-              <h3 className="text-[10px] font-black text-[#8B6E3C] tracking-widest uppercase">
+        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-3.5 shadow-2xs hover:shadow-xs card-hover-lift backdrop-blur-xs flex flex-col justify-between min-h-[130px]">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 border-b border-slate-100/60 pb-1 mb-1">
+              <History className="w-3 h-3 text-[#8B6E3C]" />
+              <h3 className="text-[9px] font-black text-[#8B6E3C] tracking-widest uppercase">
                 {d.todayInHistory}
               </h3>
             </div>
             
             {/* Scrollable list box */}
-            <div className="space-y-3 max-h-[90px] overflow-y-auto scrollable-card pr-1.5">
+            <div className="space-y-2 max-h-[80px] overflow-y-auto scrollable-card pr-1">
               {historyEvents.length > 0 ? (
                 historyEvents.map((evt, idx) => {
                   const match = evt.match(/^(\d{4})年/);
                   const year = match ? match[1] : "";
                   const text = match ? evt.slice(match[0].length) : evt;
                   return (
-                    <div key={idx} className="timeline-dot flex items-start gap-2.5">
+                    <div key={idx} className="timeline-dot flex items-start gap-2">
                       {year && (
-                        <span className="text-[8px] font-black text-[#4D7C5D] bg-[#F0F5F1] px-1.5 py-0.5 rounded shrink-0">
+                        <span className="text-[7px] font-black text-[#4D7C5D] bg-[#F0F5F1] px-1 py-0.5 rounded shrink-0">
                           {year}
                         </span>
                       )}
-                      <span className="text-[10px] text-slate-600 font-bold leading-relaxed">
+                      <span className="text-[9px] text-slate-600 font-bold leading-relaxed">
                         {text}
                       </span>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-[10px] text-slate-400 font-black text-center py-4">
+                <p className="text-[9px] text-slate-400 font-black text-center py-3">
                   {loadingHistory ? d.loading : d.noEvents}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end pt-1">
-            <span className="text-[8px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1">
-              <Clock className="w-3 h-3 text-[#8B6E3C]" /> Sliding Timeline
+          <div className="flex justify-end pt-0.5">
+            <span className="text-[7px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5 text-[#8B6E3C]" /> Timeline
             </span>
           </div>
         </div>

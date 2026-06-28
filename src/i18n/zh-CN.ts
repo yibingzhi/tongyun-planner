@@ -17,6 +17,7 @@ const zhCN: Translations = {
     notes: "随手便签",
     analytics: "专注统计",
     history: "历史归档",
+    countdown: "倒数日",
     settings: "系统设置",
     focusMode: "专注模式",
     breakMode: "休息模式",
@@ -69,6 +70,7 @@ const zhCN: Translations = {
     analytics: "专注度统计看板",
     settings: "个性界面装扮",
     completed: "已完成历史归档",
+    countdown: "倒数日",
   },
 
   matrix: {
@@ -441,6 +443,25 @@ const zhCN: Translations = {
     completed_task: "已完成",
     dueToday: "今日截止",
     weatherLabel: "天气",
+  },
+
+  countdown: {
+    title: "倒数日",
+    addEvent: "添加倒数日",
+    days: "{days} 天",
+    daysLater: "还有 {days} 天",
+    daysAgo: "已过 {days} 天",
+    today: "就是今天！",
+    eventName: "事件名称",
+    eventNamePlaceholder: "比如：春节",
+    targetDate: "目标日期",
+    emoji: "图标",
+    save: "保存",
+    cancel: "取消",
+    delete: "删除",
+    deleteConfirm: "确定删除「{title}」吗？",
+    empty: "还没有倒数日，添加一个吧 🎯",
+    daysLabel: "天",
   },
 };
 

@@ -8,6 +8,7 @@ import {
   StickyNote,
   BarChart3,
   History,
+  Hourglass,
   Clock,
   RotateCcw,
   Coffee,
@@ -28,6 +29,7 @@ interface SidebarProps {
   completedTasksCount: number;
   tasksCount: number;
   stickyNotesCount: number;
+  countdownCount: number;
   syncStatus: "synced" | "syncing" | "error";
   lastBackupTime: number | null;
 
@@ -84,6 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   completedTasksCount,
   tasksCount,
   stickyNotesCount,
+  countdownCount,
   syncStatus,
   lastBackupTime,
   pomodoroIsActive,
@@ -188,6 +191,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               activeCls: "bg-[#F5F0F8] text-[#9B6FAE] border-[#DDD0E8]", barCls: "active-analytics" },
             { tab: "completed" as AppTab, icon: <History className="w-4 h-4" />, label: s.history, count: completedTasksCount,
               activeCls: "bg-[#EEF7F2] text-[#5DAE7C] border-[#C5E5D2]", barCls: "active-completed" },
+            { tab: "countdown" as AppTab, icon: <Hourglass className="w-4 h-4" />, label: s.countdown, count: countdownCount,
+              activeCls: "bg-[#FEF6E6] text-[#C97D3E] border-[#F5E2B8]", barCls: "active-countdown" },
             { tab: "settings" as AppTab, icon: <Settings className="w-4 h-4" />, label: s.settings, count: null,
               activeCls: "bg-[#F5F3F1] text-[#8B8178] border-[#E0DBD5]", barCls: "active-settings" },
           ] as const).map((item) => {

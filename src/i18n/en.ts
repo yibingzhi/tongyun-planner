@@ -17,6 +17,7 @@ const en: Translations = {
     notes: "Sticky Notes",
     analytics: "Analytics",
     history: "History",
+    countdown: "Countdown",
     settings: "Settings",
     focusMode: "Focus",
     breakMode: "Break",
@@ -69,6 +70,7 @@ const en: Translations = {
     analytics: "Focus Analytics",
     settings: "Customization",
     completed: "Completed Archive",
+    countdown: "Countdown",
   },
 
   matrix: {
@@ -441,6 +443,25 @@ const en: Translations = {
     completed_task: "Done",
     dueToday: "Due today",
     weatherLabel: "Weather",
+  },
+
+  countdown: {
+    title: "Countdown",
+    addEvent: "Add Countdown",
+    days: "{days} days",
+    daysLater: "{days} days to go",
+    daysAgo: "{days} days ago",
+    today: "It's today!",
+    eventName: "Event Name",
+    eventNamePlaceholder: "e.g. Birthday",
+    targetDate: "Target Date",
+    emoji: "Icon",
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    deleteConfirm: "Delete \"{title}\"?",
+    empty: "No countdowns yet. Add one! 🎯",
+    daysLabel: "d",
   },
 };
 

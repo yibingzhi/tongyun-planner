@@ -51,6 +51,22 @@ export async function webdavUpload(config: WebDavConfig, filename: string, conte
 /**
  * Downloads text file content from a WebDav server.
  */
+export async function webdavUploadVersion(config: WebDavConfig, timestamp: number): Promise<void> {
+  await webdavUpload(config, "qiyun_list_version.txt", String(timestamp));
+}
+
+export async function webdavDownloadVersion(config: WebDavConfig): Promise<number | null> {
+  try {
+    const text = await webdavDownload(config, "qiyun_list_version.txt");
+    return parseInt(text.trim(), 10);
+  } catch (e: any) {
+    if (e.message?.includes("not found") || e.message?.includes("404")) {
+      return null;
+    }
+    throw e;
+  }
+}
+
 export async function webdavDownload(config: WebDavConfig, filename: string): Promise<string> {
   if (!config.url || !config.username) {
     throw new Error("WebDav sync parameters are incomplete.");

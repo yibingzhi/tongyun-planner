@@ -3,7 +3,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { load } from "@tauri-apps/plugin-store";
-import type { Task, SubTask, PomodoroLog, StickyNote, AlertSoundType, AppTab, CustomizationConfig, RepeatType } from "./types";
+import type { Task, SubTask, PomodoroLog, StickyNote, CountdownEvent, AlertSoundType, AppTab, CustomizationConfig, RepeatType } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardView } from "./components/DashboardView";
@@ -20,6 +20,7 @@ import { CompletedView } from "./components/CompletedView";
 import { WidgetWindow } from "./components/WidgetWindow";
 import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
+import { CountdownView } from "./components/CountdownView";
 import { audioEngine } from "./utils/audioEngine";
 import type { WebDavConfig } from "./types";
 import { Sparkles } from "lucide-react";
@@ -96,6 +97,9 @@ function AppInner() {
     const saved = localStorage.getItem("aero_last_backup_time");
     return saved ? parseInt(saved, 10) : null;
   });
+  const lastSyncVersionRef = useRef<number>(
+    parseInt(localStorage.getItem("qiyun_sync_version") || "0", 10)
+  );
 
   // 避免首屏初始化加载、数据恢复操作触发重复的自动备份上传
   const isFirstLoad = useRef(true);
@@ -115,6 +119,7 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState<AppTab>("home");
   const [pomodoroLogs, setPomodoroLogs] = useState<PomodoroLog[]>([]);
   const [stickyNotes, setStickyNotes] = useState<StickyNote[]>([]);
+  const [countdowns, setCountdowns] = useState<CountdownEvent[]>([]);
 
   // 主窗口展开备注的任务 ID 和内容
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
@@ -464,6 +469,7 @@ function AppInner() {
 
     const timer = setTimeout(async () => {
       try {
+        const now = Date.now();
         const aiPraise = JSON.parse(localStorage.getItem("qiyun_ai_praise") || "[]");
         const backupData = {
           tasks,
@@ -471,15 +477,14 @@ function AppInner() {
           stickyNotes,
           customizationConfig,
           aiPraise,
-          timestamp: Date.now(),
+          timestamp: now,
         };
-        const { webdavUpload } = await import("./utils/webdav");
-        await webdavUpload(
-          { url, username, password: password || "" },
-          "qiyun_list_backup.json",
-          JSON.stringify(backupData, null, 2)
-        );
-        const now = Date.now();
+        const { webdavUpload, webdavUploadVersion } = await import("./utils/webdav");
+        const wdConfig = { url, username, password: password || "" };
+        await webdavUpload(wdConfig, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
+        await webdavUploadVersion(wdConfig, now);
+        lastSyncVersionRef.current = now;
+        localStorage.setItem("qiyun_sync_version", now.toString());
         setLastBackupTime(now);
         localStorage.setItem("aero_last_backup_time", now.toString());
         setSyncStatus("synced");
@@ -592,6 +597,11 @@ function AppInner() {
           ];
           setStickyNotes(defaultNotes);
           localStorage.setItem("aero_sticky_notes", JSON.stringify(defaultNotes));
+        }
+
+        const localCountdowns = localStorage.getItem("qiyun_countdowns");
+        if (localCountdowns) {
+          setCountdowns(JSON.parse(localCountdowns));
         }
 
         const storedTasks = await store.get<Task[]>("tasks");
@@ -1144,6 +1154,33 @@ function AppInner() {
     syncState(id, "delete_note");
   }, [saveStickyNotes, syncState]);
 
+  const saveCountdowns = useCallback((updated: CountdownEvent[]) => {
+    localStorage.setItem("qiyun_countdowns", JSON.stringify(updated));
+  }, []);
+
+  const handleAddCountdown = useCallback((event: { title: string; targetDate: string; emoji?: string; color?: string }) => {
+    const newEvent: CountdownEvent = {
+      id: Date.now().toString(),
+      title: event.title,
+      targetDate: event.targetDate,
+      emoji: event.emoji || "🎯",
+      color: event.color,
+    };
+    setCountdowns((prev) => {
+      const updated = [...prev, newEvent];
+      saveCountdowns(updated);
+      return updated;
+    });
+  }, [saveCountdowns]);
+
+  const handleDeleteCountdown = useCallback((id: string) => {
+    setCountdowns((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      saveCountdowns(updated);
+      return updated;
+    });
+  }, [saveCountdowns]);
+
   const handleToggleWidget = useCallback(async () => {
     try {
       await invoke("toggle_widget_window");
@@ -1172,6 +1209,8 @@ function AppInner() {
 
     localStorage.removeItem("aero_pomodoro_logs");
     localStorage.removeItem("aero_sticky_notes");
+    localStorage.removeItem("qiyun_countdowns");
+    setCountdowns([]);
     setPomodoroLogs([]);
     const defaultNotes = [
       {
@@ -1347,11 +1386,7 @@ function AppInner() {
     await webdavUpload(config, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
   }, [tasks, completedTasks, stickyNotes, customizationConfig]);
 
-  const handleRestoreFromCloud = useCallback(async (config: WebDavConfig) => {
-    const { webdavDownload } = await import("./utils/webdav");
-    const jsonStr = await webdavDownload(config, "qiyun_list_backup.json");
-    const data = JSON.parse(jsonStr);
-    
+  const restoreFromData = useCallback((data: any) => {
     if (data && (Array.isArray(data.tasks) || Array.isArray(data.stickyNotes))) {
       isRestoringRef.current = true;
       if (Array.isArray(data.tasks)) {
@@ -1371,11 +1406,9 @@ function AppInner() {
         localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
         syncState("settings", "settings_sync", JSON.stringify(data.customizationConfig));
       }
-
       if (data.aiPraise) {
         localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
       }
-      
       const fullBackup = {
         tasks: data.tasks || [],
         completedTasks: data.completedTasks || [],
@@ -1384,10 +1417,62 @@ function AppInner() {
         aiPraise: data.aiPraise || [],
       };
       syncState("restore", "restore_sync", JSON.stringify(fullBackup));
-    } else {
+      return true;
+    }
+    return false;
+  }, [saveTasks, saveCompleted, saveStickyNotes, syncState]);
+
+  const handleRestoreFromCloud = useCallback(async (config: WebDavConfig) => {
+    const { webdavDownload } = await import("./utils/webdav");
+    const jsonStr = await webdavDownload(config, "qiyun_list_backup.json");
+    const data = JSON.parse(jsonStr);
+    if (!restoreFromData(data)) {
       throw new Error("备份数据格式不正确");
     }
-  }, [saveTasks, saveCompleted, saveStickyNotes, syncState]);
+  }, [restoreFromData]);
+
+  const checkAndSyncFromCloud = useCallback(async (silent: boolean = false) => {
+    const url = localStorage.getItem("qiyun_webdav_url");
+    const username = localStorage.getItem("qiyun_webdav_user");
+    const password = localStorage.getItem("qiyun_webdav_pass");
+    if (!url || !username) return;
+
+    try {
+      const { webdavDownloadVersion, webdavDownload } = await import("./utils/webdav");
+      const remoteVersion = await webdavDownloadVersion({ url, username, password: password || "" });
+      if (remoteVersion && remoteVersion > lastSyncVersionRef.current) {
+        const jsonStr = await webdavDownload({ url, username, password: password || "" }, "qiyun_list_backup.json");
+        const data = JSON.parse(jsonStr);
+        if (restoreFromData(data)) {
+          lastSyncVersionRef.current = remoteVersion;
+          localStorage.setItem("qiyun_sync_version", remoteVersion.toString());
+          if (!silent) {
+            setSyncStatus("synced");
+          }
+        }
+      }
+    } catch (e) {
+      if (!silent) console.warn("自动同步检查失败:", e);
+    }
+  }, [restoreFromData]);
+
+  // 启动时检查云端是否有更新
+  useEffect(() => {
+    if (customizationConfig.enableAutoBackup === false) return;
+    const url = localStorage.getItem("qiyun_webdav_url");
+    if (!url) return;
+    const timer = setTimeout(() => checkAndSyncFromCloud(true), 3000);
+    return () => clearTimeout(timer);
+  }, [customizationConfig.enableAutoBackup, checkAndSyncFromCloud]);
+
+  // 定时自动同步（每5分钟）
+  useEffect(() => {
+    if (customizationConfig.enableAutoBackup === false) return;
+    const url = localStorage.getItem("qiyun_webdav_url");
+    if (!url) return;
+    const interval = setInterval(() => checkAndSyncFromCloud(true), 300000);
+    return () => clearInterval(interval);
+  }, [customizationConfig.enableAutoBackup, checkAndSyncFromCloud]);
 
   const handlePinNoteToDesktop = async (id: string) => {
     try {
@@ -1514,6 +1599,7 @@ function AppInner() {
           completedTasksCount={completedTasks.length}
           tasksCount={tasks.length}
           stickyNotesCount={stickyNotes.length}
+          countdownCount={countdowns.length}
           pomodoroIsActive={pomodoroIsActive}
           setPomodoroIsActive={setPomodoroIsActive}
           pomodoroIsBreak={pomodoroIsBreak}
@@ -1567,6 +1653,8 @@ function AppInner() {
                       ? t.header.analytics
                       : activeTab === "settings"
                       ? t.header.settings
+                      : activeTab === "countdown"
+                      ? t.header.countdown
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -1896,6 +1984,14 @@ function AppInner() {
               handleClearCompleted={handleClearCompleted}
               handleUndoComplete={handleUndoComplete}
               handleDeleteTask={handleDeleteTask}
+            />
+          )}
+
+          {activeTab === "countdown" && (
+            <CountdownView
+              countdowns={countdowns}
+              handleAddCountdown={handleAddCountdown}
+              handleDeleteCountdown={handleDeleteCountdown}
             />
           )}
 
