@@ -10,6 +10,7 @@ const en: Translations = {
     progress: "Progress",
     completed: "Completed",
     remaining: "Remaining",
+    home: "Home",
     matrix: "Matrix Board",
     list: "Task List",
     calendar: "Calendar",
@@ -60,6 +61,7 @@ const en: Translations = {
   },
 
   header: {
+    home: "Home",
     matrix: "Eisenhower Matrix",
     list: "Task List",
     calendar: "Calendar View",
@@ -258,6 +260,8 @@ const en: Translations = {
     system: "System & Language",
     fun: "Fun",
     quadColors: "Quadrant Colors",
+    nickname: "Nickname",
+    nicknamePlaceholder: "Enter your nickname (shown on homepage)",
     cardBg: "Card Background",
     white: "White",
     grid: "Grid",
@@ -413,6 +417,19 @@ const en: Translations = {
     focusTimeBody: "Break is over, time to focus!",
     pomodoroTime: "Pomodoro is up!",
     pomodoroTimeBody: "Great job! Take a break and hydrate.",
+  },
+  dashboard: {
+    morning: "Good morning",
+    noon: "Good noon",
+    afternoon: "Good afternoon",
+    evening: "Good evening",
+    cheerfulDay: "Stay energized today",
+    quoteFallback: "Today is a gift — that's why it's called the present.",
+    todayInHistory: "Today in History",
+    loading: "Loading...",
+    noEvents: "No historical events found",
+    refresh: "Refresh",
+    home: "Home",
   },
 };
 

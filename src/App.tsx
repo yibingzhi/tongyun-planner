@@ -6,6 +6,7 @@ import { load } from "@tauri-apps/plugin-store";
 import type { Task, SubTask, PomodoroLog, StickyNote, AlertSoundType, AppTab, CustomizationConfig, RepeatType } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { Sidebar } from "./components/Sidebar";
+import { DashboardView } from "./components/DashboardView";
 import { MatrixView } from "./components/MatrixView";
 import { ListView } from "./components/ListView";
 import { TaskDetailModal } from "./components/TaskDetailModal";
@@ -109,7 +110,7 @@ function AppInner() {
   const [aiPreviewTasks, setAiPreviewTasks] = useState<ExtractedTask[]>([]);
   const [showAiInbox, setShowAiInbox] = useState(false);
   // 主页Tab
-  const [activeTab, setActiveTab] = useState<AppTab>("matrix");
+  const [activeTab, setActiveTab] = useState<AppTab>("home");
   const [pomodoroLogs, setPomodoroLogs] = useState<PomodoroLog[]>([]);
   const [stickyNotes, setStickyNotes] = useState<StickyNote[]>([]);
 
@@ -1509,7 +1510,9 @@ function AppInner() {
           <header className="flex justify-between items-center border-b border-[#EFEBE4] pb-4">
             <div>
               <h2 className="text-xl font-bold tracking-wide text-[#2D323A]">
-                {activeTab === "matrix"
+                {activeTab === "home"
+                  ? t.header.home
+                  : activeTab === "matrix"
                   ? t.header.matrix
                   : activeTab === "list"
                   ? t.header.list
@@ -1526,6 +1529,8 @@ function AppInner() {
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {activeTab === "settings"
                   ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
+                  : activeTab === "home"
+                  ? "每日一言 · 历史上的今天"
                   : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
               </p>
             </div>
@@ -1759,6 +1764,10 @@ function AppInner() {
           )}
 
           {/* 各 Tab 内容渲染 */}
+          {activeTab === "home" && (
+            <DashboardView />
+          )}
+
           {activeTab === "matrix" && (
             <MatrixView 
               tasks={tasks} 

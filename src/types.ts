@@ -43,7 +43,7 @@ export interface StickyNote {
 
 export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
-export type AppTab = "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "settings";
+export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "settings";
 
 export type Locale = "zh-CN" | "en";
 

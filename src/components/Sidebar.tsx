@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   BookOpen,
+  Home,
   LayoutGrid,
   ListTodo,
   Calendar,
@@ -172,6 +173,17 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
         {/* 导航标签 */}
         <nav className="space-y-1">
+          <button
+            onClick={() => setActiveTab("home")}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
+              activeTab === "home"
+                ? "bg-[#F0F5F1] text-[#4D7C5D] border-[#C4D7B2] shadow-sm"
+                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            {s.home}
+          </button>
           <button
             onClick={() => setActiveTab("matrix")}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${

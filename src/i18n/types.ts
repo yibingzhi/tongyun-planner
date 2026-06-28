@@ -14,6 +14,7 @@ export interface Translations {
   analytics: Record<string, string>;
   completed: Record<string, string>;
   settings: Record<string, string>;
+  dashboard: Record<string, string>;
   floatingNote: Record<string, string>;
   widget: Record<string, string>;
   titleBar: Record<string, string>;

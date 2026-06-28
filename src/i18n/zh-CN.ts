@@ -10,6 +10,7 @@ const zhCN: Translations = {
     progress: "完成进度",
     completed: "已完成",
     remaining: "剩余待办",
+    home: "主页",
     matrix: "四象限看板",
     list: "待办清单",
     calendar: "日历日程",
@@ -60,6 +61,7 @@ const zhCN: Translations = {
   },
 
   header: {
+    home: "主页",
     matrix: "四象限优先级看板",
     list: "待办任务列表",
     calendar: "日历日程看板",
@@ -258,6 +260,8 @@ const zhCN: Translations = {
     system: "⚙️ 系统与语言",
     fun: "🎉 趣味",
     quadColors: "🎨 四象限主色调搭配",
+    nickname: "👤 你的昵称",
+    nicknamePlaceholder: "输入昵称（显示在主页）",
     cardBg: "📝 待办卡片背景纹理",
     white: "纯净白",
     grid: "格子本",
@@ -413,6 +417,19 @@ const zhCN: Translations = {
     focusTimeBody: "休息结束啦，打起精神开始专注吧 🎯",
     pomodoroTime: "番茄时间到啦！",
     pomodoroTimeBody: "太棒了！完成了一个番茄钟，喝口水休息一下吧 🌿",
+  },
+  dashboard: {
+    morning: "早上好",
+    noon: "中午好",
+    afternoon: "下午好",
+    evening: "晚上好",
+    cheerfulDay: "今天也要元气满满",
+    quoteFallback: "每一个今天都是你曾经梦想的明天。",
+    todayInHistory: "历史上的今天",
+    loading: "加载中...",
+    noEvents: "暂无历史事件",
+    refresh: "换一个",
+    home: "主页",
   },
 };
 

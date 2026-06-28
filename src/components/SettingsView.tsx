@@ -230,6 +230,19 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
         {/* 1. 个性化装扮面签 */}
         {subTab === "personalization" && (
           <div className="space-y-5 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
+            {/* 0. 昵称 */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                {s.nickname}
+              </h4>
+              <input
+                type="text"
+                defaultValue={localStorage.getItem("qiyun_nickname") || ""}
+                onChange={(e) => localStorage.setItem("qiyun_nickname", e.target.value)}
+                placeholder={s.nicknamePlaceholder}
+                className="w-full px-3 py-2 rounded-xl border border-[#EFEBE4] bg-white/80 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C4D7B2] focus:border-transparent transition-all"
+              />
+            </div>
             {/* 1.1 四象限色彩 */}
             <div className="space-y-3">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
