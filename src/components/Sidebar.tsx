@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     }
   };
   return (
-    <aside className="w-72 flex-shrink-0 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-6 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
+    <aside className="w-64 flex-shrink-0 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-5 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
       <div className="space-y-6 flex-shrink-0">
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -172,99 +172,50 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         </div>
 
         {/* 导航标签 */}
-        <nav className="space-y-1">
-          <button
-            onClick={() => setActiveTab("home")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "home"
-                ? "bg-[#F0F5F1] text-[#4D7C5D] border-[#C4D7B2] shadow-sm"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <Home className="w-4 h-4" />
-            {s.home}
-          </button>
-          <button
-            onClick={() => setActiveTab("matrix")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "matrix"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            {s.matrix}
-          </button>
-          <button
-            onClick={() => setActiveTab("list")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "list"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <ListTodo className="w-4 h-4" />
-            {s.list} ({tasksCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("calendar")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "calendar"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            {s.calendar}
-          </button>
-          <button
-            onClick={() => setActiveTab("notes")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "notes"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <StickyNote className="w-4 h-4" />
-            {s.notes} ({stickyNotesCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "analytics"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            {s.analytics}
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "completed"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <History className="w-4 h-4" />
-            {s.history} ({completedTasksCount})
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
-              activeTab === "settings"
-                ? "bg-[#FCF2F0]/70 text-[#A34E36] border-[#F5DFDB] shadow-sm font-bold"
-                : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            {s.settings}
-          </button>
+        <nav className="space-y-0.5">
+          {([
+            { tab: "home" as AppTab, icon: <Home className="w-4 h-4" />, label: s.home, count: null,
+              activeCls: "bg-[#F0F5F1] text-[#4D7C5D] border-[#C4D7B2]", barCls: "active-home" },
+            { tab: "matrix" as AppTab, icon: <LayoutGrid className="w-4 h-4" />, label: s.matrix, count: null,
+              activeCls: "bg-[#F3F0F8] text-[#7C6FAE] border-[#D5CEE8]", barCls: "active-matrix" },
+            { tab: "list" as AppTab, icon: <ListTodo className="w-4 h-4" />, label: s.list, count: tasksCount,
+              activeCls: "bg-[#EEF5F8] text-[#5B99B0] border-[#C5DEE8]", barCls: "active-list" },
+            { tab: "calendar" as AppTab, icon: <Calendar className="w-4 h-4" />, label: s.calendar, count: null,
+              activeCls: "bg-[#FBF4EC] text-[#C97D3E] border-[#EDDCC8]", barCls: "active-calendar" },
+            { tab: "notes" as AppTab, icon: <StickyNote className="w-4 h-4" />, label: s.notes, count: stickyNotesCount,
+              activeCls: "bg-[#FBF8EC] text-[#A08B30] border-[#EDE5C8]", barCls: "active-notes" },
+            { tab: "analytics" as AppTab, icon: <BarChart3 className="w-4 h-4" />, label: s.analytics, count: null,
+              activeCls: "bg-[#F5F0F8] text-[#9B6FAE] border-[#DDD0E8]", barCls: "active-analytics" },
+            { tab: "completed" as AppTab, icon: <History className="w-4 h-4" />, label: s.history, count: completedTasksCount,
+              activeCls: "bg-[#EEF7F2] text-[#5DAE7C] border-[#C5E5D2]", barCls: "active-completed" },
+            { tab: "settings" as AppTab, icon: <Settings className="w-4 h-4" />, label: s.settings, count: null,
+              activeCls: "bg-[#F5F3F1] text-[#8B8178] border-[#E0DBD5]", barCls: "active-settings" },
+          ] as const).map((item) => {
+            const isActive = activeTab === item.tab;
+            return (
+              <button
+                key={item.tab}
+                onClick={() => setActiveTab(item.tab)}
+                className={`nav-icon-hover w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-bold tracking-wide transition-all border cursor-pointer ${
+                  isActive
+                    ? `${item.activeCls} shadow-sm nav-active-bar ${item.barCls}`
+                    : "text-slate-600 border-transparent hover:bg-white/50 hover:text-slate-800"
+                }`}
+              >
+                {item.icon}
+                <span className="flex-grow text-left">{item.label}</span>
+                {item.count !== null && (
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md ${
+                    isActive ? "bg-white/60" : "bg-[#FAF8F5] text-slate-400"
+                  }`}>{item.count}</span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         {/* 禅意专注空间 (Zen Focus Card) */}
-        <div data-task-id={pomodoroTaskId || ""} className="px-4 py-3.5 rounded-2xl bg-white/60 border border-[#EFEBE4] shadow-xs backdrop-blur-sm space-y-3">
+        <div data-task-id={pomodoroTaskId || ""} className={`px-4 py-3.5 rounded-2xl bg-white/60 border border-[#EFEBE4] shadow-xs backdrop-blur-sm space-y-3 ${pomodoroIsActive ? 'pomodoro-active-glow' : ''}`}>
           {/* Header */}
           <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 tracking-wide">
             <span className="flex items-center gap-1.5">

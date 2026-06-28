@@ -375,3 +375,197 @@ html.transparent-window body {
 .animate-celebration-bounce {
   animation: celebration-bounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ========================================
+   UI 美化升级 — 新增样式
+   ======================================== */
+
+/* 渐变文字效果 (Gradient Text) */
+.gradient-text-morning {
+  background: linear-gradient(135deg, #C4D7B2 0%, #4D7C5D 50%, #8B6E3C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-noon {
+  background: linear-gradient(135deg, #E8A0BF 0%, #D97706 50%, #B45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-afternoon {
+  background: linear-gradient(135deg, #B2C8DF 0%, #8B6E3C 50%, #C4D7B2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-evening {
+  background: linear-gradient(135deg, #B2C8DF 0%, #E8A0BF 50%, #8B6E3C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 环形进度条 (Circular Progress Ring) */
+.progress-ring {
+  transform: rotate(-90deg);
+}
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  stroke-linecap: round;
+}
+
+/* 柔和呼吸脉冲 (Soft Pulse) */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2.5s ease-in-out infinite;
+}
+
+/* 轻柔弹跳入场 (Bounce Gentle) */
+@keyframes bounce-gentle {
+  0% { transform: translateY(6px); opacity: 0; }
+  60% { transform: translateY(-2px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-bounce-gentle {
+  animation: bounce-gentle 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 计数器翻动效果 (Count Up) */
+@keyframes count-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-count-up {
+  animation: count-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 侧边栏导航活跃色条 (Nav Active Indicator) */
+.nav-active-bar {
+  position: relative;
+}
+.nav-active-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 4px 4px 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-active-bar.active-home::before { background: #4D7C5D; }
+.nav-active-bar.active-matrix::before { background: #7C6FAE; }
+.nav-active-bar.active-list::before { background: #5B99B0; }
+.nav-active-bar.active-calendar::before { background: #C97D3E; }
+.nav-active-bar.active-notes::before { background: #C9A93E; }
+.nav-active-bar.active-analytics::before { background: #9B6FAE; }
+.nav-active-bar.active-completed::before { background: #5DAE7C; }
+.nav-active-bar.active-settings::before { background: #8B8178; }
+
+/* 卡片精致 hover 升级 */
+.card-hover-lift {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -8px rgba(154, 142, 128, 0.15), 0 4px 10px -4px rgba(154, 142, 128, 0.08);
+}
+
+/* 任务项类别色条 */
+.task-bar-urgent-important { border-left: 3px solid #E8A0BF; }
+.task-bar-important-not-urgent { border-left: 3px solid #C4D7B2; }
+.task-bar-urgent-not-important { border-left: 3px solid #B2C8DF; }
+.task-bar-not-urgent-not-important { border-left: 3px solid #EAD9A8; }
+
+/* 时间线装饰 (Timeline Decoration) */
+.timeline-dot {
+  position: relative;
+  padding-left: 16px;
+}
+.timeline-dot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C4D7B2;
+  box-shadow: 0 0 0 2px rgba(196, 215, 178, 0.3);
+}
+.timeline-dot::after {
+  content: '';
+  position: absolute;
+  left: 2.5px;
+  top: 15px;
+  width: 1px;
+  height: calc(100% - 4px);
+  background: linear-gradient(to bottom, #EFEBE4, transparent);
+}
+.timeline-dot:last-child::after {
+  display: none;
+}
+
+/* 引号装饰 (Quote Decoration) */
+.quote-decoration {
+  position: relative;
+  padding-left: 16px;
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(to bottom, #C4D7B2, #B2C8DF, #E8A0BF) 1;
+}
+.quote-decoration::before {
+  content: '\201C';
+  position: absolute;
+  top: -8px;
+  left: 6px;
+  font-size: 28px;
+  font-family: Georgia, serif;
+  color: rgba(196, 215, 178, 0.5);
+  line-height: 1;
+}
+
+/* 番茄钟呼吸灯 (Pomodoro Active Glow) */
+@keyframes pomodoro-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(163, 78, 54, 0.15); }
+  50% { box-shadow: 0 0 12px 3px rgba(163, 78, 54, 0.12); }
+}
+.pomodoro-active-glow {
+  animation: pomodoro-breathe 2s ease-in-out infinite;
+}
+
+/* 导航图标 hover 微旋转 */
+.nav-icon-hover:hover svg:first-child {
+  transform: rotate(-8deg);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 统计卡片背景色 */
+.stat-card-todo { background: linear-gradient(135deg, rgba(178, 200, 223, 0.15), rgba(178, 200, 223, 0.05)); }
+.stat-card-done { background: linear-gradient(135deg, rgba(196, 215, 178, 0.15), rgba(196, 215, 178, 0.05)); }
+.stat-card-rate { background: linear-gradient(135deg, rgba(232, 160, 191, 0.15), rgba(232, 160, 191, 0.05)); }
+
+/* 交错入场动画 */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+
+/* 精致的滚动容器自定义样式 (用于历史卡片可滚动) */
+.scrollable-card::-webkit-scrollbar {
+  width: 3px;
+}
+.scrollable-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollable-card::-webkit-scrollbar-thumb {
+  background: rgba(184, 172, 158, 0.2);
+  border-radius: 9999px;
+}
+.scrollable-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(184, 172, 158, 0.4);
+}

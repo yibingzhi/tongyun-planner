@@ -215,9 +215,9 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <button
                 key={tabItem.id}
                 onClick={() => setSubTab(tabItem.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer hover:scale-103 active:scale-97 ${
                   isSelected
-                    ? "bg-[#FCF2F0] text-[#A34E36] border border-[#F5DFDB] shadow-xs"
+                    ? "bg-[#FCF2F0] text-[#A34E36] border border-[#F5DFDB] shadow-xs font-black"
                     : "bg-transparent text-slate-500 border border-transparent hover:bg-white hover:text-slate-800"
                 }`}
               >
@@ -276,8 +276,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                             <button
                               key={colorKey}
                               onClick={() => handleColorChange(quad.id, colorKey)}
-                              className={`w-5.5 h-5.5 rounded-full ${colorConfig.dot} border border-slate-200 transition-all hover:scale-115 cursor-pointer relative ${
-                                isSelected ? "ring-2 ring-slate-400 ring-offset-2 scale-110 shadow-xs" : ""
+                              className={`w-5.5 h-5.5 rounded-full ${colorConfig.dot} border border-slate-200 transition-all hover:scale-120 cursor-pointer relative ${
+                                isSelected ? "ring-2 ring-slate-400 ring-offset-2 scale-110 shadow-xs" : "opacity-80 hover:opacity-100"
                               }`}
                               title={colorConfig.name}
                             >
@@ -314,10 +314,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={pattern.id}
                       onClick={() => handleStyleChange("cardBackground", pattern.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
-                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
                       }`}
                     >
                       {pattern.label}
@@ -345,10 +345,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={pin.id}
                       onClick={() => handleStyleChange("pinType", pin.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
-                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
                       }`}
                     >
                       {pin.label}
@@ -375,10 +375,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       <button
                         key={glass.id}
                         onClick={() => handleStyleChange("interfaceGlass", glass.id as any)}
-                        className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
                           isSelected
                             ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
-                            : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                            : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
                         }`}
                       >
                         {glass.label}
@@ -402,10 +402,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       <button
                         key={font.id}
                         onClick={() => handleStyleChange("fontFamily", font.id as any)}
-                        className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
                           isSelected
                             ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
-                            : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                            : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
                         }`}
                       >
                         {font.label}
@@ -433,10 +433,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={wc.id}
                       onClick={() => handleStyleChange("watercolorStyle", wc.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-bold border transition-all cursor-pointer text-center ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
-                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
                       }`}
                     >
                       {wc.label}

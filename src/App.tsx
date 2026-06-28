@@ -1508,89 +1508,90 @@ function AppInner() {
 
         {/* 主工作区 */}
         <main className="flex-grow p-6 overflow-y-auto flex flex-col gap-5 z-10 relative custom-scrollbar min-h-0">
-          <header className="flex justify-between items-center border-b border-[#EFEBE4] pb-4">
-            <div>
-              <h2 className="text-xl font-bold tracking-wide text-[#2D323A]">
-                {activeTab === "home"
-                  ? t.header.home
-                  : activeTab === "matrix"
-                  ? t.header.matrix
-                  : activeTab === "list"
-                  ? t.header.list
-                  : activeTab === "calendar"
-                  ? t.header.calendar
-                  : activeTab === "notes"
-                  ? t.header.notes
-                  : activeTab === "analytics"
-                  ? t.header.analytics
-                  : activeTab === "settings"
-                  ? t.header.settings
-                  : t.header.completed}
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                {activeTab === "settings"
-                  ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
-                  : activeTab === "home"
-                  ? "今日待办 · 天气 · 一言"
-                  : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
-              </p>
-            </div>
+          {/* 主工作区头部 - 仅在非首页 Tab 时显示 */}
+          {activeTab !== "home" && (
+            <>
+              <header className="flex justify-between items-center border-b border-[#EFEBE4] pb-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-wide text-[#2D323A]">
+                    {activeTab === "matrix"
+                      ? t.header.matrix
+                      : activeTab === "list"
+                      ? t.header.list
+                      : activeTab === "calendar"
+                      ? t.header.calendar
+                      : activeTab === "notes"
+                      ? t.header.notes
+                      : activeTab === "analytics"
+                      ? t.header.analytics
+                      : activeTab === "settings"
+                      ? t.header.settings
+                      : t.header.completed}
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">
+                    {activeTab === "settings"
+                      ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
+                      : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
+                  </p>
+                </div>
 
-            {/* AI Assistant Toggle Switch - only shown on Matrix or List views to minimize cognitive load! */}
-            {(activeTab === "matrix" || activeTab === "list") && (
-              <button
-                onClick={() => setShowAiInbox(!showAiInbox)}
-                className={`text-xs px-3.5 py-2 rounded-xl font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs select-none ${
-                  showAiInbox
-                    ? "bg-[#FCF2F0] text-[#A34E36] border-[#F5DFDB]"
-                    : "bg-white text-slate-500 border-[#EFEBE4] hover:bg-[#FAF8F5]"
-                }`}
-                title={showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}</span>
-              </button>
-            )}
-          </header>
-
-          {/* 今日数据统计摘要 */}
-          <div className="flex flex-wrap items-center gap-4 bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm z-10 relative backdrop-blur-md">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-              <span>
-                📅{" "}
-                {new Date().toLocaleDateString(
-                  customizationConfig.locale === "en" ? "en-US" : "zh-CN",
-                  {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }
+                {/* AI Assistant Toggle Switch - only shown on Matrix or List views to minimize cognitive load! */}
+                {(activeTab === "matrix" || activeTab === "list") && (
+                  <button
+                    onClick={() => setShowAiInbox(!showAiInbox)}
+                    className={`text-xs px-3.5 py-2 rounded-xl font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs select-none ${
+                      showAiInbox
+                        ? "bg-[#FCF2F0] text-[#A34E36] border-[#F5DFDB]"
+                        : "bg-white text-slate-500 border-[#EFEBE4] hover:bg-[#FAF8F5]"
+                    }`}
+                    title={showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}</span>
+                  </button>
                 )}
-              </span>
-              <span className="text-[#EFEBE4]">|</span>
-                <span>{t.sidebar.progress}</span>
-            </div>
-            <div className="flex items-center gap-4 ml-auto text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#B2C8DF]" />
-                <span className="text-slate-500">
-                  {t.common.taskCount.replace("{count}", String(tasks.length))}
-                </span>
+              </header>
+
+              {/* 今日数据统计摘要 */}
+              <div className="flex flex-wrap items-center gap-4 bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm z-10 relative backdrop-blur-md">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                  <span>
+                    📅{" "}
+                    {new Date().toLocaleDateString(
+                      customizationConfig.locale === "en" ? "en-US" : "zh-CN",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      }
+                    )}
+                  </span>
+                  <span className="text-[#EFEBE4]">|</span>
+                  <span>{t.sidebar.progress}</span>
+                </div>
+                <div className="flex items-center gap-4 ml-auto text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B2C8DF]" />
+                    <span className="text-slate-500">
+                      {t.common.taskCount.replace("{count}", String(tasks.length))}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C4D7B2]" />
+                    <span className="text-slate-500">
+                      {t.common.completed.replace("{count}", String(completedTasks.length))}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8A0BF]" />
+                    <span className="text-slate-500">
+                      {t.common.progress.replace("{pct}", String(progressPercentage))}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C4D7B2]" />
-                <span className="text-slate-500">
-                  {t.common.completed.replace("{count}", String(completedTasks.length))}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E8A0BF]" />
-                <span className="text-slate-500">
-                  {t.common.progress.replace("{pct}", String(progressPercentage))}
-                </span>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* AI 智能灵感收集箱 (AI Inbox) */}
           {showAiInbox && (activeTab === "matrix" || activeTab === "list") && (
