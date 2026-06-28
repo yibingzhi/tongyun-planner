@@ -223,24 +223,25 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           </button>
         </nav>
 
-        {/* 番茄专注时钟 */}
-        <div data-task-id={pomodoroTaskId || ""} className="px-4 py-3 rounded-2xl bg-white/70 border border-[#EFEBE4] shadow-sm backdrop-blur-sm space-y-2">
-          <div className="flex justify-between items-center text-[9px] font-extrabold text-[#A34E36] tracking-wider uppercase">
-            <span className="flex items-center gap-1">
+        {/* 禅意专注空间 (Zen Focus Card) */}
+        <div data-task-id={pomodoroTaskId || ""} className="px-4 py-3.5 rounded-2xl bg-white/60 border border-[#EFEBE4] shadow-xs backdrop-blur-sm space-y-3">
+          {/* Header */}
+          <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 tracking-wide">
+            <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-[#A34E36]" />
-              {pomodoroIsBreak ? "休息时间 🌿" : "专注时间 🎯"}
+              <span>{pomodoroIsBreak ? "休息模式" : "专注模式"}</span>
             </span>
-            <span>第 {pomodoroSessionCount} 番茄</span>
+            <span className="text-[9px] text-slate-400">番茄数: {pomodoroSessionCount}</span>
           </div>
 
           {pomodoroTaskTitle && (
-            <div className="text-[9.5px] font-bold text-slate-500 max-w-full truncate bg-[#FAF8F5]/80 px-2 py-0.5 rounded border border-[#EFEBE4] text-center" title={pomodoroTaskTitle}>
-              📌 专注中: {pomodoroTaskTitle}
+            <div className="text-[10px] font-medium text-slate-600 max-w-full truncate bg-[#FAF8F5]/80 px-2.5 py-1 rounded border border-[#EFEBE4]/60 text-center" title={pomodoroTaskTitle}>
+              专注中: {pomodoroTaskTitle}
             </div>
           )}
 
+          {/* Timer & Basic Controls Row */}
           <div className="flex items-center justify-between">
-            {/* 时间及调节控件 */}
             <div className="flex items-center gap-1">
               {!pomodoroIsActive && (
                 <button
@@ -274,13 +275,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                       }
                     }
                   }}
-                  className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4] flex items-center justify-center text-slate-500 font-extrabold text-[10px] cursor-pointer transition-colors shadow-sm"
+                  className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4]/80 flex items-center justify-center text-slate-400 font-extrabold text-[10px] cursor-pointer transition-colors shadow-2xs"
                   title="减少1分钟"
                 >
                   -
                 </button>
               )}
-              <span className="text-xl font-bold font-mono text-[#2D323A]">
+              <span className="text-xl font-bold font-mono text-[#2D323A] tracking-tight">
                 {Math.floor(pomodoroTimeLeft / 60)
                   .toString()
                   .padStart(2, "0")}
@@ -319,7 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                       }
                     }
                   }}
-                  className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4] flex items-center justify-center text-slate-500 font-extrabold text-[10px] cursor-pointer transition-colors shadow-sm"
+                  className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4]/80 flex items-center justify-center text-slate-400 font-extrabold text-[10px] cursor-pointer transition-colors shadow-2xs"
                   title="增加1分钟"
                 >
                   +
@@ -327,7 +328,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               )}
             </div>
 
-            {/* 番茄钟控制按钮 */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => {
@@ -342,7 +342,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     pomodoroSessionCount
                   );
                 }}
-                className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-700 transition-colors cursor-pointer"
+                className="p-1 rounded-lg border border-[#EFEBE4]/80 hover:bg-[#FAF8F5] text-slate-600 transition-colors cursor-pointer"
                 title={pomodoroIsActive ? "暂停" : "开始专注"}
               >
                 {pomodoroIsActive ? (
@@ -373,7 +373,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                     null
                   );
                 }}
-                className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                className="p-1 rounded-lg border border-[#EFEBE4]/80 hover:bg-[#FAF8F5] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 title="重置"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -381,8 +381,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             </div>
           </div>
 
-          {/* 倒计时进度条 */}
-          <div className="w-full h-1 bg-[#FAF8F5] rounded-full overflow-hidden border border-[#EFEBE4]/60">
+          {/* Progress Bar */}
+          <div className="w-full h-1 bg-[#FAF8F5] rounded-full overflow-hidden border border-[#EFEBE4]/50">
             <div
               className={`h-full transition-all duration-1000 ease-linear ${
                 pomodoroIsBreak ? "bg-[#C4D7B2]" : "bg-[#E8A0BF]"
@@ -397,64 +397,41 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             />
           </div>
 
-          {/* 提示音选择 */}
-          <div className="flex items-center justify-between pt-1 text-[8px] text-slate-400 font-extrabold uppercase">
-            <span>铃声</span>
-            <div className="flex gap-1.5">
-              {[
-                { id: "beep", label: "电子" },
-                { id: "cuckoo", label: "布谷 🐦" },
-                { id: "meow", label: "喵喵 🐱" },
-              ].map((snd) => (
-                <button
-                  key={snd.id}
-                  onClick={() => {
-                    const newSound = snd.id as AlertSoundType;
-                    setAlertSoundType(newSound);
-                    localStorage.setItem("aero_alert_sound_type", newSound);
-                    setTimeout(() => {
-                      audioEngine.playCompletionSound(newSound);
-                    }, 50);
-                  }}
-                  className={`px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
-                    alertSoundType === snd.id
-                      ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] font-extrabold"
-                      : "bg-transparent border-transparent hover:bg-slate-50 hover:text-slate-600"
-                  }`}
-                >
-                  {snd.label}
-                </button>
-              ))}
+          {/* Sound choice & White Noise integrated panel */}
+          <div className="pt-2 border-t border-dashed border-[#EFEBE4]/80 space-y-2">
+            {/* White Noise Control Row */}
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <Coffee className="w-3.5 h-3.5 text-[#4D7C5D]" />
+                <span>自然白噪音</span>
+              </span>
+              <button
+                onClick={() => {
+                  if (isPlayingNoise) {
+                    stopNoise();
+                    setIsPlayingNoise(false);
+                  } else {
+                    startNoise(selectedNoiseType, noiseVolume);
+                    setIsPlayingNoise(true);
+                  }
+                }}
+                className={`px-2 py-0.5 rounded-md border text-[9px] font-bold transition-all cursor-pointer ${
+                  isPlayingNoise
+                    ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36]"
+                    : "bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D]"
+                }`}
+              >
+                {isPlayingNoise ? "静音" : "播放"}
+              </button>
             </div>
-          </div>
-        </div>
 
-        {/* 自然白噪音发生器 */}
-        <div className="px-4 py-3 rounded-2xl bg-white/70 border border-[#EFEBE4] shadow-sm backdrop-blur-sm space-y-2">
-          <div className="flex justify-between items-center text-[9px] font-extrabold text-[#4D7C5D] tracking-wider uppercase">
-            <span className="flex items-center gap-1">
-              <Coffee className="w-3.5 h-3.5 text-[#4D7C5D]" />
-              专注白噪音
-            </span>
-            <span className="text-slate-400 font-bold">
-              {selectedNoiseType === "brown"
-                ? "深海褐噪"
-                : selectedNoiseType === "pink"
-                ? "山谷粉噪"
-                : selectedNoiseType === "ocean"
-                ? "海浪起伏"
-                : "细雨微风"}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between gap-2.5">
-            {/* 声效切换键 */}
-            <div className="grid grid-cols-4 gap-1 flex-grow">
+            {/* Noise presets */}
+            <div className="grid grid-cols-4 gap-1">
               {[
-                { id: "brown", label: "🌲", title: "深海褐噪" },
-                { id: "pink", label: "🌿", title: "山谷粉噪" },
-                { id: "ocean", label: "🌊", title: "海浪起伏" },
-                { id: "rain", label: "🌧️", title: "细雨微风" },
+                { id: "brown", label: "褐噪", title: "深海褐噪" },
+                { id: "pink", label: "粉噪", title: "山谷粉噪" },
+                { id: "ocean", label: "海浪", title: "海浪起伏" },
+                { id: "rain", label: "细雨", title: "细雨微风" },
               ].map((sound) => (
                 <button
                   key={sound.id}
@@ -464,10 +441,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                       startNoise(sound.id, noiseVolume);
                     }
                   }}
-                  className={`h-6 rounded-lg text-xs flex items-center justify-center border transition-all cursor-pointer ${
+                  className={`h-5.5 rounded-lg text-[9px] font-semibold flex items-center justify-center border transition-all cursor-pointer ${
                     selectedNoiseType === sound.id
-                      ? "bg-[#F0F5F1] border-[#DEEAE2] font-bold"
-                      : "bg-transparent border-transparent hover:bg-slate-50 text-slate-400 hover:text-slate-700"
+                      ? "bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D] font-bold"
+                      : "bg-transparent border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100/50"
                   }`}
                   title={sound.title}
                 >
@@ -476,84 +453,89 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               ))}
             </div>
 
-            {/* 播放/暂停键 */}
-            <button
-              onClick={() => {
-                if (isPlayingNoise) {
-                  stopNoise();
-                  setIsPlayingNoise(false);
-                } else {
-                  startNoise(selectedNoiseType, noiseVolume);
-                  setIsPlayingNoise(true);
-                }
-              }}
-              className={`p-1.5 rounded-lg border transition-all flex-shrink-0 cursor-pointer ${
-                isPlayingNoise
-                  ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36]"
-                  : "bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D]"
-              }`}
-            >
-              {isPlayingNoise ? (
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
-            </button>
-          </div>
+            {/* Volume slider */}
+            {isPlayingNoise && (
+              <div className="flex items-center gap-2 pt-0.5 animate-fade-in-up">
+                <span className="text-[8px] text-slate-400 font-bold uppercase flex-shrink-0">音量</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={noiseVolume}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setNoiseVolume(val);
+                    audioEngine.setVolume(val);
+                  }}
+                  className="flex-grow accent-[#4D7C5D] h-0.5 bg-[#FAF8F5] rounded-lg border border-[#EFEBE4]/50 cursor-pointer"
+                />
+              </div>
+            )}
 
-          {/* 音量控制拉条 */}
-          {isPlayingNoise && (
-            <div className="flex items-center gap-2 pt-0.5">
-              <span className="text-[8px] text-slate-400 font-extrabold uppercase">音量</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={noiseVolume}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setNoiseVolume(val);
-                  audioEngine.setVolume(val);
-                }}
-                className="flex-grow accent-[#4D7C5D] h-1 bg-[#FAF8F5] rounded-lg border border-[#EFEBE4]/60 cursor-pointer"
-              />
+            {/* Timer end sound selection */}
+            <div className="flex items-center justify-between pt-1 text-[8.5px] text-slate-400 font-semibold uppercase">
+              <span>铃声选择</span>
+              <div className="flex gap-1.5">
+                {[
+                  { id: "beep", label: "电子" },
+                  { id: "cuckoo", label: "布谷" },
+                  { id: "meow", label: "猫咪" },
+                ].map((snd) => (
+                  <button
+                    key={snd.id}
+                    onClick={() => {
+                      const newSound = snd.id as AlertSoundType;
+                      setAlertSoundType(newSound);
+                      localStorage.setItem("aero_alert_sound_type", newSound);
+                      setTimeout(() => {
+                        audioEngine.playCompletionSound(newSound);
+                      }, 50);
+                    }}
+                    className={`px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
+                      alertSoundType === snd.id
+                        ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] font-bold"
+                        : "bg-transparent border-transparent hover:text-slate-600"
+                    }`}
+                  >
+                    {snd.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* 底部设置 */}
-      <div className="space-y-2 pt-4 border-t border-[#EFEBE4] flex-shrink-0">
+      <div className="space-y-1.5 pt-3 border-t border-[#EFEBE4] flex-shrink-0">
         <button
           onClick={handleToggleWidget}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-[#4D7C5D] hover:bg-[#F0F5F1]/80 border border-[#DEEAE2] bg-[#F0F5F1]/40 cursor-pointer"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all text-[#4D7C5D] hover:bg-[#F0F5F1] border border-[#DEEAE2] cursor-pointer"
         >
-          <Coffee className="w-3.5 h-3.5 text-[#4D7C5D]" />
-          显示/隐藏桌面挂件
+          <LayoutGrid className="w-3.5 h-3.5" />
+          桌面挂件
         </button>
-        <button
-          onClick={() => handleToggleWidgetLock()}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            isWidgetLocked
-              ? "text-[#8B6E3C] hover:bg-[#FAF5ED] border border-[#EFE5D3] bg-[#FAF5ED]/50 shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 border border-slate-200/60 bg-transparent"
-          }`}
-        >
-          {isWidgetLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-          {isWidgetLocked ? "解锁挂件（恢复交互）" : "锁住挂件（鼠标穿透）"}
-        </button>
-        <button
-          onClick={resetTasks}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-slate-200/60 bg-transparent transition-all cursor-pointer"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          重置演示任务
-        </button>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => handleToggleWidgetLock()}
+            className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold border transition-all cursor-pointer ${
+              isWidgetLocked
+                ? "text-[#8B6E3C] bg-[#FAF5ED] border-[#EFE5D3]"
+                : "text-slate-500 border-slate-200/60 bg-transparent hover:bg-slate-100 hover:text-slate-700"
+            }`}
+          >
+            {isWidgetLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+            {isWidgetLocked ? "挂件解锁" : "锁定穿透"}
+          </button>
+          <button
+            onClick={resetTasks}
+            className="flex items-center justify-center gap-1 py-1.5 rounded-lg text-[10px] font-semibold text-slate-500 border border-slate-200/60 bg-transparent hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            重置演示
+          </button>
+        </div>
       </div>
     </aside>
   );

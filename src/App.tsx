@@ -19,32 +19,33 @@ import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { audioEngine } from "./utils/audioEngine";
 import type { WebDavConfig } from "./types";
+import { Sparkles } from "lucide-react";
 
 const INITIAL_TASKS: Task[] = [
   {
     id: "1",
-    title: "🎨 确认待办管理主色调",
+    title: "设计待办清单配色与主题风格",
     description: "选用暖色奶茶背景、抹茶绿和蜜桃红，构建温馨清爽的日程规划风格。",
     category: "urgent-important",
     dueDate: new Date().toISOString().split("T")[0],
   },
   {
     id: "2",
-    title: "🧘 测试白噪音及番茄钟",
+    title: "体验白噪音与番茄工作法",
     description: "在侧边栏开启白噪音，配合25分钟番茄时钟，体验极致专注手感。",
     category: "urgent-important",
     dueDate: new Date().toISOString().split("T")[0],
   },
   {
     id: "3",
-    title: "🌿 整理书桌与绿植给水",
-    description: "整理房间和摆件，让生活空间 and 心情一起回归清爽自然。",
+    title: "整理桌面与给绿植浇水",
+    description: "整理房间和摆件，让生活空间与心情一起回归清爽自然。",
     category: "important-not-urgent",
     dueDate: new Date().toISOString().split("T")[0],
   },
   {
     id: "4",
-    title: "☕ 补给中意的烘焙咖啡豆",
+    title: "购买并补给浅烘咖啡豆",
     description: "生活日常补给，准备片刻的手冲咖啡度过下午。",
     category: "urgent-not-important",
     dueDate: new Date().toISOString().split("T")[0],
@@ -194,6 +195,7 @@ function App() {
     const finalTaskId = tId !== undefined ? tId : pomodoroTaskId;
     const finalTaskTitle = tTitle !== undefined ? tTitle : pomodoroTaskTitle;
     const endTime = active ? Date.now() + timeLeft * 1000 : null;
+    setPomodoroEndTime(endTime);
     const data = JSON.stringify({
       active,
       timeLeft,
@@ -206,7 +208,7 @@ function App() {
       taskTitle: finalTaskTitle,
     });
     syncState("pomodoro", "pomodoro_sync", data);
-  }, [pomodoroTaskId, pomodoroTaskTitle, syncState]);
+  }, [pomodoroTaskId, pomodoroTaskTitle, syncState, setPomodoroEndTime]);
 
   const handleStartFocus = useCallback((taskId: string, taskTitle: string) => {
     setPomodoroTaskId(taskId);
@@ -438,19 +440,19 @@ function App() {
           const defaultNotes = [
             {
               id: "note-1",
-              text: "💡 QiYun List 双窗口小提示：\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁！\n- 侧边栏的白噪音是完全离线纯物理波形合成的哦，不消耗网络！",
+              text: "使用技巧：双窗口联动与幽灵锁定模式\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁。\n- 侧边栏的白噪音是完全离线纯物理波形合成，不需要消耗网络流量。",
               color: "tea",
               rotate: -1,
             },
             {
               id: "note-2",
-              text: "🌿 个人健康习惯记事：\n- 每隔 45 分钟起来喝杯水\n- 视线离开屏幕看绿植 20 秒\n- 做 5 次深呼吸",
+              text: "健康习惯：多喝水、放松眼睛、深呼吸\n- 每隔 45 分钟起来喝杯水\n- 视线离开屏幕看绿植 20 秒\n- 闭眼做 5 次深呼吸",
               color: "mint",
               rotate: 2,
             },
             {
               id: "note-3",
-              text: "🛒 手账购物清单备忘：\n- 冰滴咖啡豆 (浅烘焙) 1 包\n- 可爱小水壶 1 个\n- 记录手账专用的和纸胶带 1 盒",
+              text: "手账购物备忘：豆子、水壶、纸胶带\n- 冰滴咖啡豆 (浅烘焙) 1 包\n- 便携保温小水壶 1 个\n- 记录手账专用的纸胶带 1 盒",
               color: "rose",
               rotate: -2,
             },
@@ -633,6 +635,7 @@ function App() {
           setPomodoroSessionCount(data.sessionCount);
           setPomodoroTaskId(data.taskId || null);
           setPomodoroTaskTitle(data.taskTitle || null);
+          setPomodoroEndTime(data.endTime);
         } catch (e) {
           console.error("解析番茄钟同步数据失败", e);
         }
@@ -814,6 +817,7 @@ function App() {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    isExplicit?: boolean;
   }) => {
     const { title, description, notes, category, dueDate } = taskData;
     const taskId = Date.now().toString();
@@ -844,7 +848,7 @@ function App() {
       newTask.dueDate
     );
 
-    if (customizationConfig.aiAutoCategorize && customizationConfig.aiApiKey) {
+    if (customizationConfig.aiAutoCategorize && customizationConfig.aiApiKey && !taskData.isExplicit) {
       const aiCategory = await classifyCategory(customizationConfig, title, description);
       if (aiCategory && aiCategory !== initialCategory) {
         setTasks((prev) => {
@@ -942,19 +946,19 @@ function App() {
     const defaultNotes = [
       {
         id: "note-1",
-        text: "💡 QiYun List 双窗口小提示：\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁！\n- 侧边栏的白噪音是完全离线纯物理波形合成的哦，不消耗网络！",
+        text: "使用技巧：双窗口联动与幽灵锁定模式\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁。\n- 侧边栏的白噪音是完全离线纯物理波形合成，不需要消耗网络流量。",
         color: "tea",
         rotate: -1,
       },
       {
         id: "note-2",
-        text: "🌿 个人健康习惯记事：\n- 每隔 45 分钟起来喝杯水\n- 视线离开屏幕看绿植 20 秒\n- 做 5 次深呼吸",
+        text: "健康习惯：多喝水、放松眼睛、深呼吸\n- 每隔 45 分钟起来喝杯水\n- 视线离开屏幕看绿植 20 秒\n- 闭眼做 5 次深呼吸",
         color: "mint",
         rotate: 2,
       },
       {
         id: "note-3",
-        text: "🛒 手账购物清单备忘：\n- 冰滴咖啡豆 (浅烘焙) 1 包\n- 可爱小水壶 1 个\n- 记录手账专用的和纸胶带 1 盒",
+        text: "手账购物备忘：豆子、水壶、纸胶带\n- 冰滴咖啡豆 (浅烘焙) 1 包\n- 便携保温小水壶 1 个\n- 记录手账专用的纸胶带 1 盒",
         color: "rose",
         rotate: -2,
       },
@@ -1316,8 +1320,8 @@ function App() {
               </h2>
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {activeTab === "settings"
-                  ? "定制专属的主题色调、材质滤镜与字体，装扮你温馨舒适的日程看板。"
-                  : "规划今日待办，有条不紊，感受生活的从容与美好。"}
+                  ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
+                  : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
               </p>
             </div>
 
@@ -1330,9 +1334,10 @@ function App() {
                     ? "bg-[#FCF2F0] text-[#A34E36] border-[#F5DFDB]"
                     : "bg-white text-slate-500 border-[#EFEBE4] hover:bg-[#FAF8F5]"
                 }`}
-                title="开启/关闭 AI 灵感收集箱"
+                title={showAiInbox ? "关闭 AI 收集箱" : "开启 AI 智能录入"}
               >
-                <span>🪄 {showAiInbox ? "关闭 AI 助手" : "AI 智能录入"}</span>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{showAiInbox ? "关闭 AI 录入" : "AI 智能规划"}</span>
               </button>
             )}
           </header>
@@ -1379,7 +1384,8 @@ function App() {
             <div className="bg-white/60 border border-[#EFEBE4] p-4 rounded-2xl shadow-sm z-10 relative backdrop-blur-md flex flex-col gap-2.5 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
-                  🪄 AI 智能收集箱 (AI Inbox)
+                  <Sparkles className="w-3.5 h-3.5 text-[#8B6E3C]" />
+                  <span>AI 智能收集箱</span>
                 </span>
               </div>
 
@@ -1392,7 +1398,7 @@ function App() {
                 }`}>
                   <span>
                     {aiInputMessage.text === "API_KEY_MISSING"
-                      ? "⚠️ 尚未配置 AI 大模型 API Key，请先前往「个性界面装扮」页面底部的 AI 设置区域填写。"
+                      ? "未配置大模型 API 密钥，请先前往“设置页面”底部的 AI 设置区域填写。"
                       : aiInputMessage.text}
                   </span>
                   {aiInputMessage.text === "API_KEY_MISSING" && (
@@ -1410,7 +1416,7 @@ function App() {
                 /* AI 提取结果预检与调整面板 */
                 <div className="flex flex-col gap-3 animate-fade-in-up">
                   <div className="text-[10px] font-bold text-slate-500 mb-1 border-b border-[#EFEBE4] pb-1.5">
-                    📋 AI 预检与微调清单（点击任务项可自由修改，核对无误后一键导入）:
+                    AI 预检清单（支持手动修改，核对无误后一键导入）:
                   </div>
                   <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                     {aiPreviewTasks.map((t, idx) => (
@@ -1515,7 +1521,7 @@ function App() {
                       }
                     }}
                     onFocus={() => aiInputMessage && setAiInputMessage(null)}
-                    placeholder="在此写下今天的所有规划与日程（如：下午3点开会讨论PPT，明早8点慢跑健身，周五前交述职报告）。AI 将自动分析到期日与四象限并一键直接存入日程...（按 Ctrl + Enter 智能规划录入）"
+                    placeholder="在此写下今天的所有规划与日程（如：下午3点开会讨论方案，周五前交述职报告）。AI 将自动分析截止日期与优先级象限并智能存入...（按 Ctrl + Enter 智能规划录入）"
                     className="flex-grow bg-[#FAF8F5]/80 border border-[#EFEBE4] px-3.5 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors resize-none h-14 custom-scrollbar font-semibold"
                     disabled={aiInputLoading}
                   />
@@ -1530,12 +1536,13 @@ function App() {
                   >
                     {aiInputLoading ? (
                       <>
-                        <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px] animate-spin">⏳</span>
+                        <Sparkles className="w-3.5 h-3.5 animate-spin" />
                         <span>规划中...</span>
                       </>
                     ) : (
                       <>
-                        <span>🪄 智能规划录入</span>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>智能分析</span>
                       </>
                     )}
                   </button>

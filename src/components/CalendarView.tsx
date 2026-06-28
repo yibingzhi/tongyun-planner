@@ -18,6 +18,7 @@ interface CalendarViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    isExplicit?: boolean;
   }) => void;
 }
 
@@ -234,7 +235,8 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
         <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm max-h-[480px]">
           <div className="pb-2.5 border-b border-[#EFEBE4] mb-3">
             <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
-              <span>📅 {selectedCalendarDate} 待办任务</span>
+              <Calendar className="w-3.5 h-3.5 text-[#8B6E3C]" />
+              <span>{selectedCalendarDate} 待办任务</span>
             </h3>
           </div>
 
@@ -268,7 +270,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                 <p className="text-[10px] text-slate-400 font-bold leading-normal">
                   本日无待办任务
                   <br />
-                  享受轻松充实的一天吧 ☕
+                  享受轻松而专注的一天
                 </p>
               </div>
             )}

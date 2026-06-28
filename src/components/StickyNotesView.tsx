@@ -158,12 +158,12 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
       ) : (
         <div className="text-center py-20 bg-white/40 border border-[#EFEBE4] rounded-2xl backdrop-blur-sm flex flex-col items-center gap-3">
           <StickyNote className="w-12 h-12 text-[#EFEBE4]" />
-          <p className="text-xs text-slate-400 font-bold">便签墙空空如也，添加一条试试吧 📝</p>
+          <p className="text-xs text-slate-400 font-bold">暂无便签，点击右上角新建</p>
           <button
             onClick={handleAddNote}
             className="mt-2 text-[10px] text-[#4D7C5D] hover:bg-[#F0F5F1] border border-[#DEEAE2] px-3.5 py-1.5 rounded-lg transition-all font-bold uppercase tracking-wider bg-transparent cursor-pointer"
           >
-            添加便签 +
+            添加便签
           </button>
         </div>
       )}

@@ -161,7 +161,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
                 : "bg-[#FAF5ED] border-[#EFE5D3] text-[#8B6E3C]";
               return (
                 <span className={`text-[7.5px] px-1.5 py-0.5 rounded border ${badgeClass}`}>
-                  {countdown.isOverdue ? "⚠️ " : ""} {countdown.text}
+                  {countdown.text}
                 </span>
               );
             })()}
@@ -194,7 +194,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
           )}
           {task.notes && (
             <p className="text-[10px] text-[#8B6E3C] mt-1.5 line-clamp-2 leading-relaxed italic font-semibold whitespace-pre-wrap">
-              📝 {task.notes}
+              备注: {task.notes}
             </p>
           )}
         </div>
@@ -226,7 +226,8 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
             className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-[#EFEBE4] bg-white hover:bg-[#F0F5F1] hover:text-[#4D7C5D] text-slate-500 font-extrabold cursor-pointer transition-colors"
             title="开始专注该任务"
           >
-            ⏱️ 专注
+            <Clock className="w-2.5 h-2.5" />
+            <span>专注</span>
           </button>
           <span className="flex items-center gap-0.5">右划完成 <span className="text-[#4D7C5D]">→</span></span>
         </div>

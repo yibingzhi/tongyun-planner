@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Check, Trash2, FileEdit, Clock, Heart } from "lucide-react";
+import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin } from "lucide-react";
 import type { Task } from "../types";
 import { FILTER_OPTIONS, getDueDateCountdown } from "../constants";
 import { CustomSelect } from "./CustomSelect";
@@ -25,6 +25,7 @@ interface ListViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    isExplicit?: boolean;
   }) => void;
   handleToggleFavorite: (id: string) => void;
   handleTogglePin: (id: string) => void;
@@ -138,11 +139,11 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                     <div className="min-w-0 flex-grow">
                       <div className="flex items-center gap-2 min-w-0">
                         {task.isPinned && (
-                          <span className="text-[10px] text-[#8B6E3C] flex-shrink-0" title="已置顶">📌</span>
+                          <span title="已置顶" className="flex-shrink-0 flex items-center"><Pin className="w-3 h-3 text-[#8B6E3C] fill-[#8B6E3C]" /></span>
                         )}
                         <h4 className="text-xs font-bold text-slate-800 truncate leading-snug">{task.title}</h4>
                         {task.isFavorite && (
-                          <span className="text-[10px] text-[#E8A0BF] flex-shrink-0" title="已标星">♥</span>
+                          <span title="已标星" className="flex-shrink-0 flex items-center"><Heart className="w-3 h-3 text-[#E8A0BF] fill-[#E8A0BF]" /></span>
                         )}
                         <span
                           className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -171,7 +172,8 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                               : "bg-[#FAF8F5] border-[#EFEBE4] text-slate-500 font-semibold";
                             return (
                               <span className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${badgeStyle}`}>
-                                📅 {task.dueDate?.split("-").slice(1).join("/")} ({countdown.text})
+                                <Calendar className="w-2.5 h-2.5 text-slate-400" />
+                                <span>{task.dueDate?.split("-").slice(1).join("/")} ({countdown.text})</span>
                               </span>
                             );
                           })()
@@ -179,7 +181,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                         
                         {task.notes && (
                           <span className="text-[#8B6E3C] italic font-semibold truncate max-w-[150px] flex-shrink-0">
-                            📝 {task.notes}
+                            备注: {task.notes}
                           </span>
                         )}
                       </div>
@@ -244,7 +246,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                 {expandedNoteId === task.id && (
                   <div className="px-4 pb-3.5 pt-1 border-t border-[#EFEBE4] bg-[#FAF8F5]/30 rounded-b-xl animate-fade-in-up">
                     <label className="text-[9px] font-bold text-[#8B6E3C] uppercase tracking-wider block mb-1">
-                      📝 任务细节备注
+                      任务细节备注
                     </label>
                     <textarea
                       value={editingNotes}
@@ -276,7 +278,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
       ) : (
         <div className="text-center py-16 flex flex-col items-center gap-3">
           <Check className="w-10 h-10 text-[#EFEBE4]" />
-          <p className="text-xs text-slate-400 font-bold">没有找到符合条件的待办任务</p>
+          <p className="text-xs text-slate-400 font-bold">暂无待办任务</p>
         </div>
       )}
     </div>

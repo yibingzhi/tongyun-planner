@@ -122,12 +122,32 @@ export async function classifyCategory(
 
   try {
     const result = await callAI(config, systemPrompt, userPrompt);
+    // 清洗结果：转小写，去除引号、括号、多余标点
+    const cleaned = result.trim().toLowerCase().replace(/[`'"'\[\]\.\#\*]/g, "");
+
+    // 映射中文分类到英文标识符
+    const chineseMapping: Record<string, Task["category"]> = {
+      "重要且紧急": "urgent-important",
+      "重要紧急": "urgent-important",
+      "重要不紧急": "important-not-urgent",
+      "紧急不重要": "urgent-not-important",
+      "不重要不紧急": "not-urgent-not-important",
+      "不重要且不紧急": "not-urgent-not-important",
+    };
+
+    for (const [zh, en] of Object.entries(chineseMapping)) {
+      if (cleaned.includes(zh)) {
+        return en;
+      }
+    }
+
+    // 解决包含关系冲突并匹配（先检查最长匹配项，避免 urgent-not-important 被 incorrectly 包含）
     const matched = [
-      "urgent-important",
+      "not-urgent-not-important",
       "important-not-urgent",
       "urgent-not-important",
-      "not-urgent-not-important",
-    ].find((c) => result.includes(c));
+      "urgent-important",
+    ].find((c) => cleaned === c || cleaned.includes(c));
 
     return (matched as Task["category"]) || null;
   } catch (e) {
@@ -230,13 +250,42 @@ export async function extractTasksFromNote(
   try {
     const parsed = JSON.parse(cleaned);
     if (Array.isArray(parsed)) {
-      return parsed.map((item: any) => ({
-        title: item.title || "无题待办",
-        description: item.description || "",
-        notes: item.notes || "",
-        dueDate: item.dueDate || today,
-        category: item.category || "urgent-important",
-      }));
+      return parsed.map((item: any) => {
+        let cat = (item.category || "").trim().toLowerCase();
+
+        // 映射中文分类到英文标识符
+        const chineseMapping: Record<string, Task["category"]> = {
+          "重要且紧急": "urgent-important",
+          "重要紧急": "urgent-important",
+          "重要不紧急": "important-not-urgent",
+          "紧急不重要": "urgent-not-important",
+          "不重要不紧急": "not-urgent-not-important",
+          "不重要且不紧急": "not-urgent-not-important",
+        };
+
+        for (const [zh, en] of Object.entries(chineseMapping)) {
+          if (cat.includes(zh)) {
+            cat = en;
+            break;
+          }
+        }
+
+        // 解决包含关系冲突并格式化
+        const matched = [
+          "not-urgent-not-important",
+          "important-not-urgent",
+          "urgent-not-important",
+          "urgent-important",
+        ].find((c) => cat === c || cat.includes(c));
+
+        return {
+          title: item.title || "无题待办",
+          description: item.description || "",
+          notes: item.notes || "",
+          dueDate: item.dueDate || today,
+          category: (matched as Task["category"]) || "urgent-important",
+        };
+      });
     }
     return [];
   } catch (e) {

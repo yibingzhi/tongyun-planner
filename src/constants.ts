@@ -153,5 +153,6 @@ export function getDueDateCountdown(dueDateStr?: string): DueCountdown | null {
 
 /** AI 象限分类默认 System Prompt */
 export const DEFAULT_AI_CLASSIFY_PROMPT =
-  "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。只能返回 [urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important] 之一。";
+  "你是一个日程管理专家。你的任务是根据任务标题和细节描述，推断并返回适合的艾森豪威尔象限类别。请只返回以下四个英文标识符之一，不要包含任何标点符号、Markdown 格式、解释或多余的空格：\n- urgent-important\n- important-not-urgent\n- urgent-not-important\n- not-urgent-not-important";
+
 

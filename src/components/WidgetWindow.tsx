@@ -13,6 +13,7 @@ import {
   StickyNote,
   Trash2,
   Coffee,
+  Calendar,
 } from "lucide-react";
 import type { Task, StickyNote as StickyNoteType, CustomizationConfig } from "../types";
 import { SwipeCard } from "./SwipeCard";
@@ -319,14 +320,15 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                           </p>
                         )}
                         {task.dueDate && (
-                          <span className="text-[8px] text-slate-400 font-bold">
-                            📅 {task.dueDate.split("-").slice(1).join("/")}
+                          <span className="text-[8px] text-slate-400 font-bold flex items-center gap-0.5">
+                            <Calendar className="w-2 h-2 text-slate-400" />
+                            <span>{task.dueDate.split("-").slice(1).join("/")}</span>
                           </span>
                         )}
                       </div>
                       {task.notes && (
                         <p className="text-[9px] text-[#8B6E3C] truncate italic mt-0.5">
-                          📝 {task.notes}
+                          备注: {task.notes}
                         </p>
                       )}
                     </div>
@@ -383,12 +385,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           >
             <div className="flex flex-col items-center gap-3">
               <div className="text-[10px] font-extrabold text-[#A34E36] tracking-wider uppercase bg-[#FCF2F0]/80 border border-[#F5DFDB] px-3 py-1 rounded-full shadow-sm">
-                {pomodoroIsBreak ? "休息时间 🌿" : "专注时间 🎯"}
+                {pomodoroIsBreak ? "休息模式" : "专注模式"}
               </div>
 
               {pomodoroTaskTitle && (
                 <div className="text-[9px] font-bold text-slate-500 max-w-[130px] truncate text-center bg-slate-100/60 px-2.5 py-0.5 rounded border border-slate-200/50" title={pomodoroTaskTitle}>
-                  📌 {pomodoroTaskTitle}
+                  专注中: {pomodoroTaskTitle}
                 </div>
               )}
 

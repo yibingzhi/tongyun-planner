@@ -20,6 +20,7 @@ interface MatrixViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    isExplicit?: boolean;
   }) => void;
   handleToggleFavorite: (id: string) => void;
   handleTogglePin: (id: string) => void;
@@ -146,7 +147,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
             {/* Inline Quick Add Component (Context-Aware) */}
             <div className="z-10">
               <QuickAddTask
-                handleAddTask={handleAddTask}
+                handleAddTask={(data) => handleAddTask({ ...data, isExplicit: true })}
                 defaultCategory={quad.id}
                 compact={true}
                 placeholder={`添加任务到「${quad.label.split(" ").slice(1).join("")}」...按回车保存`}
