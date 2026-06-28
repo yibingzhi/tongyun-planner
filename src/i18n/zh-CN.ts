@@ -117,6 +117,7 @@ const zhCN: Translations = {
     tags: "标签",
     addTag: "添加标签",
     tagPlaceholder: "输入标签，回车确认",
+    detail: "详情",
   },
 
   listView: {
@@ -380,6 +381,9 @@ const zhCN: Translations = {
     lockTitle: "锁住挂件（半透明幽灵模式）",
     unlockTitle: "解锁挂件（恢复不透明）",
     progress: "完成进度 {count}",
+    dueCount: "{count} 到期",
+    todayPomos: "今日专注: {count} 个",
+    todayMinutes: "{min} 分钟",
   },
 
   titleBar: {
@@ -400,6 +404,8 @@ const zhCN: Translations = {
     taskCount: "待办任务：{count} 项",
     completed: "已完成：{count} 项",
     progress: "总进度：{pct}%",
+    undo: "撤销",
+    taskCompleted: "已完成",
   },
 
   notification: {

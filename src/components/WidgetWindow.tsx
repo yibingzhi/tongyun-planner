@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Unlock,
@@ -14,10 +14,12 @@ import {
   Trash2,
   Coffee,
   Calendar,
-
+  Info,
 } from "lucide-react";
-import type { Task, StickyNote as StickyNoteType, CustomizationConfig } from "../types";
+import type { Task, SubTask, PomodoroLog, StickyNote as StickyNoteType, CustomizationConfig } from "../types";
 import { SwipeCard } from "./SwipeCard";
+import { TaskDetailModal } from "./TaskDetailModal";
+import { CelebrationOverlay } from "./CelebrationOverlay";
 import { CustomSelect } from "./CustomSelect";
 import { PRIORITY_OPTIONS, PLANNER_COLORS } from "../constants";
 import { NOTE_COLORS } from "./StickyNotesView";
@@ -31,6 +33,7 @@ interface WidgetWindowProps {
   progressPercentage: number;
   isWidgetLocked: boolean;
   handleToggleWidgetLock: (forceState?: boolean) => Promise<void>;
+  pomodoroLogs: PomodoroLog[];
   handleComplete: (id: string) => void;
   handleSnooze: (id: string) => void;
   handleToggleFavorite: (id: string) => void;
@@ -81,6 +84,9 @@ interface WidgetWindowProps {
   setPomodoroTaskId: React.Dispatch<React.SetStateAction<string | null>>;
   setPomodoroTaskTitle: React.Dispatch<React.SetStateAction<string | null>>;
   handleStartFocus: (taskId: string, taskTitle: string) => void;
+  handleUndoComplete: (id: string) => void;
+  celebrationMessage: string | null;
+  onClearCelebration: () => void;
 }
 
 export const WidgetWindow: React.FC<WidgetWindowProps> = ({
@@ -88,6 +94,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   completedTasks,
   stickyNotes,
   progressPercentage,
+  pomodoroLogs,
   isWidgetLocked,
   handleToggleWidgetLock,
   handleComplete,
@@ -112,11 +119,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   syncState,
   customizationConfig,
   pomodoroTaskId,
-  pomodoroTaskTitle,
   setPomodoroTaskId,
   setPomodoroTaskTitle,
   handleStartFocus,
   handleToggleFavorite,
+  handleUndoComplete,
+  celebrationMessage,
+  onClearCelebration,
 }) => {
   const { t } = useTranslation();
   const w = t.widget;
@@ -127,6 +136,8 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
 
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [undoToast, setUndoToast] = useState<{ taskId: string; title: string } | null>(null);
   const savedSplit = localStorage.getItem("qiyun_widget_split") === "true";
   const [splitView, setSplitView] = useState(savedSplit);
   const toggleSplit = () => {
@@ -196,6 +207,87 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     setWidgetView("card");
   };
 
+  const handleToggleSubtaskWidget = (taskId: string, subtaskId: string) => {
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId);
+      if (!task) return prev;
+      const subtasks = (task.subtasks || []).map((s) =>
+        s.id === subtaskId ? { ...s, completed: !s.completed } : s
+      );
+      const nextTask = { ...task, subtasks };
+      const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
+      saveTasks(updated);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      return updated;
+    });
+  };
+
+  const handleAddSubtaskWidget = (taskId: string, title: string) => {
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId);
+      if (!task) return prev;
+      const newSub: SubTask = { id: Date.now().toString(), title, completed: false };
+      const nextTask = { ...task, subtasks: [...(task.subtasks || []), newSub] };
+      const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
+      saveTasks(updated);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      return updated;
+    });
+  };
+
+  const handleSaveNotesWidget = (id: string, notes: string) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, notes } : t));
+      saveTasks(updated);
+      syncState(id, "update", undefined, undefined, undefined, notes);
+      return updated;
+    });
+  };
+
+  const handleUpdateTagsWidget = (id: string, tags: string[]) => {
+    setTasks((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, tags } : t));
+      saveTasks(updated);
+      return updated;
+    });
+  };
+
+  const handleStartFocusFromCard = (taskId: string, taskTitle: string) => {
+    handleStartFocus(taskId, taskTitle);
+    setWidgetView("timer");
+  };
+
+  const handleCompleteWithUndo = (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    handleComplete(taskId);
+    setUndoToast({ taskId, title: task?.title || "" });
+  };
+
+  const handleUndoClick = () => {
+    if (undoToast) {
+      handleUndoComplete(undoToast.taskId);
+      setUndoToast(null);
+    }
+  };
+
+  useEffect(() => {
+    if (undoToast) {
+      const timer = setTimeout(() => setUndoToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [undoToast]);
+
+  // 到期任务系统提醒（仅首次挂载时发送）
+  useEffect(() => {
+    if (dueCount > 0 && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      const titles = dueTasks.slice(0, 3).map((t) => t.title);
+      const body = titles.length === 1
+        ? `「${titles[0]}」已到期`
+        : `「${titles[0]}」等 ${dueCount} 个任务已到期`;
+      new Notification(w.todayTodos, { body });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleMouseDownDrag = (e: React.PointerEvent) => {
     // 允许按住非交互区拖拽窗口
     if (e.button === 0) {
@@ -207,6 +299,29 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
 
   const urgentTasks = tasks.filter((t) => t.category === "urgent-important");
   const displayTask = urgentTasks[0] || tasks[0];
+  const focusTask = pomodoroTaskId ? tasks.find(t => t.id === pomodoroTaskId) || completedTasks.find(t => t.id === pomodoroTaskId) : undefined;
+
+  // 专注统计
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayLogs = pomodoroLogs.filter((log) => {
+    const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+    return logDate === todayStr && !log.taskId?.startsWith("break");
+  });
+  const todayPomodoros = todayLogs.length;
+  const todayFocusMinutes = todayLogs.reduce((acc, log) => acc + log.duration, 0);
+
+  // 到期任务提醒
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueTasks = tasks.filter((t) => {
+    if (!t.dueDate) return false;
+    const parts = t.dueDate.split("-");
+    if (parts.length !== 3) return false;
+    const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    due.setHours(0, 0, 0, 0);
+    return due.getTime() <= today.getTime();
+  });
+  const dueCount = dueTasks.length;
 
   return (
     <div
@@ -233,6 +348,14 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           >
                 {w.urgent.replace("{count}", String(urgentTasks.length))}
           </span>
+          {dueCount > 0 && (
+            <span
+              data-tauri-drag-region
+              className="text-[8px] bg-[#FBECE5] text-[#A64424] border border-[#F6DCD2] px-2 py-0.5 rounded-full font-bold ml-1"
+            >
+              {w.dueCount.replace("{count}", String(dueCount))}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {isWidgetLocked && (
@@ -355,7 +478,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                     className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-[#FAF8F5]/65 border border-[#EFEBE4]/60 hover:bg-[#FAF8F5] hover:shadow-sm transition-all group"
                   >
                     <button
-                      onClick={() => handleComplete(task.id)}
+                      onClick={() => handleCompleteWithUndo(task.id)}
                       className="w-4 h-4 rounded-full border border-slate-300 flex-shrink-0 hover:border-[#4D7C5D] hover:bg-[#F0F5F1] transition-all flex items-center justify-center group/btn cursor-pointer"
                     >
                       <Check className="w-2.5 h-2.5 text-[#4D7C5D] opacity-0 group-hover/btn:opacity-100 transition-opacity" />
@@ -439,9 +562,27 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 {pomodoroIsBreak ? s.breakMode : s.focusMode}
               </div>
 
-              {pomodoroTaskTitle && (
-                <div className="text-[9px] font-bold text-slate-500 max-w-[130px] truncate text-center bg-slate-100/60 px-2.5 py-0.5 rounded border border-slate-200/50" title={pomodoroTaskTitle}>
-                  {s.focusing}: {pomodoroTaskTitle}
+              {/* 当前专注任务卡片 */}
+              {focusTask && (
+                <div className="w-full max-w-[180px] bg-white/70 border border-[#EFEBE4] rounded-xl px-3 py-2 shadow-sm flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold text-[#2D323A] truncate leading-tight">
+                      {focusTask.title}
+                    </p>
+                    {focusTask.description && (
+                      <p className="text-[8px] text-slate-500 truncate mt-0.5 font-medium">
+                        {focusTask.description}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setDetailTask(focusTask)}
+                    className="flex-shrink-0 px-1.5 py-0.5 rounded border border-[#EFEBE4] bg-white hover:bg-[#EEEAF5] hover:text-[#7C5D9E] text-slate-500 font-extrabold text-[8px] cursor-pointer transition-colors"
+                    title={tc.detail}
+                  >
+                    <Info className="w-2.5 h-2.5 inline mr-0.5" />
+                    {tc.detail}
+                  </button>
                 </div>
               )}
 
@@ -640,6 +781,16 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* 今日专注统计 */}
+              <div className="flex items-center gap-3 text-[8px] text-slate-500 font-extrabold mt-1">
+                <span className="bg-[#F0F5F1]/80 border border-[#DEEAE2] px-2 py-0.5 rounded-full">
+                  {w.todayPomos.replace("{count}", String(todayPomodoros))}
+                </span>
+                <span className="bg-[#FAF5ED]/80 border border-[#EFE5D3] px-2 py-0.5 rounded-full">
+                  {w.todayMinutes.replace("{min}", String(todayFocusMinutes))}
+                </span>
+              </div>
             </div>
           </div>
         ) : widgetView === "notes" ? (
@@ -759,13 +910,14 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
             <SwipeCard
               key={displayTask.id}
               task={displayTask}
-              onComplete={handleComplete}
+              onComplete={handleCompleteWithUndo}
               onSnooze={handleSnooze}
               progressPercentage={progressPercentage}
               qColors={customizationConfig?.qColors}
               cardBackground={customizationConfig?.cardBackground}
-              onStartFocus={handleStartFocus}
+              onStartFocus={handleStartFocusFromCard}
               onToggleFavorite={handleToggleFavorite}
+              onTaskClick={setDetailTask}
             />
           </div>
         ) : (
@@ -900,6 +1052,38 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           {w.progressPercent.replace("{pct}", String(progressPercentage))}
         </div>
       </div>
+      {detailTask && (
+        <TaskDetailModal
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onToggleSubtask={handleToggleSubtaskWidget}
+          onAddSubtask={handleAddSubtaskWidget}
+          onSaveNotes={handleSaveNotesWidget}
+          onUpdateTags={handleUpdateTagsWidget}
+        />
+      )}
+
+      {celebrationMessage && (
+        <CelebrationOverlay message={celebrationMessage} onDone={onClearCelebration} />
+      )}
+
+      {undoToast && (
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute bottom-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white/95 border border-[#EFEBE4] rounded-xl px-3 py-2 shadow-lg animate-fade-in-up text-[10px]"
+        >
+          <span className="text-slate-600 font-medium truncate max-w-[120px]">
+            {undoToast.title}
+          </span>
+          <span className="text-slate-400">{cm.taskCompleted}</span>
+          <button
+            onClick={handleUndoClick}
+            className="px-2 py-0.5 rounded-lg bg-[#F0F5F1] hover:bg-[#C4D7B2] text-[#4D7C5D] font-extrabold cursor-pointer transition-colors"
+          >
+            {cm.undo}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

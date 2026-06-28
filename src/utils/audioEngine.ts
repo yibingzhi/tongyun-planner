@@ -333,7 +333,7 @@ export class AudioEngine {
         const gain1 = ctx.createGain();
         osc1.type = "sine";
         osc1.frequency.setValueAtTime(784.00, now);
-        gain1.gain.setValueAtTime(0.1, now);
+        gain1.gain.setValueAtTime(0.4, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
         osc1.connect(gain1);
         gain1.connect(ctx.destination);
@@ -344,7 +344,7 @@ export class AudioEngine {
         const gain2 = ctx.createGain();
         osc2.type = "sine";
         osc2.frequency.setValueAtTime(622.25, now + 0.18);
-        gain2.gain.setValueAtTime(0.12, now + 0.18);
+        gain2.gain.setValueAtTime(0.45, now + 0.18);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc2.connect(gain2);
         gain2.connect(ctx.destination);
@@ -360,7 +360,7 @@ export class AudioEngine {
         osc.frequency.exponentialRampToValueAtTime(720, now + 0.4);
 
         gain.gain.setValueAtTime(0.01, now);
-        gain.gain.linearRampToValueAtTime(0.08, now + 0.08);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
 
         const filter = ctx.createBiquadFilter();
@@ -383,7 +383,7 @@ export class AudioEngine {
         osc.frequency.setValueAtTime(523.25, now);
         osc.frequency.setValueAtTime(659.25, now + 0.15);
 
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.45, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
 
         osc.connect(gain);
@@ -417,7 +417,7 @@ export class AudioEngine {
 
       const gainNode = ctx.createGain();
       gainNode.gain.setValueAtTime(0.001, now);
-      gainNode.gain.linearRampToValueAtTime(0.04, now + 0.03);
+      gainNode.gain.linearRampToValueAtTime(0.15, now + 0.03);
       gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
       noise.connect(filter);
@@ -441,7 +441,7 @@ export class AudioEngine {
       osc1.type = "sine";
       osc1.frequency.setValueAtTime(1600, now);
       osc1.frequency.exponentialRampToValueAtTime(400, now + 0.03);
-      gain1.gain.setValueAtTime(0.05, now);
+      gain1.gain.setValueAtTime(0.2, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
@@ -453,7 +453,7 @@ export class AudioEngine {
       osc2.type = "triangle";
       osc2.frequency.setValueAtTime(600, now + 0.03);
       osc2.frequency.exponentialRampToValueAtTime(150, now + 0.08);
-      gain2.gain.setValueAtTime(0.08, now + 0.03);
+      gain2.gain.setValueAtTime(0.25, now + 0.03);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
@@ -475,7 +475,7 @@ export class AudioEngine {
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.exponentialRampToValueAtTime(1300, now + 0.08);
 
-      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.setValueAtTime(0.2, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
       osc.connect(gain);

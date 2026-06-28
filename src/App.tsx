@@ -321,6 +321,13 @@ function AppInner() {
               });
               syncState(newLog.id, "add_pomodoro_log", JSON.stringify(newLog));
 
+              // 专注结束庆祝
+              setCelebrationMessage(
+                locale === "zh-CN"
+                  ? `专注一关完成！继续加油 💪`
+                  : `Focus session done! Keep going 💪`
+              );
+
               setPomodoroTaskId(null);
               setPomodoroTaskTitle(null);
 
@@ -346,7 +353,8 @@ function AppInner() {
     pomodoroTaskTitle,
     windowLabel,
     syncPomodoro,
-    syncState
+    syncState,
+    locale,
   ]);
 
   // 组件卸载时释放音视频资源
@@ -1406,6 +1414,7 @@ function AppInner() {
         completedTasks={completedTasks}
         stickyNotes={stickyNotes}
         progressPercentage={progressPercentage}
+        pomodoroLogs={pomodoroLogs}
         isWidgetLocked={isWidgetLocked}
         handleToggleWidgetLock={handleToggleWidgetLock}
         handleComplete={handleComplete}
@@ -1435,6 +1444,9 @@ function AppInner() {
         setPomodoroTaskTitle={setPomodoroTaskTitle}
         handleStartFocus={handleStartFocus}
         handleToggleFavorite={handleToggleFavorite}
+        celebrationMessage={celebrationMessage}
+        onClearCelebration={() => setCelebrationMessage(null)}
+        handleUndoComplete={handleUndoComplete}
       />
     );
   }

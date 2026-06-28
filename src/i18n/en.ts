@@ -117,6 +117,7 @@ const en: Translations = {
     tags: "Tags",
     addTag: "Add tag",
     tagPlaceholder: "Type tag, press Enter",
+    detail: "Details",
   },
 
   listView: {
@@ -380,6 +381,9 @@ const en: Translations = {
     lockTitle: "Lock widget (ghost mode)",
     unlockTitle: "Unlock widget",
     progress: "Progress {count}",
+    dueCount: "{count} due",
+    todayPomos: "Focus: {count} today",
+    todayMinutes: "{min} min",
   },
 
   titleBar: {
@@ -400,6 +404,8 @@ const en: Translations = {
     taskCount: "Tasks: {count}",
     completed: "Completed: {count}",
     progress: "Progress: {pct}%",
+    undo: "Undo",
+    taskCompleted: "Done",
   },
 
   notification: {

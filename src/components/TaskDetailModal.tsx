@@ -31,6 +31,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
       onClick={onClose}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <div
         className="bg-white rounded-2xl shadow-xl border border-[#EFEBE4] w-full max-w-md mx-4 max-h-[80vh] flex flex-col animate-fade-in-up"
