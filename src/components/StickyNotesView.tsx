@@ -1,5 +1,5 @@
-import React, { memo } from "react";
-import { StickyNote, Plus, Trash2, Pin } from "lucide-react";
+import React, { memo, useState } from "react";
+import { StickyNote, Plus, Trash2, Pin, Search } from "lucide-react";
 import type { StickyNote as StickyNoteType } from "../types";
 import { StickyPin } from "./StickyPin";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -68,6 +68,10 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
 }) => {
   const { t } = useTranslation();
   const sn = t.stickyNotes;
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredNotes = stickyNotes.filter((n) =>
+    n.text.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   return (
     <div className="flex flex-col gap-4 flex-grow z-10 relative select-none">
       <div className="flex justify-between items-center bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm backdrop-blur-md">
@@ -89,9 +93,22 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
         </button>
       </div>
 
-      {stickyNotes.length > 0 ? (
+      {stickyNotes.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={sn.search}
+            className="w-full bg-white/60 border border-[#EFEBE4] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-700 placeholder-slate-400/60 focus:outline-none focus:border-[#C4B5A0] transition-colors"
+          />
+        </div>
+      )}
+
+      {filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto max-h-[460px] pr-1 pb-4 custom-scrollbar">
-          {stickyNotes.map((note) => {
+          {filteredNotes.map((note) => {
             const theme = NOTE_COLORS[note.color as keyof typeof NOTE_COLORS] || NOTE_COLORS.tea;
             return (
               <div
@@ -101,7 +118,6 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
               >
                 <StickyPin type={pinType || "pin"} />
 
-                {/* 便签文本编辑 */}
                 <textarea
                   value={note.text}
                   onChange={(e) => handleEditNoteText(note.id, e.target.value)}
@@ -110,9 +126,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                   style={{ height: "100px" }}
                 />
 
-                {/* 悬停工具条 */}
                 <div className="flex items-center justify-between pt-3 border-t border-dashed border-slate-200/50 mt-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  {/* 颜色拾取 presets */}
                   <div className="flex items-center gap-1.5">
                     {Object.entries(NOTE_COLORS).map(([colorKey, t]) => (
                       <button
@@ -126,7 +140,6 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                     ))}
                   </div>
 
-                  {/* 快捷操作组 */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => onPinNoteToDesktop && onPinNoteToDesktop(note.id)}
@@ -147,6 +160,11 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
               </div>
             );
           })}
+        </div>
+      ) : stickyNotes.length > 0 ? (
+        <div className="text-center py-16 bg-white/40 border border-[#EFEBE4] rounded-2xl backdrop-blur-sm flex flex-col items-center gap-3">
+          <Search className="w-10 h-10 text-slate-300" />
+          <p className="text-xs text-slate-400 font-bold">{sn.searchEmpty}</p>
         </div>
       ) : (
         <div className="text-center py-20 bg-white/40 border border-[#EFEBE4] rounded-2xl backdrop-blur-sm flex flex-col items-center gap-3">

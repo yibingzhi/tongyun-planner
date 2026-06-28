@@ -14,6 +14,7 @@ import {
   Trash2,
   Coffee,
   Calendar,
+
 } from "lucide-react";
 import type { Task, StickyNote as StickyNoteType, CustomizationConfig } from "../types";
 import { SwipeCard } from "./SwipeCard";
@@ -126,6 +127,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
 
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
+  const savedSplit = localStorage.getItem("qiyun_widget_split") === "true";
+  const [splitView, setSplitView] = useState(savedSplit);
+  const toggleSplit = () => {
+    const next = !splitView;
+    setSplitView(next);
+    localStorage.setItem("qiyun_widget_split", String(next));
+  };
 
   // 挂件内快捷新建任务的表单状态
   const [newTitle, setNewTitle] = useState("");
@@ -185,9 +193,9 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   return (
     <div
       onPointerDown={handleMouseDownDrag}
-      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-opacity duration-500 ${
+      className={`w-full h-full p-4 flex flex-col justify-between items-center rounded-2xl glassmorphism-dark text-[#2D323A] border border-[#EFEBE4] select-none overflow-hidden glow-card cursor-move transition-all duration-500 ${
         isWidgetLocked 
-          ? "opacity-20 hover:opacity-60 theme-glass-solid" 
+          ? "opacity-45 hover:opacity-90 theme-glass-solid ring-1 ring-[#8B6E3C]/20" 
           : `theme-glass-${customizationConfig?.interfaceGlass || "matte"}`
       } theme-font-${customizationConfig?.fontFamily || "sans"}`}
     >
@@ -208,7 +216,24 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 {w.urgent.replace("{count}", String(urgentTasks.length))}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          {isWidgetLocked && (
+            <span className="text-[7px] font-extrabold uppercase tracking-wider text-[#8B6E3C] bg-[#FAF5ED]/80 px-1.5 py-0.5 rounded border border-[#EFE5D3] animate-pulse">
+              锁定
+            </span>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleSplit(); }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`p-1 rounded-lg transition-all cursor-pointer text-[9px] font-extrabold ${
+              splitView
+                ? "bg-[#F0F5F1]/80 text-[#4D7C5D] border border-[#DEEAE2]"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            }`}
+            title="分栏模式"
+          >
+            ⊞
+          </button>
           <button
             onClick={() => handleToggleWidgetLock()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -225,7 +250,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       </div>
 
       {/* 挂件内容区 */}
-      <div className="flex-grow w-full flex flex-col min-h-0 overflow-hidden pointer-events-auto">
+      <div className={`flex-grow w-full flex flex-col min-h-0 overflow-hidden pointer-events-auto ${splitView ? "gap-1" : ""}`}>
         {widgetView === "add" ? (
           /* 挂件内快捷创建任务表单 */
           <form
@@ -727,6 +752,35 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           </div>
         )}
       </div>
+
+      {/* 分栏模式下底部辅助面板 */}
+      {splitView && widgetView !== "add" && (
+        <div onPointerDown={(e) => e.stopPropagation()} className="w-full pt-1.5 border-t border-dashed border-slate-200/60 flex items-center justify-between text-[8px] text-slate-500 font-bold">
+          {widgetView === "notes" ? (
+            <div className="flex items-center gap-2">
+              <span>{w.taskCount.replace("{count}", String(tasks.length))}</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300" />
+              <span className="text-[#4D7C5D]">{progressPercentage}%</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <Clock className="w-2.5 h-2.5 text-slate-400" />
+                <span>
+                  {Math.floor(pomodoroTimeLeft / 60).toString().padStart(2, "0")}:
+                  {(pomodoroTimeLeft % 60).toString().padStart(2, "0")}
+                  <span className="text-slate-400 ml-1">/ {pomodoroIsBreak ? s.breakMode : s.focusMode}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400">{w.taskCount.replace("{count}", String(tasks.length))}</span>
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                <span className="text-slate-500">{progressPercentage}%</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* 底部 Tab 导航 */}
       <div className="w-full pt-2 border-t border-slate-200 flex items-center justify-between pointer-events-auto">

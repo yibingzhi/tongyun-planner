@@ -174,6 +174,8 @@ const en: Translations = {
   stickyNotes: {
     empty: "No sticky notes yet. Click below to add one ✨",
     add: "Add Note",
+    search: "Search notes...",
+    searchEmpty: "No matching notes",
   },
 
   analytics: {

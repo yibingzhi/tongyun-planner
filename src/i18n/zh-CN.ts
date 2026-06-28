@@ -174,6 +174,8 @@ const zhCN: Translations = {
   stickyNotes: {
     empty: "还没有便签，点击下方按钮添加一张吧 ✨",
     add: "添加便签",
+    search: "搜索便签...",
+    searchEmpty: "没有匹配的便签",
   },
 
   analytics: {
