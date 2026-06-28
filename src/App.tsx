@@ -101,6 +101,7 @@ function AppInner() {
   // 列表筛选与搜索状态
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
   // AI 智能收集箱状态
   const [aiInputText, setAiInputText] = useState("");
   const [aiInputLoading, setAiInputLoading] = useState(false);
@@ -993,8 +994,9 @@ function AppInner() {
     dueDate: string;
     isExplicit?: boolean;
     repeat?: RepeatType;
+    tags?: string[];
   }) => {
-    const { title, description, notes, category, dueDate, repeat } = taskData;
+    const { title, description, notes, category, dueDate, repeat, tags } = taskData;
     const taskId = Date.now().toString();
     const initialCategory = category;
 
@@ -1006,6 +1008,7 @@ function AppInner() {
       category: initialCategory,
       dueDate: dueDate || undefined,
       repeat: repeat || undefined,
+      tags: tags || undefined,
     };
 
     setTasks((prev) => {
@@ -1185,6 +1188,10 @@ function AppInner() {
   const handleSaveNotes = useCallback((id: string, notes: string) => {
     handleEditTask(id, { notes: notes || undefined });
     setExpandedNoteId(null);
+  }, [handleEditTask]);
+
+  const handleUpdateTags = useCallback((id: string, tags: string[]) => {
+    handleEditTask(id, { tags: tags.length > 0 ? tags : undefined });
   }, [handleEditTask]);
 
   // Auto-dismiss AI messages after 5 seconds
@@ -1762,6 +1769,8 @@ function AppInner() {
               setSearchQuery={setSearchQuery}
               categoryFilter={categoryFilter}
               setCategoryFilter={setCategoryFilter}
+              tagFilter={tagFilter}
+              setTagFilter={setTagFilter}
               handleComplete={handleComplete}
               handleDeleteTask={handleDeleteTask}
               expandedNoteId={expandedNoteId}
@@ -1848,6 +1857,7 @@ function AppInner() {
               onToggleSubtask={handleToggleSubtask}
               onAddSubtask={handleAddSubtask}
               onSaveNotes={handleSaveNotes}
+              onUpdateTags={handleUpdateTags}
             />
           );
         })()}

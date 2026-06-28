@@ -13,6 +13,7 @@ interface QuickAddTaskProps {
     category: Task["category"];
     dueDate: string;
     repeat?: RepeatType;
+    tags?: string[];
   }) => void;
   defaultDueDate?: string;
   defaultCategory?: Task["category"];
@@ -36,6 +37,8 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   const [dueDate, setDueDate] = useState(() => defaultDueDate || new Date().toISOString().split("T")[0]);
   const [category, setCategory] = useState<Task["category"]>(defaultCategory);
   const [repeat, setRepeat] = useState<RepeatType>("none");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   
   // Track focus to expand extra options (date, priority, etc.) in non-compact mode
   const [isFocused, setIsFocused] = useState(false);
@@ -78,12 +81,15 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
       category,
       dueDate,
       repeat: repeat !== "none" ? repeat : undefined,
+      tags: tags.length > 0 ? tags : undefined,
     });
 
     // Reset fields except date, category, and repeat for ease of adding multiple
     setTitle("");
     setDescription("");
     setNotes("");
+    setTags([]);
+    setTagInput("");
     setIsFocused(false);
   };
 
@@ -164,6 +170,32 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
               />
             </div>
             
+            {/* Tags */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tags.map((tag, i) => (
+                <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#F0F5F1] border border-[#DEEAE2] text-[#4D7C5D] font-bold flex items-center gap-1">
+                  {tag}
+                  <button type="button" onClick={() => setTags(tags.filter((_, j) => j !== i))} className="cursor-pointer hover:text-red-500">×</button>
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder={tc.tagPlaceholder}
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && tagInput.trim()) {
+                    e.preventDefault();
+                    if (!tags.includes(tagInput.trim())) {
+                      setTags([...tags, tagInput.trim()]);
+                    }
+                    setTagInput("");
+                  }
+                }}
+                className="bg-[#FAF8F5] border border-[#EFEBE4]/50 px-2 py-1 rounded-xl text-[10px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2] transition-colors w-28"
+              />
+            </div>
+
             <div className="flex items-center justify-between gap-3 pt-1">
               <div className="flex items-center gap-3">
                 {/* Due Date Input */}

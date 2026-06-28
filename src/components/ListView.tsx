@@ -12,6 +12,8 @@ interface ListViewProps {
   setSearchQuery: (q: string) => void;
   categoryFilter: string;
   setCategoryFilter: (c: string) => void;
+  tagFilter: string;
+  setTagFilter: (t: string) => void;
   handleComplete: (id: string) => void;
   handleDeleteTask: (id: string) => void;
   expandedNoteId: string | null;
@@ -39,6 +41,8 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
   setSearchQuery,
   categoryFilter,
   setCategoryFilter,
+  tagFilter,
+  setTagFilter,
   handleComplete,
   handleDeleteTask,
   expandedNoteId,
@@ -68,9 +72,10 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
         (task.notes || "").toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesCategory = categoryFilter === "all" || task.category === categoryFilter;
+      const matchesTag = tagFilter === "all" || (task.tags || []).includes(tagFilter);
       const matchesFavorite = !showFavoritesOnly || task.isFavorite;
       
-      return matchesSearch && matchesCategory && matchesFavorite;
+      return matchesSearch && matchesCategory && matchesTag && matchesFavorite;
     })
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
@@ -98,6 +103,16 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
           onChange={setCategoryFilter}
           options={FILTER_OPTIONS}
           className="w-48"
+        />
+        {/* Tag Filter */}
+        <CustomSelect
+          value={tagFilter}
+          onChange={setTagFilter}
+          options={(() => {
+            const allTags = [...new Set(tasks.flatMap((t) => t.tags || []))];
+            return [{ value: "all", label: lv.allTags }, ...allTags.map((t) => ({ value: t, label: t }))];
+          })()}
+          className="w-32"
         />
         {/* Star Filter Button */}
         <button
@@ -202,6 +217,11 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                           </span>
                         )}
                         
+                        {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
+                          <span key={tag} className="text-[8.5px] px-1.5 py-0.5 rounded-md bg-[#F0F5F1] border border-[#DEEAE2] text-[#4D7C5D] font-bold flex-shrink-0">
+                            {tag}
+                          </span>
+                        ))}
                         {task.notes && (
                           <span className="text-[#8B6E3C] italic font-semibold truncate max-w-[150px] flex-shrink-0">
                             {t.taskCard.notes}: {task.notes}
@@ -235,11 +255,10 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
 
                     <button
                       onClick={() => handleStartFocus(task.id, task.title)}
-                      className="text-[10px] px-2.5 py-1 rounded-lg border border-[#EFEBE4] hover:bg-[#F0F5F1] hover:text-[#4D7C5D] hover:border-[#C4D7B2] bg-white text-slate-500 font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                      className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
                       title={lv.startFocus}
                     >
-                      <Clock className="w-2.5 h-2.5" />
-                      {lv.focus}
+                      <Clock className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => {

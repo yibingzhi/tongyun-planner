@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat } from "lucide-react";
+import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag } from "lucide-react";
 import type { Task } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
 
@@ -9,6 +9,7 @@ interface TaskDetailModalProps {
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
   onAddSubtask: (taskId: string, title: string) => void;
   onSaveNotes: (taskId: string, notes: string) => void;
+  onUpdateTags: (taskId: string, tags: string[]) => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
@@ -17,11 +18,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   onToggleSubtask,
   onAddSubtask,
   onSaveNotes,
+  onUpdateTags,
 }) => {
   const { t } = useTranslation();
   const tc = t.taskCard;
   const [notes, setNotes] = useState(task.notes || "");
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [tags, setTags] = useState<string[]>(task.tags || []);
+  const [tagInput, setTagInput] = useState("");
 
   return (
     <div
@@ -53,6 +57,46 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 custom-scrollbar">
+          {/* Tags */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Tag className="w-3 h-3 text-slate-500" />
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{tc.tags}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tags.map((tag, i) => (
+                <span key={i} className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#F0F5F1] border border-[#DEEAE2] text-[#4D7C5D] font-bold flex items-center gap-1">
+                  {tag}
+                  <button type="button" onClick={() => {
+                    const next = tags.filter((_, j) => j !== i);
+                    setTags(next);
+                    onUpdateTags(task.id, next);
+                  }} className="cursor-pointer hover:text-red-500">×</button>
+                </span>
+              ))}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+                    const next = [...tags, tagInput.trim()];
+                    setTags(next);
+                    onUpdateTags(task.id, next);
+                  }
+                  setTagInput("");
+                }}
+                className="flex items-center bg-[#FAF8F5] border border-[#EFEBE4] px-2 rounded-xl"
+              >
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder={tc.tagPlaceholder}
+                  className="w-20 bg-transparent border-none text-[10px] text-slate-700 placeholder-slate-400 focus:outline-none font-medium py-1"
+                />
+              </form>
+            </div>
+          </div>
+
           {/* Description */}
           {task.description && (
             <p className="text-xs text-slate-600 leading-relaxed">{task.description}</p>

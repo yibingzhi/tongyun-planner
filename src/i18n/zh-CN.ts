@@ -114,6 +114,9 @@ const zhCN: Translations = {
     subtasks: "子任务",
     addSubtask: "添加子任务...",
     subtaskPlaceholder: "输入子任务...",
+    tags: "标签",
+    addTag: "添加标签",
+    tagPlaceholder: "输入标签，回车确认",
   },
 
   listView: {
@@ -142,6 +145,8 @@ const zhCN: Translations = {
     subtasks: "子任务",
     addSubtask: "添加子任务...",
     subtaskPlaceholder: "输入子任务...",
+    tags: "标签",
+    allTags: "所有标签",
   },
 
   calendarView: {

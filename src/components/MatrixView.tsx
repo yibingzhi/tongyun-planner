@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Heart, Calendar, Clock, Layers3, Maximize2, Minimize2, Repeat, ListTodo } from "lucide-react";
+import { Search, Heart, Calendar, Clock, Check, Layers3, Maximize2, Minimize2, Repeat, ListTodo } from "lucide-react";
 import type { Task, TaskCategory } from "../types";
 import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
 import { QuickAddTask } from "./QuickAddTask";
@@ -257,6 +257,11 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                               <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
                             </span>
                           )}
+                          {task.tags && task.tags.length > 0 && task.tags.map((tag) => (
+                            <span key={tag} className="text-[8.5px] px-1.5 py-0.5 rounded-md bg-[#F0F5F1] border border-[#DEEAE2] text-[#4D7C5D] font-bold flex-shrink-0">
+                              {tag}
+                            </span>
+                          ))}
                         </div>
                       </div>
                       
@@ -284,17 +289,18 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
 
                         <button
                           onClick={() => handleStartFocus(task.id, task.title)}
-                          className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-xs`}
+                          className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
                           title={m.startFocus}
                         >
-                          {m.focus}
+                          <Clock className="w-3.5 h-3.5" />
                         </button>
 
                         <button
                           onClick={() => handleComplete(task.id)}
-                          className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer shadow-xs`}
+                          className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
+                          title={m.complete}
                         >
-                          {m.complete}
+                          <Check className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

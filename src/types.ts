@@ -23,6 +23,7 @@ export interface Task {
   isPinned?: boolean;
   repeat?: RepeatType;
   subtasks?: SubTask[];
+  tags?: string[];
 }
 
 export interface PomodoroLog {

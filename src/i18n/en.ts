@@ -114,6 +114,9 @@ const en: Translations = {
     subtasks: "Subtasks",
     addSubtask: "Add subtask...",
     subtaskPlaceholder: "Enter subtask...",
+    tags: "Tags",
+    addTag: "Add tag",
+    tagPlaceholder: "Type tag, press Enter",
   },
 
   listView: {
@@ -142,6 +145,8 @@ const en: Translations = {
     subtasks: "Subtasks",
     addSubtask: "Add subtask...",
     subtaskPlaceholder: "Enter subtask...",
+    tags: "Tags",
+    allTags: "All Tags",
   },
 
   calendarView: {
