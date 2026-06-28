@@ -77,6 +77,9 @@ export interface CustomizationConfig {
   // Weather
   weatherCity?: string;
 
+  // Theme preference
+  darkMode?: "light" | "dark" | "auto";
+
   // AI Agent settings
   aiProvider?: "openai" | "anthropic";
   aiApiKey?: string;

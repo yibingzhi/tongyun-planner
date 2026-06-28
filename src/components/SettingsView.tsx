@@ -243,6 +243,35 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 className="w-full px-3 py-2 rounded-xl border border-[#EFEBE4] bg-white/80 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C4D7B2] focus:border-transparent transition-all"
               />
             </div>
+            {/* 0.2 主题显示模式 */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                {s.themeMode || "🌓 主题显示模式"}
+              </h4>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "light", label: "☀️ " + (s.themeLight || "浅色模式") },
+                  { id: "dark", label: "🌙 " + (s.themeDark || "深色模式") },
+                  { id: "auto", label: "🖥️ " + (s.themeAuto || "跟随系统") },
+                ].map((mode) => {
+                  const isSelected = (config.darkMode || "light") === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      onClick={() => handleStyleChange("darkMode", mode.id as any)}
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                        isSelected
+                          ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
+                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* 0.5 城市 */}
             <div className="space-y-2">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">

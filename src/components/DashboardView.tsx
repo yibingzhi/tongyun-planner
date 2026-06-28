@@ -1,23 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock } from "lucide-react";
-import type { Task, RepeatType } from "../types";
-import { QuickAddTask } from "./QuickAddTask";
-import type { CustomizationConfig } from "../types";
+import type { Task, CustomizationConfig } from "../types";
 
 interface DashboardViewProps {
   tasks: Task[];
   completedTasks: Task[];
   handleComplete: (id: string) => void;
-  handleAddTask: (taskData: {
-    title: string;
-    description: string;
-    notes: string;
-    category: Task["category"];
-    dueDate: string;
-    repeat?: RepeatType;
-    tags?: string[];
-  }) => void;
   onTaskClick: (task: Task) => void;
   config: CustomizationConfig;
 }
@@ -26,7 +15,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
   completedTasks,
   handleComplete,
-  handleAddTask,
   onTaskClick,
   config,
 }) => {
@@ -336,15 +324,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Quick Add */}
-      <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] shadow-2xs hover:shadow-xs p-3 backdrop-blur-xs transition-shadow duration-300">
-        <QuickAddTask
-          handleAddTask={handleAddTask}
-          defaultDueDate={today}
-          placeholder={tasks.length > 0 ? "再添加一个任务..." : "今天的第一件事是什么？"}
-          compact={false}
-        />
-      </div>
+
 
       {/* Today's Tasks */}
       <div className="rounded-3xl bg-white/70 border border-[#EFEBE4] shadow-2xs backdrop-blur-xs overflow-hidden">

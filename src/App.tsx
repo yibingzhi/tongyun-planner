@@ -73,6 +73,7 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   sunsetEndHour: 6,
   sunsetWarmth: 50,
   weatherCity: "",
+  darkMode: "light",
   aiApiKey: "",
   aiEndpoint: "https://api.openai.com/v1",
   aiModel: "gpt-4o",
@@ -401,6 +402,41 @@ function AppInner() {
     return () => clearInterval(interval);
   }, [customizationConfig.enableSunsetMode, customizationConfig.sunsetStartHour, customizationConfig.sunsetEndHour, customizationConfig.sunsetWarmth]);
 
+  // 主题显示模式 (Dark Mode) 控制 Effect
+  useEffect(() => {
+    const mode = customizationConfig.darkMode || "light";
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const updateTheme = () => {
+      if (mode === "dark") {
+        document.documentElement.classList.add("dark");
+      } else if (mode === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        // "auto" 跟随系统
+        if (mediaQuery.matches) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+    };
+
+    updateTheme();
+
+    if (mode === "auto") {
+      // 监听系统主题变化
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener("change", updateTheme);
+        return () => mediaQuery.removeEventListener("change", updateTheme);
+      } else {
+        // 兼容老版本浏览器/Tauri内置WebView可能不支持addEventListener的形式
+        mediaQuery.addListener(updateTheme);
+        return () => mediaQuery.removeListener(updateTheme);
+      }
+    }
+  }, [customizationConfig.darkMode]);
+
   // WebDAV 自动备份防抖触发 Effect
   useEffect(() => {
     // 首次加载时不触发备份
@@ -457,7 +493,12 @@ function AppInner() {
   }, [tasks, completedTasks, stickyNotes, customizationConfig]);
 
   useEffect(() => {
-    const label = getCurrentWebviewWindow().label;
+    let label = "main";
+    try {
+      label = getCurrentWebviewWindow().label;
+    } catch (e) {
+      // Running in standard browser
+    }
     setWindowLabel(label);
     if (label !== "main") {
       document.documentElement.classList.add("transparent-window");
@@ -1771,7 +1812,6 @@ function AppInner() {
               tasks={tasks}
               completedTasks={completedTasks}
               handleComplete={handleComplete}
-              handleAddTask={handleAddTask}
               onTaskClick={handleTaskClick}
               config={customizationConfig}
             />

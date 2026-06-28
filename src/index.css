@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 /* 允许背景透明，这是实现无边框挂件磨砂效果的前提 */
 html, body, #root {
@@ -569,3 +570,293 @@ html.transparent-window body {
 .scrollable-card::-webkit-scrollbar-thumb:hover {
   background: rgba(184, 172, 158, 0.4);
 }
+
+/* ==========================================================================
+   🌓 暗黑模式全方位适配与质感重塑 (Premium Dark Mode Overrides)
+   ========================================================================== */
+
+/* 1. 基础容器与文本 */
+.dark html,
+.dark body,
+.dark #root {
+  background-color: #121214 !important;
+  color: #E3E4E6 !important;
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #E3E4E6 !important;
+}
+
+/* 2. 主工作区与侧边栏 */
+.dark main {
+  background-color: transparent !important;
+}
+
+.dark aside {
+  background-color: rgba(22, 23, 26, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark aside .border-\[\#EFEBE4\],
+.dark main .border-\[\#EFEBE4\],
+.dark main .border-b,
+.dark main .border-t,
+.dark main .border-r,
+.dark main .border-l,
+.dark .border-slate-100,
+.dark .border-slate-200\/60,
+.dark .border-\[\#EFEBE4\]\/50,
+.dark .border-\[\#EFEBE4\]\/60 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+/* 3. 毛玻璃质感适配 (Matte/Light Dark Glassmorphism) */
+.dark .glassmorphism {
+  background: rgba(30, 31, 35, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.55), 
+              0 1px 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.dark .glassmorphism-dark {
+  background: rgba(26, 27, 30, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.6), 
+              0 1px 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+.dark .theme-glass-solid aside,
+.dark .theme-glass-solid main,
+.dark .theme-glass-solid .bg-white\/70,
+.dark .theme-glass-solid .bg-white\/80 {
+  background-color: #1a1b1e !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 4. 纸张底面纹理变暗 */
+.dark .bg-grid-pattern {
+  background-color: #141517 !important;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px) !important;
+}
+
+.dark .bg-lined-pattern {
+  background-color: #141517 !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px) !important;
+}
+
+.dark .bg-doodle-pattern {
+  background-color: #141517 !important;
+}
+
+/* 暗色晕染水彩背景 */
+.dark .bg-watercolor-pattern {
+  background: radial-gradient(circle at 15% 20%, rgba(135, 110, 155, 0.12) 0%, transparent 60%),
+              radial-gradient(circle at 85% 80%, rgba(70, 95, 80, 0.12) 0%, transparent 60%),
+              radial-gradient(circle at 50% 50%, rgba(35, 45, 55, 0.25) 0%, transparent 70%),
+              #121214 !important;
+}
+
+/* 5. 各种面板、卡片背景及文本 */
+.dark .bg-white,
+.dark .bg-white\/80,
+.dark .bg-white\/70,
+.dark .bg-white\/60,
+.dark .bg-white\/50,
+.dark .bg-\[\#FAF8F5\],
+.dark .bg-\[\#FAF8F5\]\/80,
+.dark .bg-\[\#FAF8F5\]\/60 {
+  background-color: rgba(28, 29, 33, 0.8) !important;
+}
+
+/* 卡片浮起与背景 */
+.dark .hover\:bg-\[\#FAF8F5\]:hover,
+.dark .hover\:bg-slate-100:hover,
+.dark .group:hover {
+  /* 当作为代办列表项被 hover 时 */
+}
+.dark .hover\:bg-\[\#FAF8F5\]:hover {
+  background-color: rgba(45, 47, 52, 0.8) !important;
+}
+
+/* 强行纠正深色模式下偏淡偏灰文字以保证对比度 */
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-\[\#2D323A\],
+.dark .text-slate-600 {
+  color: #E3E4E6 !important;
+}
+
+.dark .text-slate-500 {
+  color: #A9ACB3 !important;
+}
+
+.dark .text-slate-400 {
+  color: #7E818A !important;
+}
+
+.dark .text-\[\#8B6E3C\] {
+  color: #D4AF77 !important;
+}
+
+.dark .bg-\[\#FAF8F5\] {
+  background-color: rgba(22, 23, 26, 0.8) !important;
+}
+
+.dark .border-t,
+.dark .border-b,
+.dark .border-r,
+.dark .border-l {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 6. 侧边栏菜单样式 */
+.dark nav button:not(.nav-active-bar) {
+  color: #A9ACB3 !important;
+}
+.dark nav button:not(.nav-active-bar):hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  color: #FFF !important;
+}
+
+/* 7. 输入框与下拉选择框 */
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="date"],
+.dark textarea,
+.dark select {
+  background-color: rgba(20, 21, 24, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFF !important;
+}
+.dark input[type="text"]::placeholder,
+.dark textarea::placeholder {
+  color: #5C5E66 !important;
+}
+
+.dark input[type="text"]:focus,
+.dark textarea:focus {
+  border-color: #4D7C5D !important;
+}
+
+/* 8. 四象限与看板的配色微调 (保证在暗黑背景下的可视度与质感) */
+.dark .border-urgent-important {
+  background: rgba(45, 25, 30, 0.25) !important;
+  border-color: rgba(232, 160, 191, 0.2) !important;
+}
+.dark .border-important-not-urgent {
+  background: rgba(25, 45, 30, 0.25) !important;
+  border-color: rgba(196, 215, 178, 0.2) !important;
+}
+.dark .border-urgent-not-important {
+  background: rgba(25, 35, 45, 0.25) !important;
+  border-color: rgba(178, 200, 223, 0.2) !important;
+}
+.dark .border-not-urgent-not-important {
+  background: rgba(40, 35, 25, 0.25) !important;
+  border-color: rgba(234, 217, 168, 0.2) !important;
+}
+
+.dark .task-bar-urgent-important { border-left-color: #E8A0BF !important; }
+.dark .task-bar-important-not-urgent { border-left-color: #C4D7B2 !important; }
+.dark .task-bar-urgent-not-important { border-left-color: #B2C8DF !important; }
+.dark .task-bar-not-urgent-not-important { border-left-color: #EAD9A8 !important; }
+
+/* 映射 PLANNER_COLORS 的类到暗黑模式 (精美磨砂质感) */
+.dark .bg-\[\#FCF2F0\] { background-color: rgba(85, 40, 50, 0.22) !important; }
+.dark .border-\[\#F5DFDB\] { border-color: rgba(232, 160, 191, 0.2) !important; }
+.dark .text-\[\#A34E36\] { color: #E8A0BF !important; }
+
+.dark .bg-\[\#F0F5F1\] { background-color: rgba(30, 65, 45, 0.22) !important; }
+.dark .border-\[\#DEEAE2\] { border-color: rgba(196, 215, 178, 0.2) !important; }
+.dark .text-\[\#4D7C5D\] { color: #C4D7B2 !important; }
+
+.dark .bg-\[\#EBF3F6\] { background-color: rgba(30, 55, 75, 0.22) !important; }
+.dark .border-\[\#D0E2E8\] { border-color: rgba(178, 200, 223, 0.2) !important; }
+.dark .text-\[\#366B80\] { color: #B2C8DF !important; }
+
+.dark .bg-\[\#F3F2F7\] { background-color: rgba(55, 40, 80, 0.22) !important; }
+.dark .border-\[\#E5E2EE\] { border-color: rgba(155, 110, 175, 0.2) !important; }
+.dark .text-\[\#5C528B\] { color: #C9A8E3 !important; }
+
+.dark .bg-\[\#FBECE5\] { background-color: rgba(90, 45, 30, 0.22) !important; }
+.dark .border-\[\#F6DCD2\] { border-color: rgba(229, 124, 88, 0.2) !important; }
+.dark .text-\[\#A64424\] { color: #F0A890 !important; }
+
+.dark .bg-\[\#FAF5ED\] { background-color: rgba(70, 55, 30, 0.22) !important; }
+.dark .border-\[\#EFE5D3\] { border-color: rgba(234, 217, 168, 0.2) !important; }
+.dark .text-\[\#8B6E3C\] { color: #EAD9A8 !important; }
+
+/* 9. 日历视图适配 (Calendar Dark Adaptation) */
+.dark .calendar-day-header {
+  color: #A9ACB3 !important;
+}
+.dark .calendar-day-cell {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.dark .calendar-day-cell:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+.dark .calendar-day-cell.today {
+  background-color: rgba(139, 110, 60, 0.15) !important;
+}
+.dark .calendar-day-cell.other-month {
+  opacity: 0.3 !important;
+}
+
+/* 10. 便签视图与手账板适配 */
+.dark .notes-corkboard {
+  background-color: #1a1b1e !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 11. 标题栏与浮窗适配 (Tauri Webview Drag Region & Overlay Modals) */
+.dark div[data-tauri-drag-region] {
+  background-color: rgba(22, 23, 26, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 详情弹窗遮罩及卡片 */
+.dark .fixed.inset-0.bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+.dark .fixed.inset-0.bg-black\/20 > div {
+  background-color: #1e1f22 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 12. 问候区天气与日历卡片 */
+.dark .timeline-dot::after {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent) !important;
+}
+.dark .quote-decoration::before {
+  color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 13. 日落晚安模式在暗黑模式下的叠加 */
+.dark.theme-sunset {
+  background-color: color-mix(in srgb, #2B241A var(--sunset-warmth, 50%), #121214) !important;
+}
+.dark.theme-sunset body {
+  background-color: color-mix(in srgb, #2B241A var(--sunset-warmth, 50%), #121214) !important;
+}
+.dark.theme-sunset .glassmorphism {
+  background: color-mix(in srgb, rgba(38, 35, 30, 0.85) var(--sunset-warmth, 50%), rgba(30, 31, 35, 0.85)) !important;
+  border: 1px dashed rgba(253, 186, 116, calc(var(--sunset-warmth, 50%) / 150)) !important;
+}
+
