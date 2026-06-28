@@ -214,7 +214,57 @@ export async function brainstormNote(
 }
 
 /**
- * 6. AI 智能从便签提取日程待办 (Extract Tasks from Note)
+ * 6. AI 夸夸模式 — 根据完成的任务生成祝贺语
+ */
+export async function generatePraise(
+  config: CustomizationConfig,
+  locale: string
+): Promise<string> {
+  const lang = locale === "zh-CN" ? "简体中文" : "English";
+  const systemPrompt = `你是一个温暖、有趣的鼓励大师。请用 ${lang} 生成一句简短的任务完成祝贺/夸赞语。
+要求：
+- 必须通用，不要提及任何具体任务名称
+- 不超过 20 个字，可以适当使用 1-2 个 emoji
+- 热情、有感染力，不要过于模板化
+- 只返回祝贺文本本身，不要任何前缀后缀或引号`;
+
+  const userPrompt = `请给我一句通用的完成祝贺语！`;
+  try {
+    return await callAI(config, systemPrompt, userPrompt);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * 6b. 批量生成夸夸词 — 一次调用生成多条（用于扩充词库）
+ */
+export async function generatePraiseBatch(
+  config: CustomizationConfig,
+  locale: string,
+  count: number = 5
+): Promise<string[]> {
+  const lang = locale === "zh-CN" ? "简体中文" : "English";
+  const systemPrompt = `你是一个温暖、有趣的鼓励大师。请用 ${lang} 生成 ${count} 条通用的任务完成祝贺/夸赞语。
+要求：
+- 必须通用，绝对不要提及任何具体任务名称或内容
+- 每条不超过 20 个字，可以适当使用 1-2 个 emoji
+- 风格热情、有感染力，不要过于模板化
+- 每条占一行，不要带序号或前缀后缀
+- 只返回纯文本，每行一条`;
+
+  const userPrompt = `请生成 ${count} 条通用夸赞语。`;
+  try {
+    const result = await callAI(config, systemPrompt, userPrompt);
+    const lines = result.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    return lines.slice(0, count);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 7. AI 智能从便签提取日程待办 (Extract Tasks from Note)
  */
 export interface ExtractedTask {
   title: string;

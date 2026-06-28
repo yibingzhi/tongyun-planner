@@ -4,6 +4,14 @@ export type TaskCategory =
   | "important-not-urgent"
   | "not-urgent-not-important";
 
+export type RepeatType = "daily" | "weekly" | "monthly" | "none";
+
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -13,6 +21,8 @@ export interface Task {
   dueDate?: string; // YYYY-MM-DD
   isFavorite?: boolean;
   isPinned?: boolean;
+  repeat?: RepeatType;
+  subtasks?: SubTask[];
 }
 
 export interface PomodoroLog {
@@ -56,6 +66,9 @@ export interface CustomizationConfig {
   sunsetStartHour?: number;
   sunsetEndHour?: number;
   sunsetWarmth?: number; // 0 to 100
+
+  // Celebration mode
+  enableCelebration?: boolean;
 
   // Locale
   locale?: Locale;

@@ -337,3 +337,41 @@ html.transparent-window body {
               linear-gradient(to bottom, rgba(251, 146, 60, calc(var(--sunset-warmth, 50%) / 1500)), rgba(251, 146, 60, calc(var(--sunset-warmth, 50%) / 1200)));
   z-index: 9999;
 }
+
+/* 夸夸模式撒花动画 */
+@keyframes celebration-confetti {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+.animate-celebration-confetti {
+  animation: celebration-confetti var(--duration, 2s) ease-in forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+/* 夸夸消息弹跳入场 */
+@keyframes celebration-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-5px);
+  }
+  70% {
+    transform: scale(0.95) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-celebration-bounce {
+  animation: celebration-bounce 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

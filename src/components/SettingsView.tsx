@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2 } from "lucide-react";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2 } from "lucide-react";
 import type { CustomizationConfig, WebDavConfig, AlertSoundType, Locale } from "../types";
 import { PLANNER_COLORS } from "../constants";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
 import { CustomSelect } from "./CustomSelect";
-import { testAIConnection } from "../utils/aiEngine";
+import { testAIConnection, generatePraiseBatch } from "../utils/aiEngine";
 import { useTranslation } from "../i18n/LanguageContext";
 
 const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).map((_, i) => ({
@@ -61,13 +61,20 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const s = t.settings;
-  const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system">("personalization");
+  const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system" | "fun">("personalization");
   const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("qiyun_webdav_url") || "");
   const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("qiyun_webdav_user") || "");
   const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("qiyun_webdav_pass") || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isAiTesting, setIsAiTesting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [aiPraiseList, setAiPraiseList] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("qiyun_ai_praise");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const [generatingPraise, setGeneratingPraise] = useState(false);
 
   const handleSaveWebDav = (url: string, user: string, pass: string) => {
     localStorage.setItem("qiyun_webdav_url", url);
@@ -200,6 +207,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             { id: "sunset", label: s.sunset },
             { id: "ai", label: s.ai },
             { id: "sync", label: s.sync },
+            { id: "fun", label: s.fun },
             { id: "system", label: s.system },
           ].map((tabItem) => {
             const isSelected = subTab === tabItem.id;
@@ -795,6 +803,84 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 {s.factoryReset}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* 6. 趣味设置 */}
+        {subTab === "fun" && (
+          <div className="space-y-6 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
+            {/* 夸夸模式开关 */}
+            <div className="bg-[#FAF8F5] border border-[#EFEBE4] rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-700 block">🎉 夸夸模式</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">完成任务时全屏撒花 + 夸赞消息</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={config.enableCelebration !== false}
+                onChange={(e) => {
+                  onChange({ ...config, enableCelebration: e.target.checked });
+                }}
+                className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
+              />
+            </div>
+
+            {/* AI 夸夸词库管理 */}
+            {config.enableCelebration !== false && (
+              <div className="bg-[#FAF8F5] border border-[#EFEBE4] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                    AI 夸夸词库（{aiPraiseList.length} 条）
+                  </span>
+                  {config.aiApiKey && (
+                    <button
+                      onClick={async () => {
+                        setGeneratingPraise(true);
+                        try {
+                          const msgs = await generatePraiseBatch(config, config.locale || "zh-CN", 5);
+                          const existing = new Set(aiPraiseList);
+                          const newOnes = msgs.filter((m) => !existing.has(m));
+                          if (newOnes.length > 0) {
+                            const updated = [...aiPraiseList, ...newOnes];
+                            setAiPraiseList(updated);
+                            localStorage.setItem("qiyun_ai_praise", JSON.stringify(updated));
+                          }
+                        } catch {}
+                        setGeneratingPraise(false);
+                      }}
+                      disabled={generatingPraise}
+                      className="text-[10px] font-bold text-[#4D7C5D] hover:text-[#3F684C] flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#C4D7B2] hover:bg-[#F0F5F1] transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Wand2 className={`w-3 h-3 ${generatingPraise ? "animate-spin" : ""}`} />
+                      {generatingPraise ? "生成中..." : "用 AI 生成 5 条夸夸"}
+                    </button>
+                  )}
+                </div>
+                {aiPraiseList.length > 0 ? (
+                  <div className="space-y-1 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                    {aiPraiseList.map((msg, i) => (
+                      <div key={i} className="flex items-center justify-between bg-white border border-[#EFEBE4] rounded-lg px-3 py-1.5 group">
+                        <span className="text-[11px] text-slate-700 font-medium truncate">{msg}</span>
+                        <button
+                          onClick={() => {
+                            const updated = aiPraiseList.filter((_, j) => j !== i);
+                            setAiPraiseList(updated);
+                            localStorage.setItem("qiyun_ai_praise", JSON.stringify(updated));
+                          }}
+                          className="p-0.5 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0 ml-2"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">
+                    {config.aiApiKey ? "点击上方按钮用 AI 生成夸夸词" : "配置 AI API Key 后可自动生成更多夸夸词"}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

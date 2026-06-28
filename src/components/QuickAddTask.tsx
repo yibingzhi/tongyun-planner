@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Calendar, Flag } from "lucide-react";
-import type { Task } from "../types";
+import { Plus, Calendar, Flag, Repeat } from "lucide-react";
+import type { Task, RepeatType } from "../types";
 import { PRIORITY_OPTIONS } from "../constants";
 import { CustomSelect } from "./CustomSelect";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -12,6 +12,7 @@ interface QuickAddTaskProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    repeat?: RepeatType;
   }) => void;
   defaultDueDate?: string;
   defaultCategory?: Task["category"];
@@ -28,11 +29,13 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const q = t.quickAdd;
+  const tc = t.taskCard;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState(() => defaultDueDate || new Date().toISOString().split("T")[0]);
   const [category, setCategory] = useState<Task["category"]>(defaultCategory);
+  const [repeat, setRepeat] = useState<RepeatType>("none");
   
   // Track focus to expand extra options (date, priority, etc.) in non-compact mode
   const [isFocused, setIsFocused] = useState(false);
@@ -74,9 +77,10 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
       notes: notes.trim(),
       category,
       dueDate,
+      repeat: repeat !== "none" ? repeat : undefined,
     });
 
-    // Reset fields except date and category for ease of adding multiple
+    // Reset fields except date, category, and repeat for ease of adding multiple
     setTitle("");
     setDescription("");
     setNotes("");
@@ -182,6 +186,22 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                     onChange={setCategory}
                     options={PRIORITY_OPTIONS}
                     className="w-40 text-[10px]"
+                    dropdownAlign="top"
+                  />
+                </div>
+                {/* Repeat Selector */}
+                <div className="flex items-center gap-1.5">
+                  <Repeat className="w-3.5 h-3.5 text-slate-400" />
+                  <CustomSelect
+                    value={repeat}
+                    onChange={(v) => setRepeat(v as RepeatType)}
+                    options={[
+                      { value: "none", label: tc.repeatNone },
+                      { value: "daily", label: tc.repeatDaily },
+                      { value: "weekly", label: tc.repeatWeekly },
+                      { value: "monthly", label: tc.repeatMonthly },
+                    ]}
+                    className="w-28 text-[10px]"
                     dropdownAlign="top"
                   />
                 </div>

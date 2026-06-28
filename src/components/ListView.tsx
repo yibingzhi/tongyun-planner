@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin } from "lucide-react";
+import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin, Repeat, ListTodo } from "lucide-react";
 import type { Task } from "../types";
 import { FILTER_OPTIONS, getDueDateCountdown } from "../constants";
 import { CustomSelect } from "./CustomSelect";
@@ -30,6 +30,7 @@ interface ListViewProps {
   }) => void;
   handleToggleFavorite: (id: string) => void;
   handleTogglePin: (id: string) => void;
+  onTaskClick?: (task: Task) => void;
 }
 
 export const ListView: React.FC<ListViewProps> = React.memo(({
@@ -49,9 +50,11 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
   handleAddTask,
   handleToggleFavorite,
   handleTogglePin,
+  onTaskClick,
 }) => {
   const { t } = useTranslation();
   const lv = t.listView;
+  const tc = t.taskCard;
   // Local state to filter only starred tasks
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
@@ -144,7 +147,10 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                         {task.isPinned && (
                           <span title={lv.pinned} className="flex-shrink-0 flex items-center"><Pin className="w-3 h-3 text-[#8B6E3C] fill-[#8B6E3C]" /></span>
                         )}
-                        <h4 className="text-xs font-bold text-slate-800 truncate leading-snug">{task.title}</h4>
+                        <h4
+                          className="text-xs font-bold text-slate-800 truncate leading-snug cursor-pointer hover:underline"
+                          onClick={() => onTaskClick?.(task)}
+                        >{task.title}</h4>
                         {task.isFavorite && (
                           <span title={lv.starred} className="flex-shrink-0 flex items-center"><Heart className="w-3 h-3 text-[#E8A0BF] fill-[#E8A0BF]" /></span>
                         )}
@@ -180,6 +186,20 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                               </span>
                             );
                           })()
+                        )}
+
+                        {task.repeat && task.repeat !== "none" && (
+                          <span className="text-[8.5px] px-1.5 py-0.5 rounded-lg border bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
+                            <Repeat className="w-2.5 h-2.5" />
+                            <span>{tc["repeat" + task.repeat.charAt(0).toUpperCase() + task.repeat.slice(1)]}</span>
+                          </span>
+                        )}
+
+                        {task.subtasks && task.subtasks.length > 0 && (
+                          <span className="text-[8.5px] px-1.5 py-0.5 rounded-lg border bg-[#FAF5ED] border-[#EFE5D3] text-[#8B6E3C] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
+                            <ListTodo className="w-2.5 h-2.5" />
+                            <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
+                          </span>
                         )}
                         
                         {task.notes && (

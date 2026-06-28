@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Heart, Calendar, Clock, Layers3, Maximize2, Minimize2 } from "lucide-react";
+import { Search, Heart, Calendar, Clock, Layers3, Maximize2, Minimize2, Repeat, ListTodo } from "lucide-react";
 import type { Task, TaskCategory } from "../types";
 import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
 import { QuickAddTask } from "./QuickAddTask";
@@ -25,6 +25,9 @@ interface MatrixViewProps {
   }) => void;
   handleToggleFavorite: (id: string) => void;
   handleTogglePin: (id: string) => void;
+  onTaskClick?: (task: Task) => void;
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
 }
 
 export const MatrixView: React.FC<MatrixViewProps> = React.memo(({ 
@@ -35,8 +38,13 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
   handleAddTask,
   handleToggleFavorite,
   handleTogglePin,
+  onTaskClick,
+  searchQuery,
+  setSearchQuery,
 }) => {
   const { t } = useTranslation();
+  const lv = t.listView;
+  const tc = t.taskCard;
   const m = t.matrix;
   // State to support full screen expand/collapse for a specific quadrant
   const [expandedQuadrant, setExpandedQuadrant] = useState<TaskCategory | null>(null);
@@ -85,16 +93,42 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
     ? quadrants.filter((q) => q.id === expandedQuadrant)
     : quadrants;
 
+  // Local search when not provided from parent
+  const [localSearch, setLocalSearch] = useState("");
+  const effectiveQuery = searchQuery !== undefined ? searchQuery : localSearch;
+  const effectiveSetQuery = setSearchQuery || setLocalSearch;
+
   return (
-    <div 
-      className={`animate-fade-in-up select-none flex-grow ${
-        expandedQuadrant ? "flex flex-col" : "grid grid-cols-2 gap-4"
-      }`}
-    >
+    <div className="animate-fade-in-up select-none flex-grow flex flex-col gap-4">
+      {/* Search bar */}
+      <div className="relative flex-shrink-0">
+        <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder={lv.search}
+          value={effectiveQuery}
+          onChange={(e) => effectiveSetQuery(e.target.value)}
+          className="w-full bg-white/70 border border-[#EFEBE4] pl-10 pr-4 py-2.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors font-semibold backdrop-blur-md"
+        />
+      </div>
+      <div 
+        className={`flex-grow ${
+          expandedQuadrant ? "flex flex-col" : "grid grid-cols-2 gap-4"
+        }`}
+      >
       {activeQuadrants.map((quad) => {
-        // Sort quadrant tasks by putting pinned tasks at the very top
+        // Filter by search and category, then sort so pinned tasks float to the top
         const quadrantTasks = tasks
           .filter((t) => t.category === quad.id)
+          .filter((t) => {
+            if (!effectiveQuery) return true;
+            const q = effectiveQuery.toLowerCase();
+            return (
+              t.title.toLowerCase().includes(q) ||
+              (t.description || "").toLowerCase().includes(q) ||
+              (t.notes || "").toLowerCase().includes(q)
+            );
+          })
           .sort((a, b) => {
             if (a.isPinned && !b.isPinned) return -1;
             if (!a.isPinned && b.isPinned) return 1;
@@ -179,7 +213,10 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                           {task.isPinned && (
                             <span className="text-[10px] text-[#8B6E3C] flex-shrink-0" title={m.pinned}>📌</span>
                           )}
-                          <h4 className={`text-xs font-bold text-[#2D323A] group-hover:${textClass} transition-colors truncate`}>
+                          <h4
+                            className={`text-xs font-bold text-[#2D323A] group-hover:${textClass} transition-colors truncate cursor-pointer hover:underline`}
+                            onClick={() => onTaskClick?.(task)}
+                          >
                             {task.title}
                           </h4>
                           {task.isFavorite && (
@@ -205,6 +242,20 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                                 </span>
                               );
                             })()
+                          )}
+
+                          {task.repeat && task.repeat !== "none" && (
+                            <span className="text-[8.5px] px-1.5 py-0.5 rounded-lg border bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
+                              <Repeat className="w-2.5 h-2.5" />
+                              <span>{tc["repeat" + task.repeat.charAt(0).toUpperCase() + task.repeat.slice(1)]}</span>
+                            </span>
+                          )}
+
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <span className="text-[8.5px] px-1.5 py-0.5 rounded-lg border bg-[#FAF5ED] border-[#EFE5D3] text-[#8B6E3C] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
+                              <ListTodo className="w-2.5 h-2.5" />
+                              <span>{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>
+                            </span>
                           )}
                         </div>
                       </div>
@@ -238,7 +289,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                         >
                           {m.focus}
                         </button>
-                        
+
                         <button
                           onClick={() => handleComplete(task.id)}
                           className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer shadow-xs`}
@@ -258,6 +309,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
           </div>
         );
       })}
+      </div>
     </div>
   );
 });

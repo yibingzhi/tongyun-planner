@@ -3,15 +3,17 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { load } from "@tauri-apps/plugin-store";
-import type { Task, PomodoroLog, StickyNote, AlertSoundType, AppTab, CustomizationConfig } from "./types";
+import type { Task, SubTask, PomodoroLog, StickyNote, AlertSoundType, AppTab, CustomizationConfig, RepeatType } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { Sidebar } from "./components/Sidebar";
 import { MatrixView } from "./components/MatrixView";
 import { ListView } from "./components/ListView";
+import { TaskDetailModal } from "./components/TaskDetailModal";
 import { CalendarView } from "./components/CalendarView";
 import { StickyNotesView } from "./components/StickyNotesView";
-import { classifyCategory, extractTasksFromNote } from "./utils/aiEngine";
+import { classifyCategory, extractTasksFromNote, generatePraise } from "./utils/aiEngine";
 import type { ExtractedTask } from "./utils/aiEngine";
+import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
 import { WidgetWindow } from "./components/WidgetWindow";
@@ -74,11 +76,12 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiModel: "gpt-4o",
   aiAutoCategorize: false,
   enableAutoBackup: true,
+  enableCelebration: true,
   locale: (localStorage.getItem("qiyun_locale") as "zh-CN" | "en") || "zh-CN",
 };
 
 function AppInner() {
-  const { t, setLocale } = useTranslation();
+  const { t, setLocale, locale } = useTranslation();
   const [windowLabel, setWindowLabel] = useState<string>("main");
   const [customizationConfig, setCustomizationConfig] = useState<CustomizationConfig>(DEFAULT_CUSTOMIZATION_CONFIG);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -112,6 +115,10 @@ function AppInner() {
   // 主窗口展开备注的任务 ID 和内容
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState("");
+  // 任务详情弹窗
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+  // 夸夸模式
+  const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
   // 番茄专注时钟状态
   const [focusDuration, setFocusDuration] = useState<number>(25);
@@ -410,11 +417,13 @@ function AppInner() {
 
     const timer = setTimeout(async () => {
       try {
+        const aiPraise = JSON.parse(localStorage.getItem("qiyun_ai_praise") || "[]");
         const backupData = {
           tasks,
           completedTasks,
           stickyNotes,
           customizationConfig,
+          aiPraise,
           timestamp: Date.now(),
         };
         const { webdavUpload } = await import("./utils/webdav");
@@ -786,23 +795,80 @@ function AppInner() {
     };
   }, []);
 
+  const getNextDueDate = (currentDue: string | undefined, repeat: RepeatType): string | undefined => {
+    if (!currentDue) {
+      const today = new Date();
+      if (repeat === "daily") return new Date(today.getTime() + 86400000).toISOString().split("T")[0];
+      if (repeat === "weekly") return new Date(today.getTime() + 7 * 86400000).toISOString().split("T")[0];
+      if (repeat === "monthly") return new Date(today.getTime() + 30 * 86400000).toISOString().split("T")[0];
+      return undefined;
+    }
+    const d = new Date(currentDue);
+    if (repeat === "daily") return new Date(d.getTime() + 86400000).toISOString().split("T")[0];
+    if (repeat === "weekly") return new Date(d.getTime() + 7 * 86400000).toISOString().split("T")[0];
+    if (repeat === "monthly") {
+      const next = new Date(d);
+      next.setMonth(next.getMonth() + 1);
+      return next.toISOString().split("T")[0];
+    }
+    return undefined;
+  };
+
   const handleComplete = useCallback((id: string) => {
     setTasks((prev) => {
       const completedItem = prev.find((t) => t.id === id);
-      const updated = prev.filter((t) => t.id !== id);
-      saveTasks(updated);
+      let updated = prev.filter((t) => t.id !== id);
 
       if (completedItem) {
+        // Handle recurring tasks: create next occurrence
+        if (completedItem.repeat && completedItem.repeat !== "none") {
+          const nextDue = getNextDueDate(completedItem.dueDate, completedItem.repeat);
+          const recurringTask: Task = {
+            ...completedItem,
+            id: Date.now().toString(),
+            dueDate: nextDue,
+          };
+          updated = [recurringTask, ...updated];
+        }
+
         setCompletedTasks((cPrev) => {
           const cUpdated = [completedItem, ...cPrev.filter((t) => t.id !== id)];
           saveCompleted(cUpdated);
           return cUpdated;
         });
+
+        // Trigger celebration (if enabled)
+        if (customizationConfig.enableCelebration !== false) {
+          // Fixed pool
+          const fixedPool = locale === "zh-CN"
+            ? ["你真牛逼！🎉", "太强了吧！💪", "完美收官！✨", "效率爆表！🚀", "任务终结者！🏆", "无敌是多么寂寞！😎", "今天也是元气满满的一天！☀️", "你值得一朵小红花 🌸", "帅呆了！🔥", "行云流水！⭐"]
+            : ["You're amazing! 🎉", "Nailed it! 💪", "Perfect! ✨", "On fire! 🚀", "Task destroyer! 🏆", "Unstoppable! 😎", "What a day! ☀️", "Have a cookie! 🍪", "Brilliant! 🔥", "Flawless! ⭐"];
+          // AI-generated messages stored in localStorage
+          let aiPool: string[] = [];
+          try {
+            const stored = localStorage.getItem("qiyun_ai_praise");
+            if (stored) aiPool = JSON.parse(stored);
+          } catch {}
+          const pool = [...fixedPool, ...aiPool];
+          setCelebrationMessage(pool[Math.floor(Math.random() * pool.length)]);
+
+          // Async: AI generates new praise, but stop once we have enough
+          if (customizationConfig.aiApiKey && completedItem && aiPool.length < 5) {
+            generatePraise(customizationConfig, locale).then((aiMsg) => {
+              if (aiMsg && !pool.includes(aiMsg)) {
+                const updated = [...aiPool, aiMsg];
+                localStorage.setItem("qiyun_ai_praise", JSON.stringify(updated));
+              }
+            });
+          }
+        }
       }
+
+      saveTasks(updated);
       return updated;
     });
     syncState(id, "complete");
-  }, [saveTasks, saveCompleted, syncState]);
+  }, [saveTasks, saveCompleted, syncState, customizationConfig, locale]);
 
   const handleUndoComplete = useCallback((id: string) => {
     setCompletedTasks((cPrev) => {
@@ -868,6 +934,42 @@ function AppInner() {
     syncState(id, "delete");
   }, [saveTasks, saveCompleted, syncState]);
 
+  const handleTaskClick = useCallback((task: Task) => {
+    setDetailTaskId(task.id);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setDetailTaskId(null);
+  }, []);
+
+  const handleToggleSubtask = useCallback((taskId: string, subtaskId: string) => {
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId);
+      if (!task) return prev;
+      const subtasks = (task.subtasks || []).map((s) =>
+        s.id === subtaskId ? { ...s, completed: !s.completed } : s
+      );
+      const nextTask = { ...task, subtasks };
+      const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
+      saveTasks(updated);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      return updated;
+    });
+  }, [saveTasks, syncState]);
+
+  const handleAddSubtask = useCallback((taskId: string, title: string) => {
+    setTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId);
+      if (!task) return prev;
+      const newSub: SubTask = { id: Date.now().toString(), title, completed: false };
+      const nextTask = { ...task, subtasks: [...(task.subtasks || []), newSub] };
+      const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
+      saveTasks(updated);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      return updated;
+    });
+  }, [saveTasks, syncState]);
+
   const handleSnooze = useCallback((id: string) => {
     setTasks((prev) => {
       const updated = [...prev];
@@ -890,8 +992,9 @@ function AppInner() {
     category: Task["category"];
     dueDate: string;
     isExplicit?: boolean;
+    repeat?: RepeatType;
   }) => {
-    const { title, description, notes, category, dueDate } = taskData;
+    const { title, description, notes, category, dueDate, repeat } = taskData;
     const taskId = Date.now().toString();
     const initialCategory = category;
 
@@ -902,6 +1005,7 @@ function AppInner() {
       notes: notes || undefined,
       category: initialCategory,
       dueDate: dueDate || undefined,
+      repeat: repeat || undefined,
     };
 
     setTasks((prev) => {
@@ -1172,11 +1276,13 @@ function AppInner() {
   }, [aiInputMessage]);
 
   const handleBackupToCloud = useCallback(async (config: WebDavConfig) => {
+    const aiPraise = JSON.parse(localStorage.getItem("qiyun_ai_praise") || "[]");
     const backupData = {
       tasks,
       completedTasks,
       stickyNotes,
       customizationConfig,
+      aiPraise,
       timestamp: Date.now(),
     };
     const { webdavUpload } = await import("./utils/webdav");
@@ -1207,12 +1313,17 @@ function AppInner() {
         localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
         syncState("settings", "settings_sync", JSON.stringify(data.customizationConfig));
       }
+
+      if (data.aiPraise) {
+        localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
+      }
       
       const fullBackup = {
         tasks: data.tasks || [],
         completedTasks: data.completedTasks || [],
         stickyNotes: data.stickyNotes || [],
         customizationConfig: data.customizationConfig || DEFAULT_CUSTOMIZATION_CONFIG,
+        aiPraise: data.aiPraise || [],
       };
       syncState("restore", "restore_sync", JSON.stringify(fullBackup));
     } else {
@@ -1638,6 +1749,9 @@ function AppInner() {
               handleAddTask={handleAddTask}
               handleToggleFavorite={handleToggleFavorite}
               handleTogglePin={handleTogglePin}
+              onTaskClick={handleTaskClick}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
             />
           )}
 
@@ -1659,6 +1773,7 @@ function AppInner() {
               handleAddTask={handleAddTask}
               handleToggleFavorite={handleToggleFavorite}
               handleTogglePin={handleTogglePin}
+              onTaskClick={handleTaskClick}
             />
           )}
 
@@ -1717,6 +1832,25 @@ function AppInner() {
             />
           )}
         </main>
+
+        {/* Task Detail Modal */}
+        {celebrationMessage && (
+  <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />
+)}
+
+{detailTaskId && (() => {
+          const task = tasks.find(t => t.id === detailTaskId) || completedTasks.find(t => t.id === detailTaskId);
+          if (!task) return null;
+          return (
+            <TaskDetailModal
+              task={task}
+              onClose={handleCloseDetail}
+              onToggleSubtask={handleToggleSubtask}
+              onAddSubtask={handleAddSubtask}
+              onSaveNotes={handleSaveNotes}
+            />
+          );
+        })()}
       </div>
     </div>
   );

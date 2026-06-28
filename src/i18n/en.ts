@@ -106,6 +106,14 @@ const en: Translations = {
     todayProgress: "Today's Progress",
     startFocus: "Start focus on this task",
     focus: "Focus",
+    repeat: "Repeat",
+    repeatNone: "No repeat",
+    repeatDaily: "Daily",
+    repeatWeekly: "Weekly",
+    repeatMonthly: "Monthly",
+    subtasks: "Subtasks",
+    addSubtask: "Add subtask...",
+    subtaskPlaceholder: "Enter subtask...",
   },
 
   listView: {
@@ -126,6 +134,14 @@ const en: Translations = {
     notesDetail: "Task Notes",
     notesPlaceholder: "Add notes or remarks here...",
     saveNotes: "Save Notes",
+    repeat: "Repeat",
+    repeatNone: "No repeat",
+    repeatDaily: "Daily",
+    repeatWeekly: "Weekly",
+    repeatMonthly: "Monthly",
+    subtasks: "Subtasks",
+    addSubtask: "Add subtask...",
+    subtaskPlaceholder: "Enter subtask...",
   },
 
   calendarView: {
@@ -234,6 +250,7 @@ const en: Translations = {
     ai: "AI Assistant",
     sync: "Backup & Sync",
     system: "System & Language",
+    fun: "Fun",
     quadColors: "Quadrant Colors",
     cardBg: "Card Background",
     white: "White",
