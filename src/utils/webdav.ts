@@ -1,4 +1,8 @@
 import type { WebDavConfig } from "../types";
+import { invoke } from "@tauri-apps/api/core";
+
+// 检测是否处于 Tauri 环境
+const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
 /**
  * Uploads a text file content (like JSON string) to a WebDav server.
@@ -8,7 +12,22 @@ export async function webdavUpload(config: WebDavConfig, filename: string, conte
     throw new Error("WebDav sync parameters are incomplete.");
   }
   
-  // Format target URL
+  if (isTauri) {
+    try {
+      await invoke("webdav_upload", {
+        url: config.url,
+        username: config.username,
+        password: config.password || null,
+        filename,
+        content,
+      });
+      return;
+    } catch (e: any) {
+      throw new Error(e.message || e);
+    }
+  }
+
+  // 浏览器环境下回退到 fetch（可能会受限于 CORS）
   const baseUrl = config.url.endsWith("/") ? config.url : `${config.url}/`;
   const targetUrl = `${baseUrl}${filename}`;
   
@@ -37,6 +56,21 @@ export async function webdavDownload(config: WebDavConfig, filename: string): Pr
     throw new Error("WebDav sync parameters are incomplete.");
   }
   
+  if (isTauri) {
+    try {
+      const res = await invoke<string>("webdav_download", {
+        url: config.url,
+        username: config.username,
+        password: config.password || null,
+        filename,
+      });
+      return res;
+    } catch (e: any) {
+      throw new Error(e.message || e);
+    }
+  }
+
+  // 浏览器环境下回退到 fetch（可能会受限于 CORS）
   const baseUrl = config.url.endsWith("/") ? config.url : `${config.url}/`;
   const targetUrl = `${baseUrl}${filename}`;
   

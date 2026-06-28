@@ -53,6 +53,78 @@ fn set_widget_click_through(app: AppHandle, ignore: bool) -> Result<(), String> 
     Ok(())
 }
 
+// 6. WebDAV 云备份指令 (在 Rust 端运行以规避前端浏览器的 CORS 限制)
+#[tauri::command]
+fn webdav_upload(
+    url: String,
+    username: String,
+    password: Option<String>,
+    filename: String,
+    content: String,
+) -> Result<(), String> {
+    let client = reqwest::blocking::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, filename);
+
+    let mut req = client.put(&target_url)
+        .header("Content-Type", "application/json; charset=utf-8")
+        .body(content);
+
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Upload failed: {} {}", res.status(), res.status().canonical_reason().unwrap_or("")));
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn webdav_download(
+    url: String,
+    username: String,
+    password: Option<String>,
+    filename: String,
+) -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, filename);
+
+    let mut req = client.get(&target_url);
+
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("Backup file not found on server.".to_string());
+    }
+
+    if !res.status().is_success() {
+        return Err(format!("Download failed: {} {}", res.status(), res.status().canonical_reason().unwrap_or("")));
+    }
+
+    res.text().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -61,7 +133,13 @@ pub fn run() {
         // 注册 Store 持久化插件
         .plugin(tauri_plugin_store::Builder::default().build())
         // 挂载用于多窗口间状态交互及窗口显隐控制的命令
-        .invoke_handler(tauri::generate_handler![sync_todo_state, toggle_widget_window, set_widget_click_through])
+        .invoke_handler(tauri::generate_handler![
+            sync_todo_state,
+            toggle_widget_window,
+            set_widget_click_through,
+            webdav_upload,
+            webdav_download
+        ])
         // 6. 初始化系统托盘
         .setup(|app| {
             // 创建托盘菜单项
