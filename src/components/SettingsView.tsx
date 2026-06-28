@@ -687,6 +687,25 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               </div>
             </div>
 
+            {/* 启用自动备份开关 */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
+              <div>
+                <span className="text-xs font-bold text-slate-700 block">开启 WebDAV 数据修改自动备份</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">任务或便签被修改 15 秒后，在后台自动安全备份</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={config.enableAutoBackup !== false}
+                onChange={(e) => {
+                  onChange({
+                    ...config,
+                    enableAutoBackup: e.target.checked,
+                  });
+                }}
+                className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
+              />
+            </div>
+
             {/* 同步备份操作组 */}
             <div className="flex gap-3 pt-2 relative">
               <button

@@ -13,6 +13,8 @@ import {
   Unlock,
   Lock,
   Settings,
+  Cloud,
+  RefreshCw,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -24,6 +26,8 @@ interface SidebarProps {
   completedTasksCount: number;
   tasksCount: number;
   stickyNotesCount: number;
+  syncStatus: "synced" | "syncing" | "error";
+  lastBackupTime: number | null;
 
   // 番茄钟状态与控制
   pomodoroIsActive: boolean;
@@ -78,6 +82,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   completedTasksCount,
   tasksCount,
   stickyNotesCount,
+  syncStatus,
+  lastBackupTime,
   pomodoroIsActive,
   setPomodoroIsActive,
   pomodoroIsBreak,
@@ -509,6 +515,33 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
       {/* 底部设置 */}
       <div className="space-y-1.5 pt-3 border-t border-[#EFEBE4] flex-shrink-0">
+        {/* WebDAV 自动备份同步指示器 */}
+        {localStorage.getItem("qiyun_webdav_url") && (
+          <div className="pb-1.5 text-[9px] flex items-center justify-between text-slate-500 font-bold border-b border-[#EFEBE4]/50 mb-1.5 select-none">
+            <div className="flex items-center gap-1">
+              {syncStatus === "syncing" ? (
+                <RefreshCw className="w-3 h-3 text-[#4D7C5D] animate-spin" />
+              ) : syncStatus === "error" ? (
+                <Cloud className="w-3 h-3 text-[#A34E36]" />
+              ) : (
+                <Cloud className="w-3 h-3 text-[#4D7C5D]" />
+              )}
+              <span>
+                {syncStatus === "syncing"
+                  ? "云端自动备份中..."
+                  : syncStatus === "error"
+                  ? "自动备份失败"
+                  : "已同步至云端"}
+              </span>
+            </div>
+            {lastBackupTime && (
+              <span className="opacity-75 font-semibold text-slate-400">
+                {new Date(lastBackupTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
+        )}
+
         <button
           onClick={handleToggleWidget}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-semibold transition-all text-[#4D7C5D] hover:bg-[#F0F5F1] border border-[#DEEAE2] cursor-pointer"

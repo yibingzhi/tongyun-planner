@@ -72,6 +72,7 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiEndpoint: "https://api.openai.com/v1",
   aiModel: "gpt-4o",
   aiAutoCategorize: false,
+  enableAutoBackup: true,
 };
 
 function App() {
@@ -79,6 +80,17 @@ function App() {
   const [customizationConfig, setCustomizationConfig] = useState<CustomizationConfig>(DEFAULT_CUSTOMIZATION_CONFIG);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+
+  // WebDAV 自动备份与状态同步指示器相关状态
+  const [syncStatus, setSyncStatus] = useState<"synced" | "syncing" | "error">("synced");
+  const [lastBackupTime, setLastBackupTime] = useState<number | null>(() => {
+    const saved = localStorage.getItem("aero_last_backup_time");
+    return saved ? parseInt(saved, 10) : null;
+  });
+
+  // 避免首屏初始化加载、数据恢复操作触发重复的自动备份上传
+  const isFirstLoad = useRef(true);
+  const isRestoringRef = useRef(false);
 
   // 列表筛选与搜索状态
   const [searchQuery, setSearchQuery] = useState("");
@@ -367,6 +379,59 @@ function App() {
     const interval = setInterval(checkSunsetTheme, 60000);
     return () => clearInterval(interval);
   }, [customizationConfig.enableSunsetMode, customizationConfig.sunsetStartHour, customizationConfig.sunsetEndHour, customizationConfig.sunsetWarmth]);
+
+  // WebDAV 自动备份防抖触发 Effect
+  useEffect(() => {
+    // 首次加载时不触发备份
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // 若当前正在执行恢复，则跳过本次变动监测，重置恢复标记
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      return;
+    }
+
+    const url = localStorage.getItem("qiyun_webdav_url");
+    const username = localStorage.getItem("qiyun_webdav_user");
+    const password = localStorage.getItem("qiyun_webdav_pass");
+
+    // 如果未启用自动备份，或者 WebDAV 连接参数不全，直接返回
+    if (customizationConfig.enableAutoBackup === false || !url || !username) {
+      return;
+    }
+
+    setSyncStatus("syncing");
+
+    const timer = setTimeout(async () => {
+      try {
+        const backupData = {
+          tasks,
+          completedTasks,
+          stickyNotes,
+          customizationConfig,
+          timestamp: Date.now(),
+        };
+        const { webdavUpload } = await import("./utils/webdav");
+        await webdavUpload(
+          { url, username, password: password || "" },
+          "qiyun_list_backup.json",
+          JSON.stringify(backupData, null, 2)
+        );
+        const now = Date.now();
+        setLastBackupTime(now);
+        localStorage.setItem("aero_last_backup_time", now.toString());
+        setSyncStatus("synced");
+      } catch (e) {
+        console.error("自动同步备份失败:", e);
+        setSyncStatus("error");
+      }
+    }, 15000); // 15秒防抖延迟
+
+    return () => clearTimeout(timer);
+  }, [tasks, completedTasks, stickyNotes, customizationConfig]);
 
   useEffect(() => {
     const label = getCurrentWebviewWindow().label;
@@ -1114,6 +1179,7 @@ function App() {
     const data = JSON.parse(jsonStr);
     
     if (data && (Array.isArray(data.tasks) || Array.isArray(data.stickyNotes))) {
+      isRestoringRef.current = true;
       if (Array.isArray(data.tasks)) {
         setTasks(data.tasks);
         saveTasks(data.tasks);
@@ -1297,6 +1363,8 @@ function App() {
           pomodoroTaskTitle={pomodoroTaskTitle}
           setPomodoroTaskId={setPomodoroTaskId}
           setPomodoroTaskTitle={setPomodoroTaskTitle}
+          syncStatus={syncStatus}
+          lastBackupTime={lastBackupTime}
         />
 
         {/* 主工作区 */}

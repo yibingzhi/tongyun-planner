@@ -61,6 +61,7 @@ export interface CustomizationConfig {
   aiEndpoint?: string;
   aiModel?: string;
   aiAutoCategorize?: boolean;
+  enableAutoBackup?: boolean;
 }
 
 export interface WebDavConfig {
