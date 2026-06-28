@@ -195,11 +195,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
       let cellStyle = "bg-white border-[#FAF8F5] text-slate-700";
       let badgeText = "";
       let badgeStyle = "";
-      if (isSelected) {
-        cellStyle = "bg-[#FCF2F0]/80 border-[#F5DFDB] text-[#A34E36]";
-      } else if (isToday) {
-        cellStyle = "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D] font-extrabold";
-      } else if (meta.type === "休") {
+      if (meta.type === "休") {
         cellStyle = "bg-[#FFF5F3] border-[#FFD9D0] text-[#D4380D]";
         badgeText = "休";
         badgeStyle = "bg-[#D4380D] text-white";
@@ -211,6 +207,12 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
         cellStyle = "bg-[#FFF9F5] border-[#F5EDE8] text-[#B88A6B]";
         badgeText = "休";
         badgeStyle = "bg-[#B88A6B]/70 text-white";
+      }
+      if (isToday) {
+        cellStyle = "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D] font-extrabold";
+      }
+      if (isSelected) {
+        cellStyle = "bg-[#FCF2F0]/80 border-[#F5DFDB] text-[#A34E36]";
       }
 
       dayElements.push(
