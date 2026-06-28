@@ -72,6 +72,7 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   sunsetStartHour: 18,
   sunsetEndHour: 6,
   sunsetWarmth: 50,
+  weatherCity: "",
   aiApiKey: "",
   aiEndpoint: "https://api.openai.com/v1",
   aiModel: "gpt-4o",
@@ -1530,7 +1531,7 @@ function AppInner() {
                 {activeTab === "settings"
                   ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
                   : activeTab === "home"
-                  ? "每日一言 · 历史上的今天"
+                  ? "今日待办 · 天气 · 一言"
                   : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
               </p>
             </div>
@@ -1765,7 +1766,14 @@ function AppInner() {
 
           {/* 各 Tab 内容渲染 */}
           {activeTab === "home" && (
-            <DashboardView />
+            <DashboardView
+              tasks={tasks}
+              completedTasks={completedTasks}
+              handleComplete={handleComplete}
+              handleAddTask={handleAddTask}
+              onTaskClick={handleTaskClick}
+              config={customizationConfig}
+            />
           )}
 
           {activeTab === "matrix" && (

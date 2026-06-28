@@ -243,6 +243,19 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 className="w-full px-3 py-2 rounded-xl border border-[#EFEBE4] bg-white/80 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C4D7B2] focus:border-transparent transition-all"
               />
             </div>
+            {/* 0.5 城市 */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                {s.weatherCity}
+              </h4>
+              <input
+                type="text"
+                defaultValue={config.weatherCity || ""}
+                onChange={(e) => handleStyleChange("weatherCity", e.target.value)}
+                placeholder={s.weatherCityPlaceholder}
+                className="w-full px-3 py-2 rounded-xl border border-[#EFEBE4] bg-white/80 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C4D7B2] focus:border-transparent transition-all"
+              />
+            </div>
             {/* 1.1 四象限色彩 */}
             <div className="space-y-3">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">

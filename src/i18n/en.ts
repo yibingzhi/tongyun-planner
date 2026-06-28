@@ -262,6 +262,8 @@ const en: Translations = {
     quadColors: "Quadrant Colors",
     nickname: "Nickname",
     nicknamePlaceholder: "Enter your nickname (shown on homepage)",
+    weatherCity: "Your City",
+    weatherCityPlaceholder: "Enter city name (e.g. Beijing)",
     cardBg: "Card Background",
     white: "White",
     grid: "Grid",
@@ -430,6 +432,11 @@ const en: Translations = {
     noEvents: "No historical events found",
     refresh: "Refresh",
     home: "Home",
+    todayTasks: "Today's Tasks",
+    noTasksToday: "No tasks for today yet. Add one! ✨",
+    completed_task: "Done",
+    dueToday: "Due today",
+    weatherLabel: "Weather",
   },
 };
 

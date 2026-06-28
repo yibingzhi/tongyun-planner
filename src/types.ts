@@ -74,6 +74,9 @@ export interface CustomizationConfig {
   // Locale
   locale?: Locale;
 
+  // Weather
+  weatherCity?: string;
+
   // AI Agent settings
   aiProvider?: "openai" | "anthropic";
   aiApiKey?: string;

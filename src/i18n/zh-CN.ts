@@ -262,6 +262,8 @@ const zhCN: Translations = {
     quadColors: "🎨 四象限主色调搭配",
     nickname: "👤 你的昵称",
     nicknamePlaceholder: "输入昵称（显示在主页）",
+    weatherCity: "🌤 所在城市",
+    weatherCityPlaceholder: "输入城市名（如：北京）",
     cardBg: "📝 待办卡片背景纹理",
     white: "纯净白",
     grid: "格子本",
@@ -430,6 +432,11 @@ const zhCN: Translations = {
     noEvents: "暂无历史事件",
     refresh: "换一个",
     home: "主页",
+    todayTasks: "今日待办",
+    noTasksToday: "今天还没有任务，添加一个吧 ✨",
+    completed_task: "已完成",
+    dueToday: "今日截止",
+    weatherLabel: "天气",
   },
 };
 
