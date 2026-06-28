@@ -1,6 +1,7 @@
 import React from "react";
 import { Check, Undo2, Trash2, History } from "lucide-react";
 import type { Task } from "../types";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface CompletedViewProps {
   completedTasks: Task[];
@@ -15,18 +16,19 @@ export const CompletedView: React.FC<CompletedViewProps> = React.memo(({
   handleUndoComplete,
   handleDeleteTask,
 }) => {
+  const { t } = useTranslation(); const c = t.completed;
   return (
     <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-6 flex flex-col gap-4 flex-grow overflow-y-auto max-h-[480px] custom-scrollbar select-none">
       <div className="flex justify-between items-center border-b border-[#EFEBE4] pb-3">
         <h3 className="text-xs font-bold text-[#4D7C5D] tracking-wider uppercase">
-          已完成任务归档 ({completedTasks.length})
+          {c.title} ({completedTasks.length})
         </h3>
         {completedTasks.length > 0 && (
           <button
             onClick={handleClearCompleted}
             className="text-[10px] text-red-500 hover:bg-red-500 hover:text-white border border-red-200 px-2.5 py-1.5 rounded-lg bg-transparent transition-all font-bold cursor-pointer"
           >
-            清空历史
+            {c.clearAll}
           </button>
         )}
       </div>
@@ -59,14 +61,14 @@ export const CompletedView: React.FC<CompletedViewProps> = React.memo(({
                 <button
                   onClick={() => handleUndoComplete(task.id)}
                   className="text-xs hover:text-[#A34E36] border border-[#EFEBE4] hover:bg-[#FCF2F0]/50 p-2.5 rounded-xl bg-transparent text-slate-400 transition-all cursor-pointer"
-                  title="撤销完成"
+                  title={c.undo}
                 >
                   <Undo2 className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleDeleteTask(task.id)}
                   className="text-xs hover:text-red-500 border border-[#EFEBE4] hover:bg-red-50/50 p-2.5 rounded-xl bg-transparent text-slate-400 transition-all cursor-pointer"
-                  title="彻底删除"
+                  title={c.permanentDelete}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -77,7 +79,7 @@ export const CompletedView: React.FC<CompletedViewProps> = React.memo(({
       ) : (
         <div className="text-center py-20 flex flex-col items-center gap-3">
           <History className="w-12 h-12 text-[#EFEBE4]" />
-          <p className="text-sm text-slate-400 font-bold">暂无已完成归档记录</p>
+          <p className="text-sm text-slate-400 font-bold">{c.empty}</p>
         </div>
       )}
     </div>

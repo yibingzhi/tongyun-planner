@@ -3,6 +3,7 @@ import { Plus, Calendar, Flag } from "lucide-react";
 import type { Task } from "../types";
 import { PRIORITY_OPTIONS } from "../constants";
 import { CustomSelect } from "./CustomSelect";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface QuickAddTaskProps {
   handleAddTask: (taskData: {
@@ -25,6 +26,8 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   placeholder = "添加任务，按回车保存...",
   compact = false,
 }) => {
+  const { t } = useTranslation();
+  const q = t.quickAdd;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
@@ -143,14 +146,14 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
             <div className="grid grid-cols-2 gap-3">
               <input
                 type="text"
-                placeholder="详情说明 (可选)..."
+                placeholder={q.descriptionPlaceholder}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full bg-[#FAF8F5] border border-[#EFEBE4]/50 px-3 py-1.5 rounded-xl text-[11px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2] transition-colors"
               />
               <input
                 type="text"
-                placeholder="备忘备注 (可选)..."
+                placeholder={q.notesPlaceholder}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full bg-[#FAF8F5] border border-[#EFEBE4]/50 px-3 py-1.5 rounded-xl text-[11px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2] transition-colors"
@@ -167,7 +170,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer"
-                    title="截止日期"
+                    title={q.dueDate}
                   />
                 </div>
                 
@@ -190,13 +193,13 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                   onClick={() => setIsFocused(false)}
                   className="px-3.5 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 hover:bg-[#FAF8F5] transition-colors cursor-pointer border border-[#EFEBE4]/60"
                 >
-                  收起
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-xs hover:scale-101 active:scale-99 transition-all cursor-pointer"
                 >
-                  保存待办
+                  {q.add}
                 </button>
               </div>
             </div>

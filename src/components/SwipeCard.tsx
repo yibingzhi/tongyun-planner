@@ -4,6 +4,7 @@ import { Check, Clock, Heart, Sparkles } from "lucide-react";
 import { CATEGORY_META, PLANNER_COLORS, getDueDateCountdown } from "../constants";
 import type { Task } from "../types";
 import { audioEngine } from "../utils/audioEngine";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export type { Task } from "../types";
 
@@ -34,6 +35,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
   onStartFocus,
   onToggleFavorite,
 }) => {
+  const { t } = useTranslation(); const tc = t.taskCard;
   const x = useMotionValue(0);
   const controls = useAnimation();
 
@@ -171,7 +173,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
                 onToggleFavorite?.(task.id);
               }}
               className="hover:scale-110 transition-transform cursor-pointer"
-              title={task.isFavorite ? "取消星标" : "标记星标"}
+              title={task.isFavorite ? tc.unfavorite : tc.favorite}
             >
               <Heart 
                 className={`w-3.5 h-3.5 text-[#E8A0BF] transition-colors ${
@@ -194,7 +196,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
           )}
           {task.notes && (
             <p className="text-[10px] text-[#8B6E3C] mt-1.5 line-clamp-2 leading-relaxed italic font-semibold whitespace-pre-wrap">
-              备注: {task.notes}
+              {tc.notes}: {task.notes}
             </p>
           )}
         </div>
@@ -209,7 +211,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
               />
             </div>
             <div className="flex justify-between items-center text-[7px] text-slate-400 mt-0.5 font-extrabold uppercase tracking-wider">
-              <span>今日进度</span>
+              <span>{tc.todayProgress}</span>
               <span className="text-slate-600">{progressPercentage}%</span>
             </div>
           </div>
@@ -217,19 +219,19 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
 
         {/* 底部引导栏 */}
         <div className="flex items-center justify-between border-t border-[#FAF8F5] pt-2 text-[8px] text-slate-400 tracking-wider font-bold">
-          <span className="flex items-center gap-0.5"><span className="text-[#A34E36]">←</span> 左划延后</span>
+          <span className="flex items-center gap-0.5"><span className="text-[#A34E36]">←</span> {tc.swipeLeft}</span>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onStartFocus?.(task.id, task.title);
             }}
             className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-[#EFEBE4] bg-white hover:bg-[#F0F5F1] hover:text-[#4D7C5D] text-slate-500 font-extrabold cursor-pointer transition-colors"
-            title="开始专注该任务"
+            title={tc.startFocus}
           >
             <Clock className="w-2.5 h-2.5" />
-            <span>专注</span>
+            <span>{tc.focus}</span>
           </button>
-          <span className="flex items-center gap-0.5">右划完成 <span className="text-[#4D7C5D]">→</span></span>
+          <span className="flex items-center gap-0.5">{tc.swipeRight} <span className="text-[#4D7C5D]">→</span></span>
         </div>
       </motion.div>
     </div>

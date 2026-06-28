@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2 } from "lucide-react";
-import type { CustomizationConfig, WebDavConfig, AlertSoundType } from "../types";
+import type { CustomizationConfig, WebDavConfig, AlertSoundType, Locale } from "../types";
 import { PLANNER_COLORS } from "../constants";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
 import { CustomSelect } from "./CustomSelect";
 import { testAIConnection } from "../utils/aiEngine";
+import { useTranslation } from "../i18n/LanguageContext";
 
 const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).map((_, i) => ({
   value: i,
@@ -34,6 +35,11 @@ const ALERT_SOUND_OPTIONS: SelectOption<AlertSoundType>[] = [
   { value: "meow", label: "猫咪叫 🐱 (Meow)" },
 ];
 
+const LOCALE_OPTIONS: SelectOption<Locale>[] = [
+  { value: "zh-CN", label: "中文 (简体)" },
+  { value: "en", label: "English" },
+];
+
 interface SettingsViewProps {
   config: CustomizationConfig;
   onChange: (newConfig: CustomizationConfig) => void;
@@ -53,6 +59,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   setAlertSoundType,
   resetTasks,
 }) => {
+  const { t } = useTranslation();
+  const s = t.settings;
   const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system">("personalization");
   const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("qiyun_webdav_url") || "");
   const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("qiyun_webdav_user") || "");
@@ -74,14 +82,14 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
   const backup = async () => {
     if (!webdavUrl || !webdavUser) {
-      triggerToast("请先填写服务器 URL 及账号", "error");
+      triggerToast(s.syncFillInfo, "error");
       return;
     }
     setIsLoading(true);
     try {
       handleSaveWebDav(webdavUrl, webdavUser, webdavPass);
       await onBackupToCloud({ url: webdavUrl, username: webdavUser, password: webdavPass });
-      triggerToast("备份数据成功！☁️", "success");
+      triggerToast(s.syncBackupSuccess, "success");
     } catch (e: any) {
       console.error(e);
       triggerToast(`备份失败: ${e.message || e}`, "error");
@@ -92,17 +100,17 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
   const restore = async () => {
     if (!webdavUrl || !webdavUser) {
-      triggerToast("请先填写服务器 URL 及账号", "error");
+      triggerToast(s.syncFillInfo, "error");
       return;
     }
-    if (!confirm("确认要从云端恢复备份吗？这会清空本地的所有待办及便签数据！")) {
+    if (!confirm(s.syncRestoreConfirm)) {
       return;
     }
     setIsLoading(true);
     try {
       handleSaveWebDav(webdavUrl, webdavUser, webdavPass);
       await onRestoreFromCloud({ url: webdavUrl, username: webdavUser, password: webdavPass });
-      triggerToast("恢复数据成功！✨", "success");
+      triggerToast(s.syncRestoreSuccess, "success");
     } catch (e: any) {
       console.error(e);
       triggerToast(`恢复失败: ${e.message || e}`, "error");
@@ -135,35 +143,35 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
   const handleSaveAiConfig = () => {
     onChange({ ...config });
-    triggerToast("AI 配置已保存 ✓", "success");
+    triggerToast(s.aiConfigSaved, "success");
   };
 
   const handleTestAiConnection = async () => {
     if (!config.aiApiKey?.trim()) {
-      triggerToast("请先填写 API Key", "error");
+      triggerToast(s.aiFillKey, "error");
       return;
     }
     if (config.aiModel === "custom" || !config.aiModel?.trim()) {
-      triggerToast("请先选择或填写模型名称", "error");
+      triggerToast(s.aiFillModel, "error");
       return;
     }
     setIsAiTesting(true);
     try {
       const reply = await testAIConnection(config);
-      triggerToast(`连接成功！模型回复：${reply.slice(0, 40)}${reply.length > 40 ? "…" : ""}`, "success");
+      triggerToast(`${s.aiTestSuccess}${reply.slice(0, 40)}${reply.length > 40 ? "…" : ""}`, "success");
     } catch (e: any) {
       console.error(e);
-      triggerToast(`连接失败: ${e.message || e}`, "error");
+      triggerToast(`${s.aiTestFail}: ${e.message || e}`, "error");
     } finally {
       setIsAiTesting(false);
     }
   };
 
   const quadrants = [
-    { id: "urgent-important", label: "I. 重要且紧急" },
-    { id: "important-not-urgent", label: "II. 重要不紧急" },
-    { id: "urgent-not-important", label: "III. 紧急不重要" },
-    { id: "not-urgent-not-important", label: "IV. 不重要不紧急" },
+    { id: "urgent-important", label: "I. " + t.matrix.urgentImportant },
+    { id: "important-not-urgent", label: "II. " + t.matrix.importantNotUrgent },
+    { id: "urgent-not-important", label: "III. " + t.matrix.urgentNotImportant },
+    { id: "not-urgent-not-important", label: "IV. " + t.matrix.notUrgentNotImportant },
   ] as const;
 
   const bgClassMap = {
@@ -188,11 +196,11 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
         {/* 二级菜单页签 */}
         <div className="flex flex-wrap gap-2 pb-3.5 border-b border-[#EFEBE4]">
           {[
-            { id: "personalization", label: "🎨 个性装扮" },
-            { id: "sunset", label: "🌅 日落护眼" },
-            { id: "ai", label: "🤖 AI 助手" },
-            { id: "sync", label: "☁️ 备份同步" },
-            { id: "system", label: "⚙️ 系统与声音" },
+            { id: "personalization", label: s.personalization },
+            { id: "sunset", label: s.sunset },
+            { id: "ai", label: s.ai },
+            { id: "sync", label: s.sync },
+            { id: "system", label: s.system },
           ].map((tabItem) => {
             const isSelected = subTab === tabItem.id;
             return (
@@ -217,7 +225,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 1.1 四象限色彩 */}
             <div className="space-y-3">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                🎨 四象限主色调搭配
+                {s.quadColors}
               </h4>
               <div className="space-y-2.5">
                 {quadrants.map((quad) => {
@@ -257,15 +265,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 1.2 卡片纹理 */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                📝 待办卡片背景纹理
+                {s.cardBg}
               </h4>
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { id: "white", label: "纯净白" },
-                  { id: "grid", label: "格子本" },
-                  { id: "lined", label: "横线本" },
-                  { id: "watercolor", label: "水彩晕染" },
-                  { id: "doodle", label: "简笔插画" },
+                  { id: "white", label: s.white },
+                  { id: "grid", label: s.grid },
+                  { id: "lined", label: s.lined },
+                  { id: "watercolor", label: s.watercolor },
+                  { id: "doodle", label: s.doodle },
                 ].map((pattern) => {
                   const isSelected = config.cardBackground === pattern.id;
                   return (
@@ -288,15 +296,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 1.3 别针夹子 */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                📌 便签夹子固定样式
+                {s.pinStyle}
               </h4>
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { id: "pin", label: "大头针" },
-                  { id: "tape", label: "手账胶带" },
-                  { id: "clip", label: "小木夹" },
-                  { id: "heart", label: "爱心扣" },
-                  { id: "smiley", label: "笑脸贴" },
+                  { id: "pin", label: s.pin },
+                  { id: "tape", label: s.tape },
+                  { id: "clip", label: s.clip },
+                  { id: "heart", label: s.heart },
+                  { id: "smiley", label: s.smiley },
                 ].map((pin) => {
                   const isSelected = config.pinType === pin.id;
                   return (
@@ -320,13 +328,13 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
               <div className="space-y-2">
                 <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                  ✨ 界面毛玻璃质感
+                  {s.glass}
                 </h4>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: "light", label: "清透" },
-                    { id: "matte", label: "磨砂" },
-                    { id: "solid", label: "纯白" },
+                    { id: "light", label: s.glassLight },
+                    { id: "matte", label: s.glassMatte },
+                    { id: "solid", label: s.glassSolid },
                   ].map((glass) => {
                     const isSelected = (config.interfaceGlass || "matte") === glass.id;
                     return (
@@ -347,13 +355,13 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               </div>
               <div className="space-y-2">
                 <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                  ✍️ 界面系统字体
+                  {s.font}
                 </h4>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: "sans", label: "简约" },
-                    { id: "rounded", label: "温馨" },
-                    { id: "serif", label: "人文" },
+                    { id: "sans", label: s.fontSans },
+                    { id: "rounded", label: s.fontRounded },
+                    { id: "serif", label: s.fontSerif },
                   ].map((font) => {
                     const isSelected = (config.fontFamily || "sans") === font.id;
                     return (
@@ -377,14 +385,14 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 1.5 背景球 */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
-                🌅 全局流动水彩背景
+                {s.watercolorBg}
               </h4>
               <div className="grid grid-cols-4 gap-2">
                 {[
-                  { id: "oasis", label: "樱粉绿洲" },
-                  { id: "aurora", label: "星河极光" },
-                  { id: "sunny", label: "暖阳秋实" },
-                  { id: "none", label: "无背景球" },
+                  { id: "oasis", label: s.oasis },
+                  { id: "aurora", label: s.aurora },
+                  { id: "sunny", label: s.sunny },
+                  { id: "none", label: s.none },
                 ].map((wc) => {
                   const isSelected = (config.watercolorStyle || "oasis") === wc.id;
                   return (
@@ -413,15 +421,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <Moon className="w-5 h-5 text-[#8B6E3C] mt-0.5" />
               <div className="text-xs text-slate-600 leading-relaxed font-medium">
                 <strong>🌅 什么是日落护眼模式？</strong>
-                <p className="mt-1">开启后，系统在指定的夜间时间段会自动启用温暖的洋甘菊燕麦色壁纸，降低屏幕蓝光及玻璃刺眼光，保护你在晚间书写规划时的视力健康。</p>
+                <p className="mt-1">{s.sunsetDesc}</p>
               </div>
             </div>
 
             {/* 自动启用开关 */}
             <div className="flex items-center justify-between p-3.5 rounded-2xl border border-[#EFEBE4] bg-white/50">
               <div>
-                <span className="text-xs font-bold text-slate-700 block">启用自动日落护眼模式</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">根据指定的时间段自动应用温暖滤镜色调</span>
+                <span className="text-xs font-bold text-slate-700 block">{s.sunsetToggle}</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">{s.sunsetToggleDesc}</span>
               </div>
               <input
                 type="checkbox"
@@ -435,7 +443,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 block uppercase">
-                  日落生效起始时间 (Start Hour)
+                   {s.sunsetStart}
                 </label>
                 <CustomSelect
                   value={config.sunsetStartHour ?? 18}
@@ -448,7 +456,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-500 block uppercase">
-                  次日日出结束时间 (End Hour)
+                   {s.sunsetEnd}
                 </label>
                 <CustomSelect
                   value={config.sunsetEndHour ?? 6}
@@ -464,7 +472,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 暖色色温调节 Slider */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-700">落日护眼色调浓度调配 (Warmth Concentration)</span>
+                <span className="text-xs font-bold text-slate-700">{s.sunsetWarmth}</span>
                 <span className="text-[10px] font-extrabold text-[#A34E36]">{config.sunsetWarmth ?? 50}%</span>
               </div>
               <input
@@ -477,8 +485,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 className="w-full cursor-pointer accent-[#A34E36]"
               />
               <div className="flex justify-between text-[8px] text-slate-400 font-extrabold uppercase">
-                <span>清透微暖 (10%)</span>
-                <span>浓郁落日 (90%)</span>
+                <span>{s.sunsetWarmthLow}</span>
+                <span>{s.sunsetWarmthHigh}</span>
               </div>
             </div>
           </div>
@@ -492,15 +500,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <Sparkles className="w-5 h-5 text-[#8B6E3C] mt-0.5" />
               <div className="text-xs text-slate-600 leading-relaxed font-medium">
                 <strong>🤖 AI 智能优先级分类助手</strong>
-                <p className="mt-1">配置云端大模型接口后，在添加新的日程待办时，AI 助手将自动帮您分析任务的轻重缓急，一键归档到最合适的四象限中。</p>
+                <p className="mt-1">{s.aiDesc}</p>
               </div>
             </div>
 
             {/* 启用自动分类开关 */}
             <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
               <div>
-                <span className="text-xs font-bold text-slate-700 block">开启 AI 自动象限分类</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">添加任务时，智能推荐该待办归属于哪个象限</span>
+                <span className="text-xs font-bold text-slate-700 block">{s.aiAutoToggle}</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">{s.aiAutoToggleDesc}</span>
               </div>
               <input
                 type="checkbox"
@@ -519,7 +527,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        AI 提供商 (AI Provider)
+                        {s.aiProvider}
                       </label>
                       <CustomSelect
                         value={config.aiProvider || "openai"}
@@ -537,7 +545,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        API Key / 大模型密钥
+                        {s.aiApiKey}
                       </label>
                       <input
                         type="password"
@@ -552,7 +560,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        API 中转端点 (Endpoint URL)
+                        {s.aiEndpoint}
                       </label>
                       <input
                         type="text"
@@ -564,7 +572,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        选择的 AI 模型 (Model)
+                        {s.aiModel}
                       </label>
                       <CustomSelect
                         value={dropdownValue}
@@ -584,7 +592,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                   {dropdownValue === "custom" && (
                     <div className="bg-[#FAF8F5]/80 border border-[#EFEBE4] p-3 rounded-xl animate-fade-in-up">
                       <label className="text-[10px] font-bold text-[#8B6E3C] uppercase block mb-1">
-                        输入您的自定义模型名称 (Model Name)
+                        {s.aiModelCustom}
                       </label>
                       <input
                         type="text"
@@ -607,7 +615,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
               >
                 <Save className="w-3.5 h-3.5" />
-                保存配置
+                 {s.aiSave}
               </button>
               <button
                 type="button"
@@ -620,7 +628,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 ) : (
                   <Link2 className="w-3.5 h-3.5" />
                 )}
-                测试连接
+                {s.aiTest}
               </button>
             </div>
           </div>
@@ -633,14 +641,14 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <Cloud className="w-5 h-5 text-[#8B6E3C] mt-0.5" />
               <div className="text-xs text-slate-600 leading-relaxed font-medium">
                 <strong>☁️ 多窗口与云端自动同步</strong>
-                <p className="mt-1">配置坚果云、Nextcloud 等 WebDav 账户后，您可以一键上传加密存档，或在更换设备时随时拉取恢复。确保在进行恢复操作前保存好本地数据。</p>
+                <p className="mt-1">{s.syncDesc}</p>
               </div>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                  WebDav 服务器 URL
+                  {s.syncUrl}
                 </label>
                 <input
                   type="text"
@@ -656,7 +664,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    WebDav 账号 / 注册邮箱
+                    {s.syncUser}
                   </label>
                   <input
                     type="text"
@@ -671,7 +679,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    应用授权码 / 密码
+                    {s.syncPass}
                   </label>
                   <input
                     type="password"
@@ -690,8 +698,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 启用自动备份开关 */}
             <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
               <div>
-                <span className="text-xs font-bold text-slate-700 block">开启 WebDAV 数据修改自动备份</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">任务或便签被修改 15 秒后，在后台自动安全备份</span>
+                <span className="text-xs font-bold text-slate-700 block">{s.syncAutoToggle}</span>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">{s.syncAutoToggleDesc}</span>
               </div>
               <input
                 type="checkbox"
@@ -718,7 +726,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 ) : (
                   <Upload className="w-3.5 h-3.5" />
                 )}
-                备份数据至云端
+                {s.syncBackup}
               </button>
               <button
                 onClick={restore}
@@ -730,7 +738,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 ) : (
                   <Download className="w-3.5 h-3.5" />
                 )}
-                从云端下载恢复
+                {s.syncRestore}
               </button>
             </div>
           </div>
@@ -739,10 +747,24 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
         {/* 5. 系统设置与提示音面签 */}
         {subTab === "system" && (
           <div className="space-y-6 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
+            {/* 语言选择 */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-700">{s.language}</h4>
+              <p className="text-[10px] text-slate-400 font-medium">{s.languageDesc}</p>
+              <CustomSelect
+                value={config.locale || "zh-CN"}
+                onChange={(val) => {
+                  handleStyleChange("locale", val as Locale);
+                }}
+                options={LOCALE_OPTIONS}
+                className="w-full max-w-sm"
+              />
+            </div>
+
             {/* 系统声音选择 */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-700">完成提示铃声 (Timer Sound)</h4>
-              <p className="text-[10px] text-slate-400 font-medium">当番茄钟完成或任务倒计时截止时触发的物理音效铃声选择。</p>
+              <h4 className="text-xs font-bold text-slate-700">{s.soundTitle}</h4>
+              <p className="text-[10px] text-slate-400 font-medium">{s.soundDesc}</p>
               <CustomSelect
                 value={alertSoundType}
                 onChange={(val) => {
@@ -758,19 +780,19 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             <div className="space-y-3 pt-5 border-t border-dashed border-[#EFEBE4]">
               <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4 text-[#A34E36]" />
-                <span>高危维护区 (Factory Reset)</span>
+                <span>{s.dangerZone}</span>
               </h4>
-              <p className="text-[10px] text-slate-400 font-medium">重置本地所有日程安排、番茄钟分析日志、桌面便签以及系统配置参数（不可撤销）。</p>
+              <p className="text-[10px] text-slate-400 font-medium">{s.dangerDesc}</p>
               <button
                 onClick={() => {
-                  if (confirm("确认要抹除全部的本地数据及日志吗？此操作无法撤销！")) {
+                  if (confirm(s.factoryResetConfirm)) {
                     resetTasks();
-                    triggerToast("已恢复出厂配置，全部数据已重置", "success");
+                    triggerToast(s.factoryResetDone, "success");
                   }
                 }}
                 className="bg-red-50 hover:bg-red-100 text-[#A34E36] border border-[#F5DFDB] px-4 py-2.5 rounded-xl text-[10px] font-extrabold hover:scale-102 transition-all shadow-xs cursor-pointer block"
               >
-                🗑️ 重置系统并抹除本地全部数据
+                {s.factoryReset}
               </button>
             </div>
           </div>
@@ -794,7 +816,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
       {showLivePreview && (
       <div className="lg:col-span-2 rounded-2xl bg-[#F4EFEA]/40 border border-[#EFEBE4] p-5 flex flex-col items-center justify-center gap-5 shadow-sm backdrop-blur-sm relative min-h-[360px]">
         <span className="absolute top-3.5 left-4 text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
-          🔮 实时手账效果预览 (Live Preview)
+          {s.livePreview}
         </span>
 
         {/* 待办卡片效果预览 */}
@@ -815,7 +837,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             >
               <span className={`w-1.5 h-1.5 rounded-full ${q1Color.dot}`} />
               <span className={`text-[7.5px] font-extrabold uppercase tracking-wider ${q1Color.text}`}>
-                重要且紧急
+                {s.previewCardTag}
               </span>
             </div>
             <Heart className="w-3.5 h-3.5 text-[#E8A0BF] hover:fill-[#E8A0BF] cursor-pointer" />
@@ -823,16 +845,16 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
           <div className="z-10 flex-grow flex flex-col justify-center my-1.5">
             <h4 className="text-xs font-bold text-[#2D323A] line-clamp-1 leading-snug">
-              🌸 体验手账风个性自定义
+              {s.previewCardTitle}
             </h4>
             <p className="text-[9px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-              这里是卡片的效果预览，现在切换上方的纹理背景，确认您最心仪的款式。
+              {s.previewCardDesc}
             </p>
           </div>
 
           <div className="z-10 flex items-center justify-between border-t border-[#FAF8F5] pt-2 text-[7.5px] text-slate-400 tracking-wider font-bold">
-            <span>← 左划延后</span>
-            <span>右划完成 →</span>
+            <span>{t.taskCard.swipeLeft}</span>
+            <span>{t.taskCard.swipeRight}</span>
           </div>
         </div>
 
@@ -841,12 +863,12 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
           <StickyPin type={config.pinType} />
 
           <div className="text-[10px] font-semibold text-[#8B6E3C] leading-relaxed flex-grow">
-            📌 这是一张拟物效果预览便签，支持 5 种木夹与胶带的大头针扣具款式切换。
+            {s.previewNote}
           </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#EFE5D3]/60 mt-1 text-[8px] text-[#8B6E3C]/60 font-bold">
-            <span>手账便签预览</span>
-            <span>✓ 已固定</span>
+            <span>{s.previewSticky}</span>
+            <span>{s.previewFixed}</span>
           </div>
         </div>
       </div>

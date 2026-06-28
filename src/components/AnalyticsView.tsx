@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Clock, CheckCircle2, Heart, Coffee, BarChart3 } from "lucide-react";
 import type { Task, PomodoroLog } from "../types";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface AnalyticsViewProps {
   pomodoroLogs: PomodoroLog[];
@@ -13,6 +14,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   tasks,
   completedTasks,
 }) => {
+  const { t } = useTranslation(); const a = t.analytics; const m = t.matrix; const cv = t.calendarView;
   // Memoize top metrics cards
   const { totalHours, totalMinutes, todayPomodoros, avgDuration } = useMemo(() => {
     const totalDur = pomodoroLogs.reduce((acc, curr) => acc + curr.duration, 0);
@@ -58,7 +60,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
 
     pomodoroLogs.forEach((log) => {
       const tId = log.taskId || "general";
-      const tTitle = log.taskTitle || "自主专注 / 其它未关联任务";
+      const tTitle = log.taskTitle || a.untitledTask;
 
       if (!taskStatsMap[tId]) {
         taskStatsMap[tId] = {
@@ -127,10 +129,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
     return (
       <div className="flex gap-1.5 overflow-x-auto py-2 custom-scrollbar justify-center">
         <div className="flex flex-col justify-between text-[8px] font-extrabold text-slate-400 py-1.5 pr-2">
-          <span>周日</span>
-          <span>周二</span>
-          <span>周四</span>
-          <span>周六</span>
+          <span>{cv.sun}</span>
+          <span>{cv.tue}</span>
+          <span>{cv.thu}</span>
+          <span>{cv.sat}</span>
         </div>
         <div className="flex gap-1.5">
           {weeks.map((week, wIdx) => (
@@ -139,7 +141,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
                 <div
                   key={dIdx}
                   title={
-                    day.isFuture ? "未到来的日子" : `${day.dateStr} : 完成了 ${day.count} 个番茄钟`
+                    day.isFuture ? a.futureDay : a.daySummary.replace("{dateStr}", day.dateStr).replace("{count}", String(day.count))
                   }
                   className={`w-3.5 h-3.5 rounded-sm transition-all duration-300 ${day.colorClass} ${
                     day.isToday ? "ring-1 ring-[#A34E36] ring-offset-1" : ""
@@ -156,28 +158,28 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   const categories = [
     {
       id: "urgent-important",
-      label: "I. 重要且紧急",
+       label: "I. " + m.urgentImportant,
       color: "bg-[#E8A0BF]",
       textColor: "text-[#A34E36]",
       bgClass: "bg-[#FCF2F0]",
     },
     {
       id: "important-not-urgent",
-      label: "II. 重要不紧急",
+       label: "II. " + m.importantNotUrgent,
       color: "bg-[#C4D7B2]",
       textColor: "text-[#4D7C5D]",
       bgClass: "bg-[#F0F5F1]",
     },
     {
       id: "urgent-not-important",
-      label: "III. 紧急不重要",
+       label: "III. " + m.urgentNotImportant,
       color: "bg-[#B2C8DF]",
       textColor: "text-[#5C528B]",
       bgClass: "bg-[#F3F2F7]",
     },
     {
       id: "not-urgent-not-important",
-      label: "IV. 不重要不紧急",
+       label: "IV. " + m.notUrgentNotImportant,
       color: "bg-[#FAF5ED]/80",
       textColor: "text-[#8B6E3C]",
       bgClass: "bg-[#FAF5ED]",
@@ -197,10 +199,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-extrabold text-[#A34E36]/80 uppercase tracking-wider block">
-              累计专注时长
+              {a.totalHours}
             </span>
             <span className="text-xs font-bold text-[#2D323A] block truncate">
-              {totalHours} 小时 {totalMinutes} 分钟
+              {a.hoursMinutes.replace("{h}", String(totalHours)).replace("{m}", String(totalMinutes))}
             </span>
           </div>
         </div>
@@ -212,10 +214,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-extrabold text-[#4D7C5D]/80 uppercase tracking-wider block">
-              完成番茄钟数
+              {a.totalSessions}
             </span>
             <span className="text-xs font-bold text-[#2D323A] block truncate">
-              {pomodoroLogs.length} 个番茄
+              {a.sessionsCount.replace("{count}", String(pomodoroLogs.length))}
             </span>
           </div>
         </div>
@@ -227,10 +229,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-extrabold text-[#5C528B]/80 uppercase tracking-wider block">
-              今日专注完成
+              {a.todayFocus}
             </span>
             <span className="text-xs font-bold text-[#2D323A] block truncate">
-              {todayPomodoros} 个
+              {a.count.replace("{count}", String(todayPomodoros))}
             </span>
           </div>
         </div>
@@ -242,9 +244,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           </div>
           <div className="min-w-0">
             <span className="text-[9px] font-extrabold text-[#8B6E3C]/80 uppercase tracking-wider block">
-              单次平均时间
+              {a.avgDuration}
             </span>
-            <span className="text-xs font-bold text-[#2D323A] block truncate">{avgDuration} 分钟</span>
+            <span className="text-xs font-bold text-[#2D323A] block truncate">{a.avgDurationValue.replace("{n}", String(avgDuration))}</span>
           </div>
         </div>
       </div>
@@ -256,16 +258,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           <div className="flex items-center justify-between pb-3.5 border-b border-[#EFEBE4] mb-4">
             <h3 className="text-xs font-bold text-[#2D323A] flex items-center gap-1.5">
               <BarChart3 className="w-4 h-4 text-[#4D7C5D]" />
-              <span>番茄专注热力图 (最近 18 周)</span>
+              <span>{a.heatmapTitle}</span>
             </h3>
             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold uppercase tracking-wider">
-              <span>少</span>
+              <span>              {a.low}</span>
               <div className="w-2.5 h-2.5 rounded bg-white/50 border border-slate-200" />
               <div className="w-2.5 h-2.5 rounded bg-[#C4D7B2]/40" />
               <div className="w-2.5 h-2.5 rounded bg-[#C4D7B2]/70" />
               <div className="w-2.5 h-2.5 rounded bg-[#4D7C5D]/70" />
               <div className="w-2.5 h-2.5 rounded bg-[#3F684C]" />
-              <span>多</span>
+              <span>              {a.high}</span>
             </div>
           </div>
           {renderHeatmap()}
@@ -274,7 +276,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
         {/* Task Categories Ratios */}
         <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col justify-between shadow-sm backdrop-blur-sm">
           <div className="pb-3 border-b border-[#EFEBE4] mb-3">
-            <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide">四象限任务分布比例</h3>
+            <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide">{a.quadrantDist}</h3>
           </div>
           <div className="space-y-3.5 flex-grow flex flex-col justify-center">
             {categories.map((cat) => {
@@ -290,7 +292,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
                   <div className="flex justify-between items-center text-[10px] font-bold">
                     <span className={cat.textColor}>{cat.label}</span>
                     <span className="text-slate-500 font-extrabold uppercase">
-                      {completed}/{total} ({pct}%) • 分布 {distPct}%
+                      {a.distDetail.replace("{completed}", String(completed)).replace("{total}", String(total)).replace("{pct}", String(pct)).replace("{distPct}", String(distPct))}
                     </span>
                   </div>
                   <div
@@ -317,7 +319,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
         <div className="pb-3.5 border-b border-[#EFEBE4] mb-4">
           <h3 className="text-xs font-bold text-[#2D323A] flex items-center gap-1.5">
             <Clock className="w-4 h-4 text-[#A34E36]" />
-            <span>任务维度专注时间分布 (Tomato Focus Breakdown)</span>
+            <span>{a.taskBreakdown}</span>
           </h3>
         </div>
         <div className="space-y-4">
@@ -337,7 +339,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
                       />
                     </div>
                     <span className="text-[10px] font-extrabold text-slate-500 min-w-[80px] text-right">
-                      {stat.tomatoCount} 番茄 • {stat.totalDuration} 分钟
+                      {a.taskBreakdownItem.replace("{count}", String(stat.tomatoCount)).replace("{duration}", String(stat.totalDuration))}
                     </span>
                   </div>
                 </div>
@@ -345,7 +347,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
             })
           ) : (
             <div className="text-center py-6 text-slate-400 text-xs font-semibold">
-              暂无专注数据，在待办任务上点击 ⏱️ 开始你的第一个番茄钟吧！
+              {a.noData}
             </div>
           )}
         </div>

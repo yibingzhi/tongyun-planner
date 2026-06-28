@@ -34,6 +34,8 @@ export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
 export type AppTab = "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "settings";
 
+export type Locale = "zh-CN" | "en";
+
 export type WidgetView = "card" | "list" | "add" | "timer" | "notes";
 
 export interface CustomizationConfig {
@@ -54,6 +56,9 @@ export interface CustomizationConfig {
   sunsetStartHour?: number;
   sunsetEndHour?: number;
   sunsetWarmth?: number; // 0 to 100
+
+  // Locale
+  locale?: Locale;
 
   // AI Agent settings
   aiProvider?: "openai" | "anthropic";

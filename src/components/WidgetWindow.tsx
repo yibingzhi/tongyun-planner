@@ -21,6 +21,7 @@ import { CustomSelect } from "./CustomSelect";
 import { PRIORITY_OPTIONS, PLANNER_COLORS } from "../constants";
 import { NOTE_COLORS } from "./StickyNotesView";
 import { StickyPin } from "./StickyPin";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface WidgetWindowProps {
   tasks: Task[];
@@ -116,6 +117,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   handleStartFocus,
   handleToggleFavorite,
 }) => {
+  const { t } = useTranslation();
+  const w = t.widget;
+  const s = t.sidebar;
+  const fn = t.floatingNote;
+  const tc = t.taskCard;
+  const cm = t.common;
+
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
 
@@ -191,13 +199,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
             data-tauri-drag-region
             className="text-[10px] font-extrabold tracking-wider text-slate-600 uppercase"
           >
-            今日待办
+            {w.todayTodos}
           </span>
           <span
             data-tauri-drag-region
             className="text-[8px] bg-[#FCF2F0] text-[#A34E36] border border-[#F5DFDB] px-2 py-0.5 rounded-full font-bold ml-1"
           >
-            {urgentTasks.length} 紧急
+                {w.urgent.replace("{count}", String(urgentTasks.length))}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -209,7 +217,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FAF5ED] text-[#8B6E3C] border border-[#EFE5D3]"
                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
             }`}
-            title={isWidgetLocked ? "解锁挂件（恢复不透明）" : "锁住挂件（半透明幽灵模式）"}
+            title={isWidgetLocked ? w.unlockTitle : w.lockTitle}
           >
             {isWidgetLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
           </button>
@@ -228,11 +236,11 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
             <div className="space-y-2 overflow-y-auto pr-0.5 custom-scrollbar">
               <div>
                 <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
-                  任务名称
+                  {w.taskName}
                 </label>
                 <input
                   type="text"
-                  placeholder="今天要做些什么呢..."
+                  placeholder={w.taskPlaceholder}
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors font-medium"
@@ -242,11 +250,11 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               </div>
               <div>
                 <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
-                  详情描述 (可选)
+                  {w.taskDesc}
                 </label>
                 <input
                   type="text"
-                  placeholder="任务详情说明..."
+                  placeholder={w.taskDescPlaceholder}
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors font-medium"
@@ -254,7 +262,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               </div>
               <div>
                 <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-0.5">
-                  截止日期
+                  {w.dueDate}
                 </label>
                 <input
                   type="date"
@@ -265,7 +273,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               </div>
               <div>
                 <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-1">
-                  优先级象限
+                  {w.category}
                 </label>
                 <CustomSelect
                   value={newCategory}
@@ -282,13 +290,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 onClick={() => setWidgetView("card")}
                 className="flex-1 border border-slate-200 hover:bg-slate-50 py-1.5 rounded-lg text-xs font-bold text-slate-500 transition-all"
               >
-                取消
+                {cm.cancel}
               </button>
               <button
                 type="submit"
                 className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all"
               >
-                添加任务
+                {w.addTask}
               </button>
             </div>
           </form>
@@ -328,7 +336,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                       </div>
                       {task.notes && (
                         <p className="text-[9px] text-[#8B6E3C] truncate italic mt-0.5">
-                          备注: {task.notes}
+                          {tc.notes}: {task.notes}
                         </p>
                       )}
                     </div>
@@ -354,7 +362,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                   className="text-center py-10 flex flex-col items-center gap-2"
                 >
                   <Heart className="w-8 h-8 text-[#E8A0BF]/50" />
-                  <p className="text-xs text-slate-400 font-bold">所有待办均已收妥</p>
+                  <p className="text-xs text-slate-400 font-bold">{w.allDone}</p>
                 </div>
               )}
             </div>
@@ -370,7 +378,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                   />
                 </div>
                 <div className="flex justify-between text-[8px] text-slate-500 font-extrabold mt-1 uppercase tracking-wider">
-                  <span>完成进度 {completedTasks.length}</span>
+                  <span>{w.progress.replace("{count}", String(completedTasks.length))}</span>
                   <span>{progressPercentage}%</span>
                 </div>
               </div>
@@ -385,12 +393,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           >
             <div className="flex flex-col items-center gap-3">
               <div className="text-[10px] font-extrabold text-[#A34E36] tracking-wider uppercase bg-[#FCF2F0]/80 border border-[#F5DFDB] px-3 py-1 rounded-full shadow-sm">
-                {pomodoroIsBreak ? "休息模式" : "专注模式"}
+                {pomodoroIsBreak ? s.breakMode : s.focusMode}
               </div>
 
               {pomodoroTaskTitle && (
                 <div className="text-[9px] font-bold text-slate-500 max-w-[130px] truncate text-center bg-slate-100/60 px-2.5 py-0.5 rounded border border-slate-200/50" title={pomodoroTaskTitle}>
-                  专注中: {pomodoroTaskTitle}
+                  {s.focusing}: {pomodoroTaskTitle}
                 </div>
               )}
 
@@ -462,7 +470,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                         }
                       }}
                       className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4] flex items-center justify-center text-slate-500 font-extrabold text-[10px] cursor-pointer transition-colors shadow-sm"
-                      title="减少1分钟"
+                      title={s.decreaseMin}
                     >
                       -
                     </button>
@@ -507,14 +515,14 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                         }
                       }}
                       className="w-4 h-4 rounded-full bg-[#FAF8F5] hover:bg-slate-200 border border-[#EFEBE4] flex items-center justify-center text-slate-500 font-extrabold text-[10px] cursor-pointer transition-colors shadow-sm"
-                      title="增加1分钟"
+                      title={s.increaseMin}
                     >
                       +
                     </button>
                   )}
                 </div>
                 <span className="text-[8px] text-slate-400 font-extrabold uppercase mt-1 z-10">
-                  第 {pomodoroSessionCount} 个番茄
+                  {w.pomodoroSession.replace("{count}", String(pomodoroSessionCount))}
                 </span>
               </div>
 
@@ -534,7 +542,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                     );
                   }}
                   className="w-8 h-8 rounded-full border border-[#EFEBE4] hover:border-[#4D7C5D] bg-white flex items-center justify-center text-slate-700 hover:text-[#4D7C5D] transition-all shadow-sm cursor-pointer"
-                  title={pomodoroIsActive ? "暂停" : "开始"}
+                  title={pomodoroIsActive ? s.pause : s.startFocus}
                 >
                   {pomodoroIsActive ? (
                     <svg className="w-3.5 h-3.5 text-[#A34E36]" fill="currentColor" viewBox="0 0 24 24">
@@ -582,12 +590,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               <div className="flex flex-col h-full overflow-hidden py-1">
                 <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-dashed border-slate-200">
                   <span className="text-[10px] font-extrabold text-slate-500 tracking-wider uppercase">
-                    便签列表 ({stickyNotes.length})
+                    {w.noteList.replace("{count}", String(stickyNotes.length))}
                   </span>
                   <button
                     onClick={handleAddNote}
                     className="p-0.5 rounded hover:bg-slate-100 text-[#4D7C5D] cursor-pointer"
-                    title="新建便签"
+                    title={w.newNote}
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -603,7 +611,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                           className={`w-full text-left p-2.5 rounded-xl border ${theme.bg} ${theme.border} hover:shadow-xs transition-all flex items-center justify-between cursor-pointer group`}
                         >
                           <span className={`text-[10px] font-semibold truncate flex-grow pr-2 ${theme.text}`}>
-                            {note.text.trim() || "(空便签)"}
+                            {note.text.trim() || w.emptyNote}
                           </span>
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${theme.dot}`} />
                         </button>
@@ -612,9 +620,9 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                   ) : (
                     <div className="text-center py-8 flex flex-col items-center gap-2">
                       <StickyNote className="w-8 h-8 text-[#FAF5ED]/60" />
-                      <span className="text-[10px] text-slate-400 font-bold">
-                        暂无便签，点击右上角 + 新增
-                      </span>
+                  <span className="text-[10px] text-slate-400 font-bold">
+                    {w.noNotes}
+                  </span>
                     </div>
                   )}
                 </div>
@@ -639,7 +647,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                         onClick={() => setSelectedWidgetNoteId(null)}
                         className={`text-[9px] font-bold flex items-center gap-0.5 hover:opacity-80 cursor-pointer ${theme.text}`}
                       >
-                        ← 返回列表
+                        {w.backToList}
                       </button>
                       <button
                         onClick={() => {
@@ -647,7 +655,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                           setSelectedWidgetNoteId(null);
                         }}
                         className="text-slate-400 hover:text-red-500 p-0.5 rounded cursor-pointer"
-                        title="删除便签"
+                        title={fn.delete}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -657,7 +665,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                     <textarea
                       value={note.text}
                       onChange={(e) => handleEditNoteText(note.id, e.target.value)}
-                      placeholder="输入便签备忘..."
+                      placeholder={w.notePlaceholder}
                       className={`w-full bg-transparent resize-none focus:outline-none text-[10px] font-semibold leading-relaxed placeholder-slate-400/50 custom-scrollbar flex-grow ${theme.text}`}
                       style={{ minHeight: "65px" }}
                     />
@@ -708,12 +716,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
               className="text-center p-6 flex flex-col items-center gap-2"
             >
               <Coffee className="w-9 h-9 text-[#8B6E3C]/60" />
-              <p className="text-xs text-slate-500 font-bold">今天所有的任务都做完了哦！</p>
+              <p className="text-xs text-slate-500 font-bold">              {w.allTasksDone}</p>
               <button
                 onClick={() => setWidgetView("add")}
                 className="mt-2 text-[10px] text-[#4D7C5D] hover:bg-[#F0F5F1] border border-[#DEEAE2] px-3 py-1 rounded-lg transition-all font-bold uppercase tracking-wider bg-transparent cursor-pointer"
               >
-                新建任务 +
+                {w.newTask}
               </button>
             </div>
           </div>
@@ -726,7 +734,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           data-tauri-drag-region
           className="text-[8px] text-slate-500 font-extrabold uppercase tracking-wider cursor-move py-1 pr-3"
         >
-          待办任务: {tasks.length}
+          {w.taskCount.replace("{count}", String(tasks.length))}
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -737,7 +745,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FCF2F0]/80 text-[#A34E36] border-[#F5DFDB]"
                 : "text-slate-400 hover:text-slate-600 border-transparent"
             }`}
-            title="卡片视图"
+            title={w.viewCard}
           >
             <Layers className="w-3 h-3" />
           </button>
@@ -749,7 +757,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FCF2F0]/80 text-[#A34E36] border-[#F5DFDB]"
                 : "text-slate-400 hover:text-slate-600 border-transparent"
             }`}
-            title="待办清单"
+            title={w.viewList}
           >
             <ListTodo className="w-3 h-3" />
           </button>
@@ -761,7 +769,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FCF2F0]/80 text-[#A34E36] border-[#F5DFDB]"
                 : "text-slate-400 hover:text-slate-600 border-transparent"
             }`}
-            title="番茄时钟"
+            title={w.viewTimer}
           >
             <Clock className="w-3 h-3" />
           </button>
@@ -776,7 +784,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FCF2F0]/80 text-[#A34E36] border-[#F5DFDB]"
                 : "text-slate-400 hover:text-slate-600 border-transparent"
             }`}
-            title="随手便签"
+            title={w.viewNotes}
           >
             <StickyNote className="w-3 h-3" />
           </button>
@@ -788,7 +796,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                 ? "bg-[#FCF2F0]/80 text-[#A34E36] border-[#F5DFDB]"
                 : "text-slate-400 hover:text-slate-600 border-transparent"
             }`}
-            title="新建任务"
+            title={w.viewAdd}
           >
             <Plus className="w-3 h-3" />
           </button>
@@ -797,7 +805,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           data-tauri-drag-region
           className="text-[8px] text-slate-500 font-extrabold cursor-move py-1 pl-3"
         >
-          进度: {progressPercentage}%
+          {w.progressPercent.replace("{pct}", String(progressPercentage))}
         </div>
       </div>
     </div>

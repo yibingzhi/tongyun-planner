@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Calendar, Coffee } from "lucide-react";
 import type { Task } from "../types";
 import { QuickAddTask } from "./QuickAddTask";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -33,6 +34,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   setSelectedCalendarDate,
   handleAddTask,
 }) => {
+  const { t } = useTranslation(); const cv = t.calendarView; const m = t.matrix;
   // Pre-group tasks by due date using useMemo to convert O(N) filters to O(1) lookups
   const tasksByDueDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -166,7 +168,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
             <h3 className="text-sm font-bold text-[#2D323A] flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-[#4D7C5D]" />
               <span>
-                {calendarYear} 年 {calendarMonth + 1} 月
+                {cv.yearMonth.replace("{year}", String(calendarYear)).replace("{month}", String(calendarMonth + 1))}
               </span>
             </h3>
             <div className="flex items-center gap-1.5">
@@ -180,7 +182,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                   }
                 }}
                 className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-500 transition-colors cursor-pointer"
-                title="上个月"
+                title={cv.prevMonth}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -195,7 +197,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                 }}
                 className="text-[10px] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-600 font-extrabold transition-all cursor-pointer"
               >
-                回到今日
+                {cv.backToToday}
               </button>
               <button
                 onClick={() => {
@@ -207,7 +209,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                   }
                 }}
                 className="p-1.5 rounded-lg border border-[#EFEBE4] hover:bg-[#FAF8F5] text-slate-500 transition-colors cursor-pointer"
-                title="下个月"
+                title={cv.nextMonth}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -218,13 +220,13 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
 
           {/* 星期行标 */}
           <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">
-            <span>周日</span>
-            <span>周一</span>
-            <span>周二</span>
-            <span>周三</span>
-            <span>周四</span>
-            <span>周五</span>
-            <span>周六</span>
+            <span>{cv.sun}</span>
+            <span>{cv.mon}</span>
+            <span>{cv.tue}</span>
+            <span>{cv.wed}</span>
+            <span>{cv.thu}</span>
+            <span>{cv.fri}</span>
+            <span>{cv.sat}</span>
           </div>
 
           {/* 日期格子容器 */}
@@ -236,7 +238,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
           <div className="pb-2.5 border-b border-[#EFEBE4] mb-3">
             <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-[#8B6E3C]" />
-              <span>{selectedCalendarDate} 待办任务</span>
+              <span>{cv.tasksForDate.replace("{date}", selectedCalendarDate)}</span>
             </h3>
           </div>
 
@@ -260,7 +262,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                     onClick={() => handleComplete(task.id)}
                     className="text-[9px] flex-shrink-0 text-[#4D7C5D] hover:bg-[#4D7C5D] hover:text-white border border-[#DEEAE2] px-2 py-0.5 rounded bg-white transition-all font-bold cursor-pointer"
                   >
-                    完成
+                    {m.complete}
                   </button>
                 </div>
               ))
@@ -268,9 +270,9 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
               <div className="h-full flex flex-col items-center justify-center text-center py-16 gap-2">
                 <Coffee className="w-8 h-8 text-[#8B6E3C]/30" />
                 <p className="text-[10px] text-slate-400 font-bold leading-normal">
-                  本日无待办任务
+                  {cv.noTasks}
                   <br />
-                  享受轻松而专注的一天
+                  {cv.enjoyDay}
                 </p>
               </div>
             )}
@@ -282,7 +284,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
               handleAddTask={handleAddTask}
               defaultDueDate={selectedCalendarDate}
               compact={true}
-              placeholder={`快速添加任务到本日...按回车保存`}
+              placeholder={cv.quickAddPlaceholder}
             />
           </div>
         </div>

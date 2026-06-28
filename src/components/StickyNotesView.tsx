@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { StickyNote, Plus, Trash2, Pin } from "lucide-react";
 import type { StickyNote as StickyNoteType } from "../types";
 import { StickyPin } from "./StickyPin";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export const NOTE_COLORS = {
   tea: {
@@ -65,16 +66,18 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
   pinType,
   onPinNoteToDesktop,
 }) => {
+  const { t } = useTranslation();
+  const sn = t.stickyNotes;
   return (
     <div className="flex flex-col gap-4 flex-grow z-10 relative select-none">
       <div className="flex justify-between items-center bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm backdrop-blur-md">
         <div>
           <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
             <StickyNote className="w-4 h-4 text-[#8B6E3C]" />
-            <span>随手便签墙 ({stickyNotes.length})</span>
+            <span>{t.header.notes} ({stickyNotes.length})</span>
           </h3>
           <p className="text-[10px] text-slate-500 mt-0.5">
-            直接修改内容，选择不同色系进行便签分类，保存你的工作备忘与随想。
+            {t.header.notes}
           </p>
         </div>
         <button
@@ -82,7 +85,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
           className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_2px_4px_rgba(77,124,93,0.1)] cursor-pointer hover:scale-102"
         >
           <Plus className="w-3.5 h-3.5" />
-          新增便签
+          {sn.add}
         </button>
       </div>
 
@@ -102,7 +105,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                 <textarea
                   value={note.text}
                   onChange={(e) => handleEditNoteText(note.id, e.target.value)}
-                  placeholder="记录些随笔备忘吧..."
+                  placeholder={sn.add}
                   className={`w-full bg-transparent resize-none focus:outline-none text-xs font-semibold leading-relaxed placeholder-slate-400/60 custom-scrollbar flex-grow ${theme.text}`}
                   style={{ height: "100px" }}
                 />
@@ -118,17 +121,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                         className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
                           note.color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
                         }`}
-                        title={
-                          colorKey === "tea"
-                            ? "奶茶色"
-                            : colorKey === "rose"
-                            ? "蜜桃红"
-                            : colorKey === "mint"
-                            ? "抹茶绿"
-                            : colorKey === "lavender"
-                            ? "薰衣草"
-                            : "天空蓝"
-                        }
+                        title={colorKey}
                       />
                     ))}
                   </div>
@@ -138,14 +131,14 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                     <button
                       onClick={() => onPinNoteToDesktop && onPinNoteToDesktop(note.id)}
                       className="p-1 rounded hover:bg-black/5 text-slate-400 hover:text-[#4D7C5D] transition-all cursor-pointer"
-                      title="悬浮到桌面"
+                      title={t.floatingNote.delete}
                     >
                       <Pin className="w-3.5 h-3.5 rotate-45" />
                     </button>
                     <button
                       onClick={() => handleDeleteNote(note.id)}
                       className="p-1 rounded hover:bg-black/5 text-slate-400 hover:text-red-500 transition-all cursor-pointer"
-                      title="删除便签"
+                      title={t.common.delete}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -158,12 +151,12 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
       ) : (
         <div className="text-center py-20 bg-white/40 border border-[#EFEBE4] rounded-2xl backdrop-blur-sm flex flex-col items-center gap-3">
           <StickyNote className="w-12 h-12 text-[#EFEBE4]" />
-          <p className="text-xs text-slate-400 font-bold">暂无便签，点击右上角新建</p>
+          <p className="text-xs text-slate-400 font-bold">{sn.empty}</p>
           <button
             onClick={handleAddNote}
             className="mt-2 text-[10px] text-[#4D7C5D] hover:bg-[#F0F5F1] border border-[#DEEAE2] px-3.5 py-1.5 rounded-lg transition-all font-bold uppercase tracking-wider bg-transparent cursor-pointer"
           >
-            添加便签
+            {sn.add}
           </button>
         </div>
       )}

@@ -1,8 +1,10 @@
 import React from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { BookOpen, Minus, Maximize2, X } from "lucide-react";
+import { useTranslation } from "../i18n/LanguageContext";
 
 export const TitleBar: React.FC = () => {
+  const { t } = useTranslation(); const tb = t.titleBar;
   const handleMinimize = () => getCurrentWebviewWindow().minimize();
   const handleToggleMaximize = () => getCurrentWebviewWindow().toggleMaximize();
   const handleClose = () => getCurrentWebviewWindow().hide();
@@ -20,7 +22,7 @@ export const TitleBar: React.FC = () => {
           QiYun List
         </span>
         <span data-tauri-drag-region className="text-[9px] text-[#8B6E3C] font-extrabold tracking-wider uppercase">
-          待办日程管理
+          {tb.subtitle}
         </span>
       </div>
       <div className="flex items-center gap-0.5">
@@ -28,7 +30,7 @@ export const TitleBar: React.FC = () => {
           onClick={handleMinimize}
           onPointerDown={(e) => e.stopPropagation()}
           className="w-7 h-6 flex items-center justify-center rounded-md text-slate-400 hover:bg-[#EFEBE4] hover:text-slate-600 transition-all cursor-pointer"
-          title="最小化"
+          title={tb.minimize}
         >
           <Minus className="w-3.5 h-3.5" />
         </button>
@@ -36,7 +38,7 @@ export const TitleBar: React.FC = () => {
           onClick={handleToggleMaximize}
           onPointerDown={(e) => e.stopPropagation()}
           className="w-7 h-6 flex items-center justify-center rounded-md text-slate-400 hover:bg-[#EFEBE4] hover:text-slate-600 transition-all cursor-pointer"
-          title="最大化"
+          title={tb.maximize}
         >
           <Maximize2 className="w-3 h-3" />
         </button>
@@ -44,7 +46,7 @@ export const TitleBar: React.FC = () => {
           onClick={handleClose}
           onPointerDown={(e) => e.stopPropagation()}
           className="w-7 h-6 flex items-center justify-center rounded-md text-slate-400 hover:bg-[#FCF2F0] hover:text-[#A34E36] transition-all cursor-pointer"
-          title="关闭"
+          title={tb.close}
         >
           <X className="w-3.5 h-3.5" />
         </button>

@@ -4,12 +4,14 @@ import { NOTE_COLORS } from "./StickyNotesView";
 import { StickyPin } from "./StickyPin";
 import { invoke } from "@tauri-apps/api/core";
 import { audioEngine } from "../utils/audioEngine";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface FloatingNoteWindowProps {
   noteId: string;
 }
 
 export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }) => {
+  const { t } = useTranslation(); const fn = t.floatingNote;
   const [text, setText] = useState("");
   const [color, setColor] = useState("tea");
   const [pinType, setPinType] = useState<"pin" | "tape" | "clip" | "heart" | "smiley">("pin");
@@ -209,7 +211,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
           <button
             onClick={handleToggleFold}
             className="w-4 h-4 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-            title={isFolded ? "展开便签" : "折叠便签"}
+            title={isFolded ? fn.expand : fn.fold}
           >
             {isFolded ? (
               <svg className="w-2.5 h-2.5 text-slate-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -224,7 +226,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
           <button
             onClick={handleClose}
             className="w-4 h-4 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-            title="关闭便签贴"
+            title={fn.close}
           >
             <X className="w-2.5 h-2.5" />
           </button>
@@ -235,13 +237,13 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
           <textarea
             value={text}
             onChange={(e) => handleTextChange(e.target.value)}
-            placeholder="随手记些什么吧..."
+            placeholder={fn.placeholder}
             className={`w-full bg-transparent resize-none focus:outline-none text-xs font-semibold leading-relaxed placeholder-slate-400/60 custom-scrollbar flex-grow cursor-text ${theme.text}`}
             style={{ minHeight: "100px" }}
           />
         ) : (
           <div className={`text-[10px] font-extrabold truncate pr-10 mt-1 cursor-pointer ${theme.text}`}>
-            {text.trim() || "(双击展开便签)"}
+            {text.trim() || fn.doubleClickHint}
           </div>
         )}
 

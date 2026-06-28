@@ -20,6 +20,7 @@ import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { audioEngine } from "./utils/audioEngine";
 import type { WebDavConfig } from "./types";
 import { Sparkles } from "lucide-react";
+import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -73,9 +74,11 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiModel: "gpt-4o",
   aiAutoCategorize: false,
   enableAutoBackup: true,
+  locale: (localStorage.getItem("qiyun_locale") as "zh-CN" | "en") || "zh-CN",
 };
 
-function App() {
+function AppInner() {
+  const { t, setLocale } = useTranslation();
   const [windowLabel, setWindowLabel] = useState<string>("main");
   const [customizationConfig, setCustomizationConfig] = useState<CustomizationConfig>(DEFAULT_CUSTOMIZATION_CONFIG);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -268,7 +271,7 @@ function App() {
               setPomodoroIsActive(false);
               setPomodoroEndTime(null);
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification("专注时间到了！", { body: "休息结束啦，打起精神开始专注吧 🎯" });
+                new Notification(t.notification.focusTime, { body: t.notification.focusTimeBody });
               }
               const nextTime = focusDuration * 60;
               setPomodoroTimeLeft(nextTime);
@@ -289,7 +292,7 @@ function App() {
               setPomodoroIsActive(false);
               setPomodoroEndTime(null);
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification("番茄时间到啦！", { body: "太棒了！完成了一个番茄钟，喝口水休息一下吧 🌿" });
+                new Notification(t.notification.pomodoroTime, { body: t.notification.pomodoroTimeBody });
               }
               const nextSession = pomodoroSessionCount + 1;
               setPomodoroSessionCount(nextSession);
@@ -447,7 +450,11 @@ function App() {
     const savedCustomization = localStorage.getItem("aero_customization_config");
     if (savedCustomization) {
       try {
-        setCustomizationConfig(JSON.parse(savedCustomization));
+        const parsed = JSON.parse(savedCustomization);
+        setCustomizationConfig(parsed);
+        if (parsed.locale) {
+          setLocale(parsed.locale);
+        }
       } catch (e) {
         console.error("Failed to parse customization config", e);
       }
@@ -1041,8 +1048,11 @@ function App() {
   const handleConfigChange = useCallback((newConfig: CustomizationConfig) => {
     setCustomizationConfig(newConfig);
     localStorage.setItem("aero_customization_config", JSON.stringify(newConfig));
+    if (newConfig.locale) {
+      setLocale(newConfig.locale);
+    }
     syncState("settings", "settings_sync", JSON.stringify(newConfig));
-  }, [syncState]);
+  }, [syncState, setLocale]);
 
   const handleEditTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks((prev) => {
@@ -1271,9 +1281,6 @@ function App() {
     return <FloatingNoteWindow noteId={noteId} />;
   }
 
-  // ==========================================
-  // 渲染挂件分支 (Widget Window)
-  // ==========================================
   if (windowLabel === "widget") {
     return (
       <WidgetWindow
@@ -1373,18 +1380,18 @@ function App() {
             <div>
               <h2 className="text-xl font-bold tracking-wide text-[#2D323A]">
                 {activeTab === "matrix"
-                  ? "四象限优先级看板"
+                  ? t.header.matrix
                   : activeTab === "list"
-                  ? "待办任务列表"
+                  ? t.header.list
                   : activeTab === "calendar"
-                  ? "日历日程看板"
+                  ? t.header.calendar
                   : activeTab === "notes"
-                  ? "随想便签墙"
+                  ? t.header.notes
                   : activeTab === "analytics"
-                  ? "专注度统计看板"
+                  ? t.header.analytics
                   : activeTab === "settings"
-                  ? "个性界面装扮"
-                  : "已完成历史归档"}
+                  ? t.header.settings
+                  : t.header.completed}
               </h2>
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {activeTab === "settings"
@@ -1402,10 +1409,10 @@ function App() {
                     ? "bg-[#FCF2F0] text-[#A34E36] border-[#F5DFDB]"
                     : "bg-white text-slate-500 border-[#EFEBE4] hover:bg-[#FAF8F5]"
                 }`}
-                title={showAiInbox ? "关闭 AI 收集箱" : "开启 AI 智能录入"}
+                title={showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{showAiInbox ? "关闭 AI 录入" : "AI 智能规划"}</span>
+                <span>{showAiInbox ? t.quickAdd.closeAi : t.quickAdd.aiInbox}</span>
               </button>
             )}
           </header>
@@ -1415,33 +1422,35 @@ function App() {
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
               <span>
                 📅{" "}
-                {new Date().toLocaleDateString("zh-CN", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {new Date().toLocaleDateString(
+                  customizationConfig.locale === "en" ? "en-US" : "zh-CN",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
               </span>
               <span className="text-[#EFEBE4]">|</span>
-              <span>今日任务状态</span>
+                <span>{t.sidebar.progress}</span>
             </div>
             <div className="flex items-center gap-4 ml-auto text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#B2C8DF]" />
                 <span className="text-slate-500">
-                  待办任务：<strong className="text-[#2D323A] font-bold">{tasks.length}</strong> 项
+                  {t.common.taskCount.replace("{count}", String(tasks.length))}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C4D7B2]" />
                 <span className="text-slate-500">
-                  已完成：
-                  <strong className="text-[#2D323A] font-bold">{completedTasks.length}</strong> 项
+                  {t.common.completed.replace("{count}", String(completedTasks.length))}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#E8A0BF]" />
                 <span className="text-slate-500">
-                  总进度：<strong className="text-[#2D323A] font-bold">{progressPercentage}%</strong>
+                  {t.common.progress.replace("{pct}", String(progressPercentage))}
                 </span>
               </div>
             </div>
@@ -1453,7 +1462,7 @@ function App() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#8B6E3C]" />
-                  <span>AI 智能收集箱</span>
+                  <span>{t.quickAdd.aiInboxTitle}</span>
                 </span>
               </div>
 
@@ -1466,7 +1475,7 @@ function App() {
                 }`}>
                   <span>
                     {aiInputMessage.text === "API_KEY_MISSING"
-                      ? "未配置大模型 API 密钥，请先前往“设置页面”底部的 AI 设置区域填写。"
+                      ? t.quickAdd.apiKeyMissing
                       : aiInputMessage.text}
                   </span>
                   {aiInputMessage.text === "API_KEY_MISSING" && (
@@ -1474,7 +1483,7 @@ function App() {
                       onClick={() => { setActiveTab("settings"); setShowAiInbox(false); setAiInputMessage(null); }}
                       className="flex-shrink-0 px-3 py-1 rounded-lg bg-[#E65100] text-white text-[10px] font-bold hover:bg-[#BF360C] transition-colors cursor-pointer"
                     >
-                      前往设置 →
+                      {t.quickAdd.goToSettings}
                     </button>
                   )}
                 </div>
@@ -1484,26 +1493,26 @@ function App() {
                 /* AI 提取结果预检与调整面板 */
                 <div className="flex flex-col gap-3 animate-fade-in-up">
                   <div className="text-[10px] font-bold text-slate-500 mb-1 border-b border-[#EFEBE4] pb-1.5">
-                    AI 预检清单（支持手动修改，核对无误后一键导入）:
+                    {t.quickAdd.aiPreview}
                   </div>
                   <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                    {aiPreviewTasks.map((t, idx) => (
+                    {aiPreviewTasks.map((item, idx) => (
                       <div key={idx} className="p-3 bg-[#FAF8F5]/85 border border-[#EFEBE4] rounded-xl flex flex-col gap-2 shadow-2xs">
                         <div className="flex gap-2 items-center">
                           <input
                             type="text"
-                            value={t.title}
+                            value={item.title}
                             onChange={(e) => {
                               const updated = [...aiPreviewTasks];
                               updated[idx].title = e.target.value;
                               setAiPreviewTasks(updated);
                             }}
                             className="flex-grow bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
-                            placeholder="任务名称"
+                            placeholder={t.quickAdd.taskTitle}
                           />
                           <input
                             type="date"
-                            value={t.dueDate}
+                            value={item.dueDate}
                             onChange={(e) => {
                               const updated = [...aiPreviewTasks];
                               updated[idx].dueDate = e.target.value;
@@ -1512,7 +1521,7 @@ function App() {
                             className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#4D7C5D] w-28 flex-shrink-0"
                           />
                           <select
-                            value={t.category}
+                            value={item.category}
                             onChange={(e) => {
                               const updated = [...aiPreviewTasks];
                               updated[idx].category = e.target.value as Task["category"];
@@ -1520,10 +1529,10 @@ function App() {
                             }}
                             className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-semibold focus:outline-none focus:border-[#4D7C5D] w-32 flex-shrink-0"
                           >
-                            <option value="urgent-important">I. 重要且紧急</option>
-                            <option value="important-not-urgent">II. 重要不紧急</option>
-                            <option value="urgent-not-important">III. 紧急不重要</option>
-                            <option value="not-urgent-not-important">IV. 不重要不紧急</option>
+                            <option value="urgent-important">I. {t.matrix.urgentImportant}</option>
+                            <option value="important-not-urgent">II. {t.matrix.importantNotUrgent}</option>
+                            <option value="urgent-not-important">III. {t.matrix.urgentNotImportant}</option>
+                            <option value="not-urgent-not-important">IV. {t.matrix.notUrgentNotImportant}</option>
                           </select>
                         </div>
 
@@ -1532,28 +1541,28 @@ function App() {
                             <label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">任务说明/详情描述</label>
                             <input
                               type="text"
-                              value={t.description}
+                              value={item.description}
                               onChange={(e) => {
                                 const updated = [...aiPreviewTasks];
                                 updated[idx].description = e.target.value;
                                 setAiPreviewTasks(updated);
                               }}
                               className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1 rounded-lg text-[10px] text-slate-600 focus:outline-none focus:border-[#4D7C5D]"
-                              placeholder="无详情说明"
+                              placeholder={t.quickAdd.noDescription}
                             />
                           </div>
                           <div>
-                            <label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">技术备忘/工单元数据</label>
+                            <label className="text-[8px] font-bold text-slate-400 uppercase block mb-0.5">{t.quickAdd.techNotes}</label>
                             <input
                               type="text"
-                              value={t.notes}
+                              value={item.notes}
                               onChange={(e) => {
                                 const updated = [...aiPreviewTasks];
                                 updated[idx].notes = e.target.value;
                                 setAiPreviewTasks(updated);
                               }}
                               className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1 rounded-lg text-[10px] text-slate-600 focus:outline-none focus:border-[#4D7C5D]"
-                              placeholder="无技术备注"
+                              placeholder={t.quickAdd.noNotes}
                             />
                           </div>
                         </div>
@@ -1566,13 +1575,13 @@ function App() {
                       onClick={() => setAiPreviewTasks([])}
                       className="text-[10px] text-slate-500 hover:text-slate-700 px-3.5 py-1.5 rounded-lg border border-[#EFEBE4] transition-colors cursor-pointer"
                     >
-                      放弃并返回
+                      {t.quickAdd.discard}
                     </button>
                     <button
                       onClick={handleConfirmAiTasks}
                       className="text-[10px] text-white bg-[#4D7C5D] hover:bg-[#3F684C] px-4.5 py-1.5 rounded-lg font-bold transition-colors cursor-pointer shadow-xs"
                     >
-                      确认并录入日程待办 (一键保存)
+                      {t.quickAdd.confirmImport}
                     </button>
                   </div>
                 </div>
@@ -1589,7 +1598,7 @@ function App() {
                       }
                     }}
                     onFocus={() => aiInputMessage && setAiInputMessage(null)}
-                    placeholder="在此写下今天的所有规划与日程（如：下午3点开会讨论方案，周五前交述职报告）。AI 将自动分析截止日期与优先级象限并智能存入...（按 Ctrl + Enter 智能规划录入）"
+                    placeholder={t.quickAdd.aiPlaceholder}
                     className="flex-grow bg-[#FAF8F5]/80 border border-[#EFEBE4] px-3.5 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] transition-colors resize-none h-14 custom-scrollbar font-semibold"
                     disabled={aiInputLoading}
                   />
@@ -1605,12 +1614,12 @@ function App() {
                     {aiInputLoading ? (
                       <>
                         <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                        <span>规划中...</span>
+                        <span>{t.quickAdd.aiProcessing}</span>
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>智能分析</span>
+                        <span>{t.quickAdd.aiAnalyze}</span>
                       </>
                     )}
                   </button>
@@ -1710,6 +1719,15 @@ function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+function App() {
+  const savedLocale = localStorage.getItem("qiyun_locale") as "zh-CN" | "en" | null;
+  return (
+    <LanguageProvider initialLocale={savedLocale || "zh-CN"}>
+      <AppInner />
+    </LanguageProvider>
   );
 }
 

@@ -3,6 +3,7 @@ import { Heart, Calendar, Clock, Layers3, Maximize2, Minimize2 } from "lucide-re
 import type { Task, TaskCategory } from "../types";
 import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
 import { QuickAddTask } from "./QuickAddTask";
+import { useTranslation } from "../i18n/LanguageContext";
 
 interface MatrixViewProps {
   tasks: Task[];
@@ -35,13 +36,15 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
   handleToggleFavorite,
   handleTogglePin,
 }) => {
+  const { t } = useTranslation();
+  const m = t.matrix;
   // State to support full screen expand/collapse for a specific quadrant
   const [expandedQuadrant, setExpandedQuadrant] = useState<TaskCategory | null>(null);
 
   const quadrants = [
     {
       id: "urgent-important",
-      label: "I. 重要且紧急",
+      label: "I. " + m.urgentImportant,
       defaultBg: "bg-[#FCF2F0]",
       defaultBorder: "border-[#F5DFDB]",
       defaultText: "text-[#A34E36]",
@@ -50,7 +53,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
     },
     {
       id: "important-not-urgent",
-      label: "II. 重要不紧急",
+      label: "II. " + m.importantNotUrgent,
       defaultBg: "bg-[#F0F5F1]",
       defaultBorder: "border-[#DEEAE2]",
       defaultText: "text-[#4D7C5D]",
@@ -59,7 +62,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
     },
     {
       id: "urgent-not-important",
-      label: "III. 紧急不重要",
+      label: "III. " + m.urgentNotImportant,
       defaultBg: "bg-[#F3F2F7]",
       defaultBorder: "border-[#E5E2EE]",
       defaultText: "text-[#5C528B]",
@@ -68,7 +71,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
     },
     {
       id: "not-urgent-not-important",
-      label: "IV. 不重要不紧急",
+      label: "IV. " + m.notUrgentNotImportant,
       defaultBg: "bg-[#FAF5ED]",
       defaultBorder: "border-[#EFE5D3]",
       defaultText: "text-[#8B6E3C]",
@@ -126,14 +129,14 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[9px] ${bgClass} border ${borderClass} ${textClass} px-2.5 py-0.5 rounded-full font-bold`}>
-                  {quadrantTasks.length} 待办
+                    {m.taskCount.replace("{count}", String(quadrantTasks.length))}
                 </span>
                 
                 {/* Maximize / Collapse toggle buttons */}
                 <button
                   onClick={() => setExpandedQuadrant(expandedQuadrant ? null : quad.id)}
                   className={`p-1 rounded-lg hover:bg-white/75 transition-colors border ${borderClass} text-slate-400 hover:text-slate-600 cursor-pointer`}
-                  title={expandedQuadrant ? "收缩看板" : "最大化聚焦此象限"}
+                  title={expandedQuadrant ? m.collapse : m.expand}
                 >
                   {expandedQuadrant ? (
                     <Minimize2 className="w-3 h-3" />
@@ -150,7 +153,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                 handleAddTask={(data) => handleAddTask({ ...data, isExplicit: true })}
                 defaultCategory={quad.id}
                 compact={true}
-                placeholder={`添加任务到「${quad.label.split(" ").slice(1).join("")}」...按回车保存`}
+                placeholder={m.addPlaceholder.replace("{quadrant}", quad.label.split(" ").slice(1).join(""))}
               />
             </div>
 
@@ -174,13 +177,13 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                       <div className="min-w-0 flex-grow">
                         <div className="flex items-center gap-1.5 min-w-0">
                           {task.isPinned && (
-                            <span className="text-[10px] text-[#8B6E3C] flex-shrink-0" title="已置顶">📌</span>
+                            <span className="text-[10px] text-[#8B6E3C] flex-shrink-0" title={m.pinned}>📌</span>
                           )}
                           <h4 className={`text-xs font-bold text-[#2D323A] group-hover:${textClass} transition-colors truncate`}>
                             {task.title}
                           </h4>
                           {task.isFavorite && (
-                            <span className="text-[10px] text-[#E8A0BF] flex-shrink-0" title="已标星">♥</span>
+                            <span className="text-[10px] text-[#E8A0BF] flex-shrink-0" title={m.starred}>♥</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 min-w-0">
@@ -212,7 +215,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                         <button
                           onClick={() => handleTogglePin(task.id)}
                           className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
-                          title={task.isPinned ? "取消置顶" : "置顶任务"}
+                          title={task.isPinned ? m.unpin : m.pin}
                         >
                           <svg className={`w-3.5 h-3.5 ${task.isPinned ? "text-[#8B6E3C] fill-[#8B6E3C]" : "text-slate-300"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -223,7 +226,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                         <button
                           onClick={() => handleToggleFavorite(task.id)}
                           className="p-1 rounded hover:bg-slate-100 flex-shrink-0 cursor-pointer text-slate-400"
-                          title={task.isFavorite ? "取消星标" : "标记星标"}
+                          title={task.isFavorite ? m.unfavorite : m.favorite}
                         >
                           <Heart className={`w-3.5 h-3.5 text-[#E8A0BF] transition-all ${task.isFavorite ? "fill-[#E8A0BF]" : "text-slate-300"}`} />
                         </button>
@@ -231,16 +234,16 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                         <button
                           onClick={() => handleStartFocus(task.id, task.title)}
                           className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer flex items-center gap-1 shadow-xs`}
-                          title="开始专注该任务"
+                          title={m.startFocus}
                         >
-                          ⏱️ 专注
+                          {m.focus}
                         </button>
                         
                         <button
                           onClick={() => handleComplete(task.id)}
                           className={`text-[9px] flex-shrink-0 bg-white border ${borderClass} ${textClass} hover:${bgClass} px-2 py-1 rounded-lg transition-all font-extrabold cursor-pointer shadow-xs`}
                         >
-                          完成
+                          {m.complete}
                         </button>
                       </div>
                     </div>
@@ -248,7 +251,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                 })
               ) : (
                 <div className="h-full flex items-center justify-center py-12 text-slate-400 text-[10px] font-bold tracking-wider">
-                  本象限暂无待办
+                  {t.listView.noTasks}
                 </div>
               )}
             </div>
