@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BookOpen,
   LayoutGrid,
@@ -117,6 +117,25 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const s = t.sidebar;
+  const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
+
+  const commitMinutes = (raw: string) => {
+    const val = parseInt(raw, 10);
+    if (isNaN(val) || val < 1) return;
+    const clamped = Math.min(val, 120);
+    const newTime = clamped * 60;
+    setPomodoroTimeLeft(newTime);
+    setEditingMinutes(null);
+    if (pomodoroIsBreak) {
+      setBreakDuration(clamped);
+      localStorage.setItem("pomodoro_break_duration", String(clamped));
+      syncPomodoro(false, newTime, true, focusDuration, clamped, pomodoroSessionCount);
+    } else {
+      setFocusDuration(clamped);
+      localStorage.setItem("pomodoro_focus_duration", String(clamped));
+      syncPomodoro(false, newTime, false, clamped, breakDuration, pomodoroSessionCount);
+    }
+  };
   return (
     <aside className="w-72 flex-shrink-0 border-r border-[#EFEBE4] bg-[#F4EFEA]/60 p-6 flex flex-col justify-between backdrop-blur-xl z-10 relative select-none overflow-y-auto custom-scrollbar">
       <div className="space-y-6 flex-shrink-0">
@@ -290,13 +309,33 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                   -
                 </button>
               )}
-              <span className="text-xl font-bold font-mono text-[#2D323A] tracking-tight">
-                {Math.floor(pomodoroTimeLeft / 60)
-                  .toString()
-                  .padStart(2, "0")}
-                :
-                {(pomodoroTimeLeft % 60).toString().padStart(2, "0")}
-              </span>
+              {editingMinutes !== null ? (
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={editingMinutes}
+                  onChange={(e) => setEditingMinutes(e.target.value)}
+                  onBlur={(e) => commitMinutes(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitMinutes((e.target as HTMLInputElement).value);
+                    if (e.key === "Escape") setEditingMinutes(null);
+                  }}
+                  autoFocus
+                  className="w-16 text-xl font-bold font-mono text-[#2D323A] tracking-tight bg-transparent border-b-2 border-[#4D7C5D] outline-none text-center"
+                />
+              ) : (
+                <span
+                  onClick={() => !pomodoroIsActive && setEditingMinutes(String(Math.floor(pomodoroTimeLeft / 60)))}
+                  className={`text-xl font-bold font-mono text-[#2D323A] tracking-tight ${!pomodoroIsActive ? "cursor-pointer hover:text-[#4D7C5D] transition-colors" : ""}`}
+                >
+                  {Math.floor(pomodoroTimeLeft / 60)
+                    .toString()
+                    .padStart(2, "0")}
+                  :
+                  {(pomodoroTimeLeft % 60).toString().padStart(2, "0")}
+                </span>
+              )}
               {!pomodoroIsActive && (
                 <button
                   onClick={() => {
@@ -441,6 +480,10 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
                 { id: "pink", label: s.pink, title: s.pinkTitle },
                 { id: "ocean", label: s.ocean, title: s.oceanTitle },
                 { id: "rain", label: s.rain, title: s.rainTitle },
+                { id: "white", label: s.white, title: s.whiteTitle },
+                { id: "fire", label: s.fire, title: s.fireTitle },
+                { id: "stream", label: s.stream, title: s.streamTitle },
+                { id: "wind", label: s.wind, title: s.windTitle },
               ].map((sound) => (
                 <button
                   key={sound.id}

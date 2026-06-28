@@ -134,6 +134,24 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     setSplitView(next);
     localStorage.setItem("qiyun_widget_split", String(next));
   };
+  const [widgetEditingMinutes, setWidgetEditingMinutes] = useState<string | null>(null);
+  const commitWidgetMinutes = (raw: string) => {
+    const val = parseInt(raw, 10);
+    if (isNaN(val) || val < 1) return;
+    const clamped = Math.min(val, 120);
+    const newTime = clamped * 60;
+    setPomodoroTimeLeft(newTime);
+    setWidgetEditingMinutes(null);
+    if (pomodoroIsBreak) {
+      setBreakDuration(clamped);
+      localStorage.setItem("pomodoro_break_duration", String(clamped));
+      syncPomodoro(false, newTime, true, focusDuration, clamped, pomodoroSessionCount);
+    } else {
+      setFocusDuration(clamped);
+      localStorage.setItem("pomodoro_focus_duration", String(clamped));
+      syncPomodoro(false, newTime, false, clamped, breakDuration, pomodoroSessionCount);
+    }
+  };
 
   // 挂件内快捷新建任务的表单状态
   const [newTitle, setNewTitle] = useState("");
@@ -500,13 +518,33 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                       -
                     </button>
                   )}
-                  <span className="text-2xl font-bold font-mono text-[#2D323A]">
-                    {Math.floor(pomodoroTimeLeft / 60)
-                      .toString()
-                      .padStart(2, "0")}
-                    :
-                    {(pomodoroTimeLeft % 60).toString().padStart(2, "0")}
-                  </span>
+                  {widgetEditingMinutes !== null ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={widgetEditingMinutes}
+                      onChange={(e) => setWidgetEditingMinutes(e.target.value)}
+                      onBlur={(e) => commitWidgetMinutes(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitWidgetMinutes((e.target as HTMLInputElement).value);
+                        if (e.key === "Escape") setWidgetEditingMinutes(null);
+                      }}
+                      autoFocus
+                      className="w-18 text-2xl font-bold font-mono text-[#2D323A] bg-transparent border-b-2 border-[#4D7C5D] outline-none text-center"
+                    />
+                  ) : (
+                    <span
+                      onClick={() => !pomodoroIsActive && setWidgetEditingMinutes(String(Math.floor(pomodoroTimeLeft / 60)))}
+                      className={`text-2xl font-bold font-mono text-[#2D323A] ${!pomodoroIsActive ? "cursor-pointer hover:text-[#4D7C5D] transition-colors" : ""}`}
+                    >
+                      {Math.floor(pomodoroTimeLeft / 60)
+                        .toString()
+                        .padStart(2, "0")}
+                      :
+                      {(pomodoroTimeLeft % 60).toString().padStart(2, "0")}
+                    </span>
+                  )}
                   {!pomodoroIsActive && (
                     <button
                       onClick={() => {

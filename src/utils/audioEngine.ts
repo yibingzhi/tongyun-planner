@@ -70,6 +70,10 @@ export class AudioEngine {
   }
 
   private stopNoiseImmediate(): void {
+    if ((this as any)._crackleInterval) {
+      clearInterval((this as any)._crackleInterval);
+      (this as any)._crackleInterval = null;
+    }
     if (this.source) {
       try {
         this.source.stop();
@@ -158,6 +162,101 @@ export class AudioEngine {
         this.source.connect(hpFilter);
         hpFilter.connect(bpFilter);
         bpFilter.connect(this.gain);
+      } else if (type === "white") {
+        const sampleRate = ctx.sampleRate;
+        const bufferSize = 2 * sampleRate;
+        const whiteBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
+        const whiteData = whiteBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          whiteData[i] = Math.random() * 2 - 1;
+        }
+
+        this.source = ctx.createBufferSource();
+        this.source.buffer = whiteBuffer;
+        this.source.loop = true;
+
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.setValueAtTime(80, ctx.currentTime);
+
+        this.source.connect(hp);
+        hp.connect(this.gain);
+      } else if (type === "fire") {
+        this.source.buffer = this.getPinkBuffer(ctx);
+
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(800, ctx.currentTime);
+
+        this.source.connect(lp);
+        lp.connect(this.gain);
+
+        const crackleInterval = setInterval(() => {
+          if (!this.ctx || !this.gain) { clearInterval(crackleInterval); return; }
+          const cCtx = this.ctx;
+          const crackleGain = cCtx.createGain();
+          crackleGain.gain.setValueAtTime(Math.random() * 0.12 + 0.04, cCtx.currentTime);
+          crackleGain.gain.exponentialRampToValueAtTime(0.001, cCtx.currentTime + 0.06 + Math.random() * 0.08);
+
+          const crackleSource = cCtx.createBufferSource();
+          const crackleBufferSize = Math.floor(0.1 * cCtx.sampleRate);
+          const crackleBuf = cCtx.createBuffer(1, crackleBufferSize, cCtx.sampleRate);
+          const crackleData = crackleBuf.getChannelData(0);
+          for (let i = 0; i < crackleBufferSize; i++) {
+            crackleData[i] = Math.random() * 2 - 1;
+          }
+          crackleSource.buffer = crackleBuf;
+
+          const crackleHp = cCtx.createBiquadFilter();
+          crackleHp.type = "highpass";
+          crackleHp.frequency.setValueAtTime(2000, cCtx.currentTime);
+
+          crackleSource.connect(crackleHp);
+          crackleHp.connect(crackleGain);
+          crackleGain.connect(this.gain!);
+          crackleSource.start(cCtx.currentTime);
+        }, 400 + Math.random() * 800);
+
+        (this as any)._crackleInterval = crackleInterval;
+      } else if (type === "stream") {
+        this.source.buffer = this.getPinkBuffer(ctx);
+
+        const bp = ctx.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.setValueAtTime(900, ctx.currentTime);
+        bp.Q.setValueAtTime(0.6, ctx.currentTime);
+
+        const streamLfo = ctx.createOscillator();
+        streamLfo.frequency.setValueAtTime(0.15, ctx.currentTime);
+        const streamLfoGain = ctx.createGain();
+        streamLfoGain.gain.setValueAtTime(250, ctx.currentTime);
+        streamLfo.connect(streamLfoGain);
+        streamLfoGain.connect(bp.frequency);
+        streamLfo.start();
+
+        this.source.connect(bp);
+        bp.connect(this.gain);
+        this.lfo = streamLfo;
+      } else if (type === "wind") {
+        this.source.buffer = this.getBrownBuffer(ctx);
+
+        const windLp = ctx.createBiquadFilter();
+        windLp.type = "lowpass";
+        windLp.frequency.setValueAtTime(300, ctx.currentTime);
+        windLp.Q.setValueAtTime(0.5, ctx.currentTime);
+
+        const windLfo = ctx.createOscillator();
+        windLfo.type = "sine";
+        windLfo.frequency.setValueAtTime(0.08, ctx.currentTime);
+        const windLfoGain = ctx.createGain();
+        windLfoGain.gain.setValueAtTime(250, ctx.currentTime);
+        windLfo.connect(windLfoGain);
+        windLfoGain.connect(windLp.frequency);
+        windLfo.start();
+
+        this.source.connect(windLp);
+        windLp.connect(this.gain);
+        this.lfo = windLfo;
       }
       
       this.source.start();
