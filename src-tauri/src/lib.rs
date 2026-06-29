@@ -13,6 +13,7 @@ pub struct TodoSyncPayload {
     pub notes: Option<String>,
     pub category: Option<String>,
     pub due_date: Option<String>,
+    pub due_time: Option<String>,
     pub timestamp: u64,
 }
 
@@ -64,6 +65,7 @@ fn webdav_upload(
 ) -> Result<(), String> {
     let client = reqwest::blocking::Client::builder()
         .danger_accept_invalid_certs(true)
+        .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -98,6 +100,7 @@ fn webdav_download(
 ) -> Result<String, String> {
     let client = reqwest::blocking::Client::builder()
         .danger_accept_invalid_certs(true)
+        .timeout(std::time::Duration::from_secs(30))
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -176,6 +179,7 @@ pub fn run() {
                                 notes: None,
                                 category: None,
                                 due_date: None,
+                                due_time: None,
                                 timestamp: 0,
                             });
                         }

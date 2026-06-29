@@ -76,7 +76,8 @@ interface WidgetWindowProps {
     description?: string,
     category?: string,
     notes?: string,
-    dueDate?: string
+    dueDate?: string,
+    dueTime?: string
   ) => Promise<void>;
   customizationConfig?: CustomizationConfig;
   pomodoroTaskId: string | null;
@@ -172,6 +173,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   const [newWidgetDueDate, setNewWidgetDueDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const [newWidgetDueTime, setNewWidgetDueTime] = useState("");
 
   const handleWidgetAddTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +186,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       notes: newNotes || undefined,
       category: newCategory,
       dueDate: newWidgetDueDate || undefined,
+      dueTime: newWidgetDueTime || undefined,
     };
 
     setTasks((prev) => {
@@ -199,11 +202,13 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       newTask.description || "",
       newTask.category,
       newTask.notes || "",
-      newTask.dueDate
+      newTask.dueDate,
+      newTask.dueTime
     );
     setNewTitle("");
     setNewDesc("");
     setNewNotes("");
+    setNewWidgetDueTime("");
     setWidgetView("card");
   };
 
@@ -217,7 +222,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       const nextTask = { ...task, subtasks };
       const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
       saveTasks(updated);
-      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime);
       return updated;
     });
   };
@@ -230,7 +235,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       const nextTask = { ...task, subtasks: [...(task.subtasks || []), newSub] };
       const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
       saveTasks(updated);
-      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate);
+      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime);
       return updated;
     });
   };
@@ -436,6 +441,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                   onChange={(e) => setNewWidgetDueDate(e.target.value)}
                   className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#4D7C5D] font-medium cursor-pointer"
                 />
+                <input
+                  type="time"
+                  value={newWidgetDueTime}
+                  onChange={(e) => setNewWidgetDueTime(e.target.value)}
+                  className="w-full bg-[#FAF8F5] border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#4D7C5D] font-medium cursor-pointer mt-1"
+                />
               </div>
               <div>
                 <label className="text-[8px] font-extrabold text-slate-500 uppercase tracking-wider block mb-1">
@@ -496,7 +507,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                         {task.dueDate && (
                           <span className="text-[8px] text-slate-400 font-bold flex items-center gap-0.5">
                             <Calendar className="w-2 h-2 text-slate-400" />
-                            <span>{task.dueDate.split("-").slice(1).join("/")}</span>
+                            <span>{task.dueDate.split("-").slice(1).join("/")}{task.dueTime ? ` ${task.dueTime}` : ""}</span>
                           </span>
                         )}
                       </div>

@@ -156,7 +156,7 @@ export const SwipeCard: React.FC<SwipeCardProps> = ({
           <div className="flex items-center gap-2">
             {/* 到期倒计时 */}
             {(() => {
-              const countdown = getDueDateCountdown(task.dueDate);
+              const countdown = getDueDateCountdown(task.dueDate, task.dueTime);
               if (!countdown) return null;
               const badgeClass = countdown.isOverdue
                 ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] font-extrabold"

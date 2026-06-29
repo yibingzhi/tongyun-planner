@@ -121,6 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const s = t.sidebar;
+  const [hasWebdavUrl] = useState(() => !!localStorage.getItem("qiyun_webdav_url"));
   const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
 
   const commitMinutes = (raw: string) => {
@@ -530,7 +531,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       {/* 底部设置 */}
       <div className="space-y-1.5 pt-3 border-t border-[#EFEBE4] flex-shrink-0">
         {/* WebDAV 自动备份同步指示器 */}
-        {localStorage.getItem("qiyun_webdav_url") && (
+        {hasWebdavUrl && (
           <div className="pb-1.5 text-[9px] flex items-center justify-between text-slate-500 font-bold border-b border-[#EFEBE4]/50 mb-1.5 select-none">
             <div className="flex items-center gap-1">
               {syncStatus === "syncing" ? (

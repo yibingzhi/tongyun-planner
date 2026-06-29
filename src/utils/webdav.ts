@@ -1,8 +1,19 @@
 import type { WebDavConfig } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 
+const SYNC_TIMEOUT = 30000;
+
 // 检测是否处于 Tauri 环境
 const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
+
+function invokeWithTimeout<T>(cmd: string, args: Record<string, unknown>, ms: number = SYNC_TIMEOUT): Promise<T> {
+  return Promise.race([
+    invoke<T>(cmd, args),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`WebDAV 操作超时 (${ms / 1000}s)`)), ms)
+    ),
+  ]);
+}
 
 /**
  * Uploads a text file content (like JSON string) to a WebDav server.
@@ -14,7 +25,7 @@ export async function webdavUpload(config: WebDavConfig, filename: string, conte
   
   if (isTauri) {
     try {
-      await invoke("webdav_upload", {
+      await invokeWithTimeout("webdav_upload", {
         url: config.url,
         username: config.username,
         password: config.password || null,
@@ -74,7 +85,7 @@ export async function webdavDownload(config: WebDavConfig, filename: string): Pr
   
   if (isTauri) {
     try {
-      const res = await invoke<string>("webdav_download", {
+      const res = await invokeWithTimeout<string>("webdav_download", {
         url: config.url,
         username: config.username,
         password: config.password || null,

@@ -7,6 +7,7 @@ export class AudioEngine {
   // Cached noise buffers to prevent CPU-heavy procedural generation on every start
   private brownBuffer: AudioBuffer | null = null;
   private pinkBuffer: AudioBuffer | null = null;
+  private whiteBuffer: AudioBuffer | null = null;
 
   // Handles state protection to prevent overlapping context states during fading out
   private fadeTimeoutId: any = null;
@@ -163,16 +164,19 @@ export class AudioEngine {
         hpFilter.connect(bpFilter);
         bpFilter.connect(this.gain);
       } else if (type === "white") {
-        const sampleRate = ctx.sampleRate;
-        const bufferSize = 2 * sampleRate;
-        const whiteBuffer = ctx.createBuffer(1, bufferSize, sampleRate);
-        const whiteData = whiteBuffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          whiteData[i] = Math.random() * 2 - 1;
+        if (!this.whiteBuffer) {
+          const sampleRate = ctx.sampleRate;
+          const bufferSize = 2 * sampleRate;
+          const buf = ctx.createBuffer(1, bufferSize, sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          this.whiteBuffer = buf;
         }
 
         this.source = ctx.createBufferSource();
-        this.source.buffer = whiteBuffer;
+        this.source.buffer = this.whiteBuffer;
         this.source.loop = true;
 
         const hp = ctx.createBiquadFilter();

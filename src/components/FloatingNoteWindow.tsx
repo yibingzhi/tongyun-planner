@@ -146,9 +146,11 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
 
   // Listen to other windows edits
   useEffect(() => {
+    let cancelled = false;
     let unlisten: (() => void) | undefined;
     
     import("@tauri-apps/api/event").then((m) => {
+      if (cancelled) return;
       m.listen("todo-sync-event", (event: any) => {
         const payload = event.payload;
         if (payload.task_id === noteId) {
@@ -184,11 +186,12 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
           }
         }
       }).then((fn) => {
-        unlisten = fn;
+        if (!cancelled) unlisten = fn;
       });
     });
 
     return () => {
+      cancelled = true;
       if (unlisten) unlisten();
     };
   }, [noteId]);

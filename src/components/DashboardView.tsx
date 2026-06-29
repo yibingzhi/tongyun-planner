@@ -21,7 +21,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { t } = useTranslation();
   const d = t.dashboard;
 
-  const nickname = localStorage.getItem("qiyun_nickname") || "";
+  const [nickname] = useState(() => localStorage.getItem("qiyun_nickname") || "");
   const today = new Date().toISOString().split("T")[0];
 
   const hour = new Date().getHours();

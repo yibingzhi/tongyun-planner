@@ -28,6 +28,7 @@ interface ListViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    dueTime?: string;
     isExplicit?: boolean;
   }) => void;
   handleToggleFavorite: (id: string) => void;
@@ -142,7 +143,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
       {filteredTasks.length > 0 ? (
         <div className="space-y-2 pr-1 custom-scrollbar overflow-y-auto">
           {filteredTasks.map((task) => {
-            const countdown = getDueDateCountdown(task.dueDate);
+            const countdown = getDueDateCountdown(task.dueDate, task.dueTime);
             
             return (
               <div
@@ -197,7 +198,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                             return (
                               <span className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${badgeStyle}`}>
                                 <Calendar className="w-2.5 h-2.5 text-slate-400" />
-                                <span>{task.dueDate?.split("-").slice(1).join("/")} ({countdown.text})</span>
+                                <span>{task.dueDate?.split("-").slice(1).join("/")}{task.dueTime ? ` ${task.dueTime}` : ""} ({countdown.text})</span>
                               </span>
                             );
                           })()

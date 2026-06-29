@@ -12,6 +12,7 @@ interface QuickAddTaskProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    dueTime?: string;
     repeat?: RepeatType;
     tags?: string[];
   }) => void;
@@ -35,6 +36,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState(() => defaultDueDate || new Date().toISOString().split("T")[0]);
+  const [dueTime, setDueTime] = useState("");
   const [category, setCategory] = useState<Task["category"]>(defaultCategory);
   const [repeat, setRepeat] = useState<RepeatType>("none");
   const [tags, setTags] = useState<string[]>([]);
@@ -80,6 +82,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
       notes: notes.trim(),
       category,
       dueDate,
+      dueTime: dueTime || undefined,
       repeat: repeat !== "none" ? repeat : undefined,
       tags: tags.length > 0 ? tags : undefined,
     });
@@ -88,6 +91,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
     setTitle("");
     setDescription("");
     setNotes("");
+    setDueTime("");
     setTags([]);
     setTagInput("");
     setIsFocused(false);
@@ -143,9 +147,9 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
           {/* Collapsed view quick icons indicator */}
           {!isFocused && (
             <div className="flex items-center gap-2 text-slate-400 flex-shrink-0">
-              <span className="text-[9px] font-bold bg-[#FAF8F5] border border-[#EFEBE4]/80 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                📅 {dueDate.split("-").slice(1).join("/")}
-              </span>
+                <span className="text-[9px] font-bold bg-[#FAF8F5] border border-[#EFEBE4]/80 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                            📅 {dueDate.split("-").slice(1).join("/")}{dueTime ? ` ${dueTime}` : ""}
+                          </span>
             </div>
           )}
         </div>
@@ -207,6 +211,12 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                     onChange={(e) => setDueDate(e.target.value)}
                     className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer"
                     title={q.dueDate}
+                  />
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-16"
                   />
                 </div>
                 

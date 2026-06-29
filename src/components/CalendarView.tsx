@@ -3,7 +3,7 @@ import { Calendar, Coffee } from "lucide-react";
 import type { Task } from "../types";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
-import { Solar } from "lunar-javascript";
+import LunarLib from "lunar-javascript";
 
 const FIXED_FESTIVALS: Record<string, string> = {
   "01-01": "元旦",
@@ -27,6 +27,7 @@ interface CalendarViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    dueTime?: string;
     isExplicit?: boolean;
   }) => void;
 }
@@ -114,7 +115,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   const getLunarDate = (dateStr: string) => {
     try {
       const [y, m, d] = dateStr.split("-").map(Number);
-      const solar = Solar.fromYmd(y, m, d);
+      const solar = LunarLib.Solar.fromYmd(y, m, d);
       const lunar = solar.getLunar();
       return {
         month: lunar.getMonthInChinese(),
@@ -147,37 +148,28 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     ));
   };
 
-  const renderCalendarDays = () => {
+  const dayGrid = useMemo(() => {
     const firstDayIndex = new Date(calendarYear, calendarMonth, 1).getDay();
     const totalDays = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     const prevMonthTotalDays = new Date(calendarYear, calendarMonth, 0).getDate();
 
-    const dayElements: React.ReactNode[] = [];
+    const elements: React.ReactNode[] = [];
 
     // 1. 上月余留天数填充
     for (let i = firstDayIndex - 1; i >= 0; i--) {
       const dayNum = prevMonthTotalDays - i;
       const prevMonth = calendarMonth === 0 ? 11 : calendarMonth - 1;
       const prevYear = calendarMonth === 0 ? calendarYear - 1 : calendarYear;
-      const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-${String(
-        dayNum
-      ).padStart(2, "0")}`;
+      const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const prevMeta = getDayMeta(dateStr);
-      dayElements.push(
-        <button
-          key={`prev-${dayNum}`}
-          onClick={() => setSelectedCalendarDate(dateStr)}
-          className={`h-11 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-[#FAF8F5] transition-all flex flex-col items-center justify-between py-1 border border-transparent cursor-pointer ${
-            selectedCalendarDate === dateStr ? "bg-[#FAF8F5] border-[#EFEBE4]" : ""
-          }`}
-        >
+      elements.push(
+        <button key={`prev-${dayNum}`} onClick={() => setSelectedCalendarDate(dateStr)}
+          className={`h-11 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-[#FAF8F5] transition-all flex flex-col items-center justify-between py-1 border border-transparent cursor-pointer ${selectedCalendarDate === dateStr ? "bg-[#FAF8F5] border-[#EFEBE4]" : ""}`}>
           <span className="flex items-center gap-0.5">
             {prevMeta.label && <span className="text-[4px] opacity-40">{prevMeta.label}</span>}
             <span>{dayNum}</span>
           </span>
-          <div className="flex gap-0.5 justify-center w-full min-h-[4px]">
-            {renderDayDots(dateStr)}
-          </div>
+          <div className="flex gap-0.5 justify-center w-full min-h-[4px]">{renderDayDots(dateStr)}</div>
         </button>
       );
     }
@@ -185,9 +177,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     // 2. 本月天数渲染
     const todayStr = new Date().toISOString().split("T")[0];
     for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
-      const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(
-        dayNum
-      ).padStart(2, "0")}`;
+      const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const isToday = dateStr === todayStr;
       const isSelected = dateStr === selectedCalendarDate;
       const meta = getDayMeta(dateStr);
@@ -195,84 +185,49 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
       let cellStyle = "bg-white border-[#FAF8F5] text-slate-700";
       let badgeText = "";
       let badgeStyle = "";
-      if (meta.type === "休") {
-        cellStyle = "bg-[#FFF5F3] border-[#FFD9D0] text-[#D4380D]";
-        badgeText = "休";
-        badgeStyle = "bg-[#D4380D] text-white";
-      } else if (meta.type === "班") {
-        cellStyle = "bg-[#FAFAFA] border-[#E8E4DE] text-slate-500";
-        badgeText = "班";
-        badgeStyle = "bg-slate-400 text-white";
-      } else if (meta.type === "weekend") {
-        cellStyle = "bg-[#FFF9F5] border-[#F5EDE8] text-[#B88A6B]";
-        badgeText = "休";
-        badgeStyle = "bg-[#B88A6B]/70 text-white";
-      }
-      if (isToday) {
-        cellStyle = "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D] font-extrabold";
-      }
-      if (isSelected) {
-        cellStyle = "bg-[#FCF2F0]/80 border-[#F5DFDB] text-[#A34E36]";
-      }
+      if (meta.type === "休") { cellStyle = "bg-[#FFF5F3] border-[#FFD9D0] text-[#D4380D]"; badgeText = "休"; badgeStyle = "bg-[#D4380D] text-white"; }
+      else if (meta.type === "班") { cellStyle = "bg-[#FAFAFA] border-[#E8E4DE] text-slate-500"; badgeText = "班"; badgeStyle = "bg-slate-400 text-white"; }
+      else if (meta.type === "weekend") { cellStyle = "bg-[#FFF9F5] border-[#F5EDE8] text-[#B88A6B]"; badgeText = "休"; badgeStyle = "bg-[#B88A6B]/70 text-white"; }
+      if (isToday) cellStyle = "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D] font-extrabold";
+      if (isSelected) cellStyle = "bg-[#FCF2F0]/80 border-[#F5DFDB] text-[#A34E36]";
 
-      dayElements.push(
-        <button
-          key={`curr-${dayNum}`}
-          onClick={() => setSelectedCalendarDate(dateStr)}
-          className={`h-11 rounded-xl text-[10px] font-bold transition-all flex flex-col items-center justify-between py-1 border cursor-pointer ${cellStyle}`}
-          title={meta.name || undefined}
-        >
+      elements.push(
+        <button key={`curr-${dayNum}`} onClick={() => setSelectedCalendarDate(dateStr)}
+          className={`h-11 rounded-xl text-[10px] font-bold transition-all flex flex-col items-center justify-between py-1 border cursor-pointer ${cellStyle}`} title={meta.name || undefined}>
           <span className="relative leading-none flex items-center justify-center w-full gap-0.5">
-            {badgeText && (
-              <span className={`text-[5px] px-1 rounded-sm font-extrabold leading-none py-0.5 ${badgeStyle}`}>
-                {badgeText}
-              </span>
-            )}
+            {badgeText && <span className={`text-[5px] px-1 rounded-sm font-extrabold leading-none py-0.5 ${badgeStyle}`}>{badgeText}</span>}
             <span>{dayNum}</span>
           </span>
           <div className="flex gap-0.5 justify-center w-full min-h-[4px]">
-            {meta.type === "休" || meta.type === "班" ? (
-              <span className="text-[5px] text-inherit font-bold truncate max-w-[28px] leading-none opacity-60">
-                {meta.name.length > 3 ? meta.name.slice(0, 3) : meta.name}
-              </span>
-            ) : (
-              renderDayDots(dateStr)
-            )}
+            {meta.type === "休" || meta.type === "班"
+              ? <span className="text-[5px] text-inherit font-bold truncate max-w-[28px] leading-none opacity-60">{meta.name.length > 3 ? meta.name.slice(0, 3) : meta.name}</span>
+              : renderDayDots(dateStr)}
           </div>
         </button>
       );
     }
 
     // 3. 下月起始填充
-    const gridRemaining = 42 - dayElements.length;
+    const gridRemaining = 42 - elements.length;
     for (let dayNum = 1; dayNum <= gridRemaining; dayNum++) {
       const nextMonth = calendarMonth === 11 ? 0 : calendarMonth + 1;
       const nextYear = calendarMonth === 11 ? calendarYear + 1 : calendarYear;
-      const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-${String(
-        dayNum
-      ).padStart(2, "0")}`;
+      const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const nextMeta = getDayMeta(dateStr);
-      dayElements.push(
-        <button
-          key={`next-${dayNum}`}
-          onClick={() => setSelectedCalendarDate(dateStr)}
-          className={`h-11 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-[#FAF8F5] transition-all flex flex-col items-center justify-between py-1 border border-transparent cursor-pointer ${
-            selectedCalendarDate === dateStr ? "bg-[#FAF8F5] border-[#EFEBE4]" : ""
-          }`}
-        >
+      elements.push(
+        <button key={`next-${dayNum}`} onClick={() => setSelectedCalendarDate(dateStr)}
+          className={`h-11 rounded-xl text-[10px] font-bold text-slate-300 hover:bg-[#FAF8F5] transition-all flex flex-col items-center justify-between py-1 border border-transparent cursor-pointer ${selectedCalendarDate === dateStr ? "bg-[#FAF8F5] border-[#EFEBE4]" : ""}`}>
           <span className="flex items-center gap-0.5">
             {nextMeta.label && <span className="text-[4px] opacity-40">{nextMeta.label}</span>}
             <span>{dayNum}</span>
           </span>
-          <div className="flex gap-0.5 justify-center w-full min-h-[4px]">
-            {renderDayDots(dateStr)}
-          </div>
+          <div className="flex gap-0.5 justify-center w-full min-h-[4px]">{renderDayDots(dateStr)}</div>
         </button>
       );
     }
 
-    return dayElements;
-  };
+    return elements;
+  }, [calendarYear, calendarMonth, selectedCalendarDate, tasksByDueDate, holidayData]);
 
   const selectedDayTasks = tasksByDueDate[selectedCalendarDate] || [];
 
@@ -348,7 +303,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
           </div>
 
           {/* 日期格子容器 */}
-          <div className="grid grid-cols-7 gap-2 flex-grow">{renderCalendarDays()}</div>
+          <div className="grid grid-cols-7 gap-2 flex-grow">{dayGrid}</div>
         </div>
 
         {/* 右侧面板: 上=当日信息 下=待办列 */}

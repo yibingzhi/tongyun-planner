@@ -21,6 +21,7 @@ interface MatrixViewProps {
     notes: string;
     category: Task["category"];
     dueDate: string;
+    dueTime?: string;
     isExplicit?: boolean;
   }) => void;
   handleToggleFavorite: (id: string) => void;
@@ -199,7 +200,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
             >
               {quadrantTasks.length > 0 ? (
                 quadrantTasks.map((task) => {
-                  const countdown = getDueDateCountdown(task.dueDate);
+                  const countdown = getDueDateCountdown(task.dueDate, task.dueTime);
                   const isOverdue = countdown?.isOverdue;
                   const cardBg = isOverdue ? "bg-[#FCF2F0]/50" : "bg-white/70";
                   const cardBorder = isOverdue ? "border-[#F5DFDB]" : borderClass;
@@ -238,7 +239,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                                 : "bg-[#FAF8F5] border-[#EFEBE4] text-slate-500 font-semibold";
                               return (
                                 <span className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${badgeStyle}`}>
-                                  📅 {task.dueDate?.split("-").slice(1).join("/")} ({countdown.text})
+                                  📅 {task.dueDate?.split("-").slice(1).join("/")}{task.dueTime ? ` ${task.dueTime}` : ""} ({countdown.text})
                                 </span>
                               );
                             })()

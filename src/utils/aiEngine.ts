@@ -271,6 +271,7 @@ export interface ExtractedTask {
   description: string;
   notes: string;
   dueDate: string;
+  dueTime?: string;
   category: Task["category"];
 }
 
@@ -280,12 +281,13 @@ export async function extractTasksFromNote(
 ): Promise<ExtractedTask[]> {
   const today = new Date().toISOString().split("T")[0];
   const systemPrompt = `你是一个专业的日程和任务规划专家。你的任务是分析用户输入的文案（如客服工单、备忘或大段规划），提取并分离成结构化的待办任务。
-请严格以标准的 JSON 数组格式返回结果。数组中的每个对象代表一个提取出的任务，且必须正好包含以下五个字段：
+请严格以标准的 JSON 数组格式返回结果。数组中的每个对象代表一个提取出的任务，且必须正好包含以下六个字段：
 1. "title": (string) 简短易读的任务标题。如果是工单或系统日志，请浓缩提炼出核心矛盾和人员（例如：“【TD登陆未授权】Adrian Cheng 微信登陆故障”）。控制在 18 个字以内。
 2. "description": (string) 任务具体背景及故障表现描述（例如：“学生和家长在国外，两个微信都试了无法登陆，没有开未成年人模式”）。
 3. "notes": (string) 详细的元数据、日志编号或硬件/UID数据（例如：“学生：Adrian Cheng\nUID：oXBpRwJV46AAu68DxqQ2xhXjWSU4\n工单：20260627-01”）。请使用换行符分隔。
 4. "dueDate": (string) 截止日期，格式为 YYYY-MM-DD。若输入提及“明天/周末/下周三”等相对日期，请根据今天的时间（今天是 ${today}）进行精确推算；若完全没有提到日期，默认使用今天（${today}）。
-5. "category": (string) 四象限分类，必须且只能是以下四个值之一：[urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important]。例如，如果是系统故障或紧急故障，应判定为 "urgent-important"。
+5. "dueTime": (string) 截止时间，24小时制 HH:mm 格式。如果输入提到"下午3点"/"15:00"/"下班前"（17:00或18:00）等具体时间，请解析为对应时间；如果没有提到时间，请留空 ""。
+6. "category": (string) 四象限分类，必须且只能是以下四个值之一：[urgent-important | important-not-urgent | urgent-not-important | not-urgent-not-important]。例如，如果是系统故障或紧急故障，应判定为 "urgent-important"。
 
 重要规则：只返回标准的 JSON 数组格式，不要包含 Markdown 代码块包裹，也不要有任何开头引言、多余文字或注释。如果没有发现明确待办事项，请直接返回空数组 []。`;
   const userPrompt = `用户输入的原始文案:\n${noteText}`;
@@ -333,6 +335,7 @@ export async function extractTasksFromNote(
           description: item.description || "",
           notes: item.notes || "",
           dueDate: item.dueDate || today,
+          dueTime: item.dueTime || undefined,
           category: (matched as Task["category"]) || "urgent-important",
         };
       });

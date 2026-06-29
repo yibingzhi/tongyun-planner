@@ -117,7 +117,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
             {task.dueDate && (
               <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4]">
                 <Calendar className="w-3 h-3" />
-                <span>{task.dueDate}</span>
+                <span>{task.dueDate}{task.dueTime ? ` ${task.dueTime}` : ""}</span>
               </div>
             )}
           </div>

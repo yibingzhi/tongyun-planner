@@ -19,6 +19,7 @@ export interface Task {
   notes?: string;
   category: TaskCategory;
   dueDate?: string; // YYYY-MM-DD
+  dueTime?: string; // HH:mm (e.g. "14:30")
   isFavorite?: boolean;
   isPinned?: boolean;
   repeat?: RepeatType;

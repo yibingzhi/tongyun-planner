@@ -107,10 +107,9 @@ export interface DueCountdown {
   isToday: boolean;
 }
 
-export function getDueDateCountdown(dueDateStr?: string): DueCountdown | null {
+export function getDueDateCountdown(dueDateStr?: string, dueTimeStr?: string): DueCountdown | null {
   if (!dueDateStr) return null;
   
-  // Parse date safely ignoring time zones for calendar alignment
   const parts = dueDateStr.split("-");
   if (parts.length !== 3) return null;
   
@@ -119,9 +118,47 @@ export function getDueDateCountdown(dueDateStr?: string): DueCountdown | null {
   const dueDay = parseInt(parts[2], 10);
   
   const due = new Date(dueYear, dueMonth, dueDay);
-  due.setHours(0, 0, 0, 0);
-  
   const today = new Date();
+  
+  if (dueTimeStr) {
+    const timeParts = dueTimeStr.split(":");
+    const hour = parseInt(timeParts[0], 10) || 0;
+    const min = parseInt(timeParts[1], 10) || 0;
+    due.setHours(hour, min, 0, 0);
+    const now = new Date();
+    const diffMs = due.getTime() - now.getTime();
+    
+    if (diffMs < 0) {
+      const absDays = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+      return {
+        days: absDays,
+        text: absDays > 0 ? `已逾期 ${absDays} 天` : "已超时",
+        isOverdue: true,
+        isToday: false,
+      };
+    }
+    // Same day check via calendar date comparison
+    const isSameDay = dueYear === now.getFullYear() && dueMonth === now.getMonth() && dueDay === now.getDate();
+    if (isSameDay) {
+      return {
+        days: 0,
+        text: `今天 ${dueTimeStr}`,
+        isOverdue: false,
+        isToday: true,
+      };
+    }
+    // Future date
+    const calDiff = Math.floor((new Date(dueYear, dueMonth, dueDay).getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / (1000 * 60 * 60 * 24));
+    return {
+      days: calDiff,
+      text: `还剩 ${calDiff} 天`,
+      isOverdue: false,
+      isToday: false,
+    };
+  }
+  
+  // Legacy: date only, midnight cutoff
+  due.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
   
   const diffMs = due.getTime() - today.getTime();
