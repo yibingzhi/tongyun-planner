@@ -17,6 +17,8 @@ import {
   Settings,
   Cloud,
   RefreshCw,
+  Target,
+  Flame,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -30,6 +32,7 @@ interface SidebarProps {
   tasksCount: number;
   stickyNotesCount: number;
   countdownCount: number;
+  habitsCount: number;
   syncStatus: "synced" | "syncing" | "error";
   lastBackupTime: number | null;
 
@@ -77,6 +80,7 @@ interface SidebarProps {
   handleToggleWidgetLock: (forceState?: boolean) => Promise<void>;
   isWidgetLocked: boolean;
   resetTasks: () => void;
+  onEnterFlowMode: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = React.memo(({
@@ -87,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   tasksCount,
   stickyNotesCount,
   countdownCount,
+  habitsCount,
   syncStatus,
   lastBackupTime,
   pomodoroIsActive,
@@ -118,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   pomodoroTaskTitle,
   setPomodoroTaskId,
   setPomodoroTaskTitle,
+  onEnterFlowMode,
 }) => {
   const { t } = useTranslation();
   const s = t.sidebar;
@@ -194,6 +200,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               activeCls: "bg-[#EEF7F2] text-[#5DAE7C] border-[#C5E5D2]", barCls: "active-completed" },
             { tab: "countdown" as AppTab, icon: <Hourglass className="w-4 h-4" />, label: s.countdown, count: countdownCount,
               activeCls: "bg-[#FEF6E6] text-[#C97D3E] border-[#F5E2B8]", barCls: "active-countdown" },
+            { tab: "habits" as AppTab, icon: <Flame className="w-4 h-4" />, label: s.habits || "习惯", count: habitsCount,
+              activeCls: "bg-[#FCF2F0] text-[#E87A6E] border-[#F5D0C5]", barCls: "active-habits" },
             { tab: "settings" as AppTab, icon: <Settings className="w-4 h-4" />, label: s.settings, count: null,
               activeCls: "bg-[#F5F3F1] text-[#8B8178] border-[#E0DBD5]", barCls: "active-settings" },
           ] as const).map((item) => {
@@ -219,6 +227,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             );
           })}
         </nav>
+
+        {/* 心流模式按钮 */}
+        <button
+          onClick={onEnterFlowMode}
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all border border-[#EFE5D3] text-[#8B6E3C] bg-[#FAF5ED] hover:bg-[#F0E8D6] shadow-xs cursor-pointer"
+        >
+          <Target className="w-4 h-4" />
+          <span className="flex-grow text-left">{t.flow?.title || "心流模式"}</span>
+          <span className="text-[9px] font-extrabold bg-white/60 px-1.5 py-0.5 rounded-md">{tasksCount}</span>
+        </button>
 
         {/* 禅意专注空间 (Zen Focus Card) */}
         <div data-task-id={pomodoroTaskId || ""} className={`px-4 py-3.5 rounded-2xl bg-white/60 border border-[#EFEBE4] shadow-xs backdrop-blur-sm space-y-3 ${pomodoroIsActive ? 'pomodoro-active-glow' : ''}`}>

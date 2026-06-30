@@ -18,6 +18,8 @@ import { WidgetWindow } from "./components/WidgetWindow";
 import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
+import { FlowMode } from "./components/FlowMode";
+import { HabitsView } from "./components/HabitsView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -65,6 +67,39 @@ function AppInner() {
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<AppTab>("home");
+  const [flowMode, setFlowMode] = useState(false);
+  const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_habits") || "[]", [])
+  );
+  const [habitLogs, setHabitLogs] = useState<Record<string, string[]>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_habit_logs") || "{}", {})
+  );
+
+  const handleAddHabit = useCallback((title: string, emoji: string) => {
+    const newHabit = { id: createId("habit"), title, emoji };
+    setHabits((prev) => {
+      const updated = [...prev, newHabit];
+      localStorage.setItem("qiyun_habits", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleDeleteHabit = useCallback((id: string) => {
+    setHabits((prev) => {
+      const updated = prev.filter((h) => h.id !== id);
+      localStorage.setItem("qiyun_habits", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleToggleHabitLog = useCallback((habitId: string, date: string) => {
+    setHabitLogs((prev) => {
+      const dayLogs = prev[date] || [];
+      const updated = { ...prev, [date]: dayLogs.includes(habitId) ? dayLogs.filter((id) => id !== habitId) : [...dayLogs, habitId] };
+      localStorage.setItem("qiyun_habit_logs", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   // ============ Store Initialization ============
   useEffect(() => {
@@ -704,7 +739,15 @@ function AppInner() {
   }
 
   return (
-    <div className={`w-full h-full min-h-screen bg-[#FAF8F5] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-glass-${customizationHook.customizationConfig.interfaceGlass || "matte"} theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
+    <>
+      {flowMode ? (
+        <FlowMode
+          tasks={tasksHook.tasks}
+          handleComplete={wrappedHandleComplete}
+          onExit={() => setFlowMode(false)}
+        />
+      ) : (
+        <div className={`w-full h-full min-h-screen bg-[#FAF8F5] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-glass-${customizationHook.customizationConfig.interfaceGlass || "matte"} theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
       <TitleBar />
       <div className="flex flex-grow min-h-0 relative">
         {getWatercolorBlobs()}
@@ -716,6 +759,7 @@ function AppInner() {
           tasksCount={tasksHook.tasks.length}
           stickyNotesCount={notesHook.stickyNotes.length}
           countdownCount={countdownHook.countdowns.length}
+          habitsCount={habits.length}
           pomodoroIsActive={pomodoroHook.pomodoroIsActive}
           setPomodoroIsActive={pomodoroHook.setPomodoroIsActive}
           pomodoroIsBreak={pomodoroHook.pomodoroIsBreak}
@@ -747,6 +791,7 @@ function AppInner() {
           setPomodoroTaskTitle={pomodoroHook.setPomodoroTaskTitle}
           syncStatus={syncStatus}
           lastBackupTime={lastBackupTime}
+          onEnterFlowMode={() => setFlowMode(true)}
         />
         <main className="flex-grow p-6 overflow-y-auto flex flex-col gap-5 z-10 relative custom-scrollbar min-h-0">
           {activeTab !== "home" && (
@@ -898,6 +943,9 @@ function AppInner() {
           {activeTab === "countdown" && (
             <CountdownView countdowns={countdownHook.countdowns} handleAddCountdown={countdownHook.handleAddCountdown} handleDeleteCountdown={countdownHook.handleDeleteCountdown} />
           )}
+          {activeTab === "habits" && (
+            <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
+          )}
           {activeTab === "settings" && (
             <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} onBackupToCloud={handleBackupToCloud} onRestoreFromCloud={handleRestoreFromCloud} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />
           )}
@@ -912,10 +960,12 @@ function AppInner() {
           return (
             <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={tasksHook.handleEditTask} />
           );
-        })()}
+        }        )()}
       </div>
     </div>
-  );
+    )}
+  </>
+);
 }
 
 function App() {

@@ -18,6 +18,7 @@ const zhCN: Translations = {
     analytics: "专注统计",
     history: "历史归档",
     countdown: "倒数日",
+    habits: "习惯打卡",
     settings: "系统设置",
     focusMode: "专注模式",
     breakMode: "休息模式",
@@ -346,6 +347,13 @@ const zhCN: Translations = {
     previewNote: "📌 这是一张拟物效果预览便签，支持 5 种木夹与胶带的大头针扣具款式切换。",
     previewSticky: "手账便签预览",
     previewFixed: "✓ 已固定",
+    snapshotTitle: "本地快照备份",
+    snapshotDesc: "一键导出全部数据为 JSON 文件，换电脑或重装后可拖入恢复，不依赖网络。",
+    snapshotExport: "导出快照",
+    snapshotImport: "导入快照",
+    snapshotExported: "导出成功 ✅",
+    snapshotImported: "导入成功 ✅ 请刷新页面",
+    snapshotImportError: "导入失败，文件格式不正确",
   },
 
   floatingNote: {
@@ -443,6 +451,24 @@ const zhCN: Translations = {
     completed_task: "已完成",
     dueToday: "今日截止",
     weatherLabel: "天气",
+  },
+
+  flow: {
+    title: "心流模式",
+    remaining: "剩余 {count} 项",
+    complete: "完成",
+    later: "稍后处理",
+    done: "全部完成！🎉",
+    doneDesc: "今日 {count} 个任务已全部完成",
+    noTasks: "今天没有待办任务",
+  },
+
+  prose: {
+    title: "AI 散文",
+    generate: "生成散文",
+    generating: "生成中...",
+    error: "生成失败，请检查 AI 配置",
+    empty: "点击上方按钮，让 AI 为你写一篇散文 ✨",
   },
 
   countdown: {

@@ -1,11 +1,13 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Calendar, Coffee } from "lucide-react";
+import { Calendar, Coffee, Smile } from "lucide-react";
 import type { Task } from "../types";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
 import LunarLib from "lunar-javascript";
 import { getLocalDateString } from "../utils/date";
 import { safeJsonParse } from "../utils/json";
+
+const MOOD_OPTIONS = ["😊", "😌", "😤", "😢", "🥱", "🤩", "😰", "😶", "🥰", "😎", "🤗", "☀️", "🌧️", "❄️", "💪", "🌸", "🔥", "☕"];
 
 const FIXED_FESTIVALS: Record<string, string> = {
   "01-01": "元旦",
@@ -87,6 +89,18 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
       })
       .catch(() => {});
   }, [calendarYear]);
+
+  // 心情便签
+  const [moods, setMoods] = useState<Record<string, string>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_moods") || "{}", {})
+  );
+  const [showMoodPicker, setShowMoodPicker] = useState(false);
+  const setMoodForDate = (date: string, emoji: string) => {
+    const updated = { ...moods, [date]: emoji };
+    setMoods(updated);
+    localStorage.setItem("qiyun_moods", JSON.stringify(updated));
+    setShowMoodPicker(false);
+  };
 
   const getDayMeta = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -199,6 +213,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
           <span className="relative leading-none flex items-center justify-center w-full gap-0.5">
             {badgeText && <span className={`text-[5px] px-1 rounded-sm font-extrabold leading-none py-0.5 ${badgeStyle}`}>{badgeText}</span>}
             <span>{dayNum}</span>
+            {moods[dateStr] && <span className="text-[7px] ml-0.5">{moods[dateStr]}</span>}
           </span>
           <div className="flex gap-0.5 justify-center w-full min-h-[4px]">
             {meta.type === "休" || meta.type === "班"
@@ -332,6 +347,36 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                       </p>
                     );
                   })()}
+                </div>
+                {/* 心情便签 */}
+                <div className="relative mt-2 flex items-center gap-1.5">
+                  <button
+                    onClick={() => setShowMoodPicker(!showMoodPicker)}
+                    className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer transition-colors"
+                    title="记录今天的心情"
+                  >
+                    <Smile className="w-3.5 h-3.5" />
+                    {moods[selectedCalendarDate] ? (
+                      <span className="text-base">{moods[selectedCalendarDate]}</span>
+                    ) : (
+                      <span className="text-[9px] text-slate-400 font-medium">记录心情</span>
+                    )}
+                  </button>
+                  {showMoodPicker && (
+                    <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 animate-fade-in-up">
+                      {MOOD_OPTIONS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => setMoodForDate(selectedCalendarDate, emoji)}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm hover:bg-[#F0F5F1] transition-all cursor-pointer ${
+                            moods[selectedCalendarDate] === emoji ? "bg-[#F0F5F1] ring-1 ring-[#C4D7B2]" : ""
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {(() => {
                   const meta = getDayMeta(selectedCalendarDate);

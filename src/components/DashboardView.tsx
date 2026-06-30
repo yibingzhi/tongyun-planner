@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
-import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock } from "lucide-react";
+import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock, PenLine, TrendingUp } from "lucide-react";
 import type { Task, CustomizationConfig } from "../types";
 import { getLocalDateString } from "../utils/date";
+import { generateProse, generateDailySuggestion } from "../utils/aiEngine";
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -130,6 +131,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     fetchHistory();
   }, []);
 
+  // AI Daily Suggestion
+  const [dailySuggestion, setDailySuggestion] = useState<string | null>(null);
+  const [suggestionLoading, setSuggestionLoading] = useState(false);
+  useEffect(() => {
+    if (!config.aiApiKey) return;
+    setSuggestionLoading(true);
+    (async () => {
+      const todayTasks = tasks
+        .filter((t) => t.dueDate === today)
+        .map((t) => ({ title: t.title, category: t.category, dueTime: t.dueTime, description: t.description }));
+      const result = await generateDailySuggestion(config, todayTasks, config.locale || "zh-CN");
+      if (result) setDailySuggestion(result);
+      setSuggestionLoading(false);
+    })();
+  }, [config.aiApiKey]);
+
+  // Prose
+  const [prose, setProse] = useState<string | null>(null);
+  const [proseLoading, setProseLoading] = useState(false);
+  const [proseError, setProseError] = useState(false);
+
+  const handleGenerateProse = async () => {
+    setProseLoading(true);
+    setProseError(false);
+    try {
+      const result = await generateProse(config, config.locale || "zh-CN");
+      if (result) {
+        setProse(result);
+      } else {
+        setProseError(true);
+      }
+    } catch {
+      setProseError(true);
+    }
+    setProseLoading(false);
+  };
+
   // Format local date elegantly
   const localDateStr = new Date().toLocaleDateString(
     config.locale === "en" ? "en-US" : "zh-CN",
@@ -139,6 +177,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       weekday: "long",
     }
   );
+
+  // Year progress
+  const nowYear = new Date().getFullYear();
+  const yearStart = new Date(nowYear, 0, 1);
+  const yearEnd = new Date(nowYear + 1, 0, 1);
+  const yearPct = Math.round(((Date.now() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime())) * 100);
 
   // SVG circular progress parameters
   const radius = 16;
@@ -187,8 +231,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         ) : null}
       </div>
 
-      {/* 独立精致的 3 个统计小卡片 */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* 独立精致的 4 个统计小卡片 */}
+      <div className="grid grid-cols-4 gap-4">
         {/* 卡片 1: 待办任务 */}
         <div className="stat-card-todo rounded-2xl border border-[#EFEBE4] p-3.5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between">
           <div className="space-y-0.5">
@@ -247,7 +291,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </svg>
           </div>
         </div>
+
+        {/* 卡片 4: 年度进度 */}
+        <div className="rounded-2xl border border-[#EFEBE4] p-3.5 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-between bg-white/40">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{nowYear}</span>
+            <div className="text-xl font-black text-slate-800 animate-count-up">{yearPct}%</div>
+          </div>
+          <div className="relative w-9 h-9 flex items-center justify-center">
+            <svg className="w-9 h-9" viewBox="0 0 36 36">
+              <circle className="text-slate-100" strokeWidth="3.5" stroke="currentColor" fill="transparent" r={radius} cx="18" cy="18" />
+              <circle
+                className="text-[#B2C8DF]"
+                strokeWidth="3.5"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (yearPct / 100) * circumference}
+                strokeLinecap="round"
+                stroke="currentColor"
+                fill="transparent"
+                r={radius}
+                cx="18"
+                cy="18"
+                transform="rotate(-90 18 18)"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
+
+      {/* 本周回顾 */}
+      {(() => {
+        const now = new Date();
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const weekCompleted = completedTasks.filter((t) => {
+          if (!t.dueDate) return false;
+          const d = new Date(t.dueDate);
+          return d >= weekAgo && d <= now;
+        });
+        const weekCompletedCount = weekCompleted.length;
+        const todayCount = completedTasks.filter((t) => t.dueDate === today).length;
+        if (weekCompletedCount === 0) return null;
+        return (
+          <div className="rounded-2xl bg-gradient-to-r from-[#FAF5ED] to-[#FFF9F5] border border-[#EFE5D3] p-3.5 flex items-center gap-3 shadow-2xs">
+            <TrendingUp className="w-5 h-5 text-[#8B6E3C]" />
+            <div className="flex-grow">
+              <span className="text-[10px] font-bold text-[#8B6E3C] tracking-wide">
+                本周回顾
+              </span>
+              <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                本周已完成 {weekCompletedCount} 项任务{todayCount > 0 ? `，今天已完成 ${todayCount} 项` : ""}
+              </p>
+            </div>
+            <span className="text-lg">📊</span>
+          </div>
+        );
+      })()}
 
       {/* Quote + History in 2-column on wide screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -326,6 +425,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
 
+
+      {/* AI 每日建议 */}
+      {config.aiApiKey && (dailySuggestion || suggestionLoading) && (
+        <div className="rounded-2xl bg-gradient-to-r from-[#F0F5F1] to-[#EBF3F6] border border-[#DEEAE2] p-4.5 shadow-2xs">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-4 h-4 text-[#4D7C5D]" />
+            <span className="text-[9px] font-black text-[#4D7C5D] tracking-widest uppercase">AI 今日建议</span>
+          </div>
+          {suggestionLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-[#4D7C5D]/30 border-t-[#4D7C5D] rounded-full animate-spin" />
+              <span className="text-[10px] text-slate-400 font-medium">为你思考今日计划...</span>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-700 leading-relaxed font-medium">{dailySuggestion}</p>
+          )}
+        </div>
+      )}
+
+      {/* AI Prose */}
+      <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4.5 shadow-2xs hover:shadow-xs card-hover-lift backdrop-blur-xs">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[9px] font-black text-[#8B6E3C] tracking-widest uppercase flex items-center gap-1.5">
+            <PenLine className="w-3.5 h-3.5" /> {t.prose?.title || "AI 散文"}
+          </span>
+          <button
+            onClick={handleGenerateProse}
+            disabled={proseLoading}
+            className={`text-[9px] font-black flex items-center gap-1 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              proseLoading
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-[#4D7C5D]/10 text-[#4D7C5D] hover:bg-[#4D7C5D]/20 hover:scale-105"
+            }`}
+          >
+            <Sparkles className={`w-3 h-3 ${proseLoading ? "animate-spin" : ""}`} />
+            {proseLoading ? (t.prose?.generating || "生成中...") : (t.prose?.generate || "生成散文")}
+          </button>
+        </div>
+        <div className="min-h-[60px]">
+          {proseLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="w-5 h-5 border-2 border-[#4D7C5D]/30 border-t-[#4D7C5D] rounded-full animate-spin" />
+            </div>
+          ) : proseError ? (
+            <p className="text-[10px] text-red-400 font-bold text-center py-4">{t.prose?.error || "生成失败，请检查 AI 配置"}</p>
+          ) : prose ? (
+            <p className="text-[11px] text-slate-700 leading-relaxed font-medium tracking-wide whitespace-pre-line">
+              {prose}
+            </p>
+          ) : (
+            <p className="text-[10px] text-slate-400 font-bold text-center py-4">
+              {t.prose?.empty || "点击上方按钮，让 AI 为你写一篇散文 ✨"}
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Today's Tasks */}
       <div className="rounded-3xl bg-white/70 border border-[#EFEBE4] shadow-2xs backdrop-blur-xs overflow-hidden">

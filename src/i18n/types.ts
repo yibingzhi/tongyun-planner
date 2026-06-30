@@ -15,6 +15,8 @@ export interface Translations {
   completed: Record<string, string>;
   settings: Record<string, string>;
   dashboard: Record<string, string>;
+  flow: Record<string, string>;
+  prose: Record<string, string>;
   countdown: Record<string, string>;
   floatingNote: Record<string, string>;
   widget: Record<string, string>;

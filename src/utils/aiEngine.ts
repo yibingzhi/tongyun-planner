@@ -265,6 +265,71 @@ export async function generatePraiseBatch(
 }
 
 /**
+ * 6c. AI 生成散文 — 根据当前日期和季节生成一篇优美的短篇散文
+ */
+export async function generateProse(
+  config: CustomizationConfig,
+  locale: string
+): Promise<string> {
+  const now = new Date();
+  const dateStr = locale === "zh-CN"
+    ? `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
+    : now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const season = ["spring", "summer", "autumn", "winter"][Math.floor(now.getMonth() / 3)];
+
+  const systemPrompt = `你是一位文风清雅、温润自持的散文作家。你擅长"白话为骨，雅字为韵"的写作风格，不随波逐流，文字自有风骨。
+
+风格要求：
+1. 语言底色（白话为骨）：整体语言要平实、自然、顺畅，使用通俗易懂的白话文。避免大篇幅堆砌文言文、生僻字或过于繁复的修辞，切忌矫揉造作、无病呻吟。
+2. 文字点睛（雅字为韵）：在平实的句式中，恰到好处地安放一两个凝练、带有书卷气或古典美感的词汇。例如用"思虑"代替"想得太多"，用"惊扰"代替"打扰"，用"自持"、"内敛"、"提点"、"耳濡目染"等词语，展现分寸感和读书人的从容。
+3. 情感态度：基调是温和、诚恳、谦逊且内省的。文字中要透着一种"随心、由衷"的淡然，不刻意迎合，也不故作高深。
+4. 字数控制在 500-800 字，主题与当前季节（${season}）和日期（${dateStr}）相关。
+
+结构布局：
+- 引入：从生活中的一个细节、日常习惯、或者一个小故事或对话切入。
+- 展开：由此细节延展开去，探讨人与人、人与物，或人与自我的关系，夹叙夹议。
+- 收尾：总结自己的心境或态度。
+
+只返回散文正文本身，不要标题、不要引言、不要任何额外说明。`;
+
+  const userPrompt = `请以今天（${dateStr}，${season}）为背景，写一篇随笔散文。主题可以是独处、慢行、惜物、喝茶、读书等日常生活中的一件小事。`;
+  try {
+    return await callAI(config, systemPrompt, userPrompt);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * 6d. AI 每日建议 — 根据今日待办推荐优先级
+ */
+export async function generateDailySuggestion(
+  config: CustomizationConfig,
+  todayTasks: { title: string; category: Task["category"]; dueTime?: string; description?: string }[],
+  locale: string
+): Promise<string> {
+  const lang = locale === "zh-CN" ? "简体中文" : "English";
+  const taskList = todayTasks.map((t, i) =>
+    `${i + 1}. [${t.category}] ${t.title}${t.dueTime ? ` (截止: ${t.dueTime})` : ""}${t.description ? ` — ${t.description.slice(0, 30)}` : ""}`
+  ).join("\n");
+
+  const systemPrompt = `你是一个温和高效的日程顾问。请用 ${lang} 给用户写一段简短的今日建议（80-120 字）。
+要求：
+- 根据以下今日待办列表，推荐先做什么、后做什么，给出理由
+- 语气温暖、鼓励，像朋友一样自然
+- 不要列点，用流畅的段落表达
+- 如果列表为空，则说"今天没有待办，好好休息或规划明天吧"
+- 只返回建议文本本身，不要任何额外说明`;
+
+  const userPrompt = `今日待办列表:\n${taskList || "（空）"}`;
+  try {
+    return await callAI(config, systemPrompt, userPrompt);
+  } catch {
+    return "";
+  }
+}
+
+/**
  * 7. AI 智能从便签提取日程待办 (Extract Tasks from Note)
  */
 export interface ExtractedTask {

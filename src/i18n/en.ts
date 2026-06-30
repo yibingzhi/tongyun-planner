@@ -18,6 +18,7 @@ const en: Translations = {
     analytics: "Analytics",
     history: "History",
     countdown: "Countdown",
+    habits: "Habits",
     settings: "Settings",
     focusMode: "Focus",
     breakMode: "Break",
@@ -346,6 +347,13 @@ const en: Translations = {
     previewNote: "This is a preview sticky note with 5 types of clips and pins to choose from.",
     previewSticky: "Sticky Note Preview",
     previewFixed: "Fixed",
+    snapshotTitle: "Local Snapshot Backup",
+    snapshotDesc: "Export all data as a JSON file. Reimport on a new device without needing WebDAV.",
+    snapshotExport: "Export Snapshot",
+    snapshotImport: "Import Snapshot",
+    snapshotExported: "Exported successfully ✅",
+    snapshotImported: "Imported successfully ✅ Please refresh",
+    snapshotImportError: "Import failed. Invalid file format.",
   },
 
   floatingNote: {
@@ -443,6 +451,24 @@ const en: Translations = {
     completed_task: "Done",
     dueToday: "Due today",
     weatherLabel: "Weather",
+  },
+
+  flow: {
+    title: "Flow Mode",
+    remaining: "{count} left",
+    complete: "Complete",
+    later: "Later",
+    done: "All done! 🎉",
+    doneDesc: "{count} tasks completed today",
+    noTasks: "No tasks for today",
+  },
+
+  prose: {
+    title: "AI Prose",
+    generate: "Generate Prose",
+    generating: "Generating...",
+    error: "Failed to generate. Check AI settings.",
+    empty: "Click the button above to let AI write a prose for you ✨",
   },
 
   countdown: {

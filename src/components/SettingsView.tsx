@@ -802,6 +802,86 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 {s.syncRestore}
               </button>
             </div>
+
+            {/* 本地快照备份 */}
+            <div className="pt-4 border-t border-[#EFEBE4] space-y-3">
+              <div className="flex items-center gap-2">
+                <Download className="w-4 h-4 text-[#8B6E3C]" />
+                <span className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">{s.snapshotTitle || "本地快照备份"}</span>
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                {s.snapshotDesc || "一键导出全部数据为 JSON 文件，换电脑或重装后可拖入恢复，不依赖网络。"}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const data = {
+                      tasks: safeJsonParse(localStorage.getItem("aero_todos"), []),
+                      completedTasks: safeJsonParse(localStorage.getItem("aero_completed_todos"), []),
+                      stickyNotes: safeJsonParse(localStorage.getItem("aero_sticky_notes"), []),
+                      customizationConfig: safeJsonParse(localStorage.getItem("aero_customization_config"), {}),
+                      pomodoroLogs: safeJsonParse(localStorage.getItem("aero_pomodoro_logs"), []),
+                      countdowns: safeJsonParse(localStorage.getItem("qiyun_countdowns"), []),
+                      habits: safeJsonParse(localStorage.getItem("qiyun_habits"), []),
+                      habitLogs: safeJsonParse(localStorage.getItem("qiyun_habit_logs"), {}),
+                      moods: safeJsonParse(localStorage.getItem("qiyun_moods"), {}),
+                      aiPraise: safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []),
+                      exportedAt: new Date().toISOString(),
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `qiyun-list-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    triggerToast(s.snapshotExported || "导出成功 ✅", "success");
+                  }}
+                  className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {s.snapshotExport || "导出快照"}
+                </button>
+                <button
+                  onClick={() => document.getElementById("snapshot-file-input")?.click()}
+                  className="flex-1 bg-[#B2C8DF] hover:bg-[#9BB5CF] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {s.snapshotImport || "导入快照"}
+                </button>
+                <input
+                  id="snapshot-file-input"
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      try {
+                        const data = JSON.parse(ev.target?.result as string);
+                        if (data.tasks) localStorage.setItem("aero_todos", JSON.stringify(data.tasks));
+                        if (data.completedTasks) localStorage.setItem("aero_completed_todos", JSON.stringify(data.completedTasks));
+                        if (data.stickyNotes) localStorage.setItem("aero_sticky_notes", JSON.stringify(data.stickyNotes));
+                        if (data.customizationConfig) localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
+                        if (data.pomodoroLogs) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(data.pomodoroLogs));
+                        if (data.countdowns) localStorage.setItem("qiyun_countdowns", JSON.stringify(data.countdowns));
+                        if (data.habits) localStorage.setItem("qiyun_habits", JSON.stringify(data.habits));
+                        if (data.habitLogs) localStorage.setItem("qiyun_habit_logs", JSON.stringify(data.habitLogs));
+                        if (data.moods) localStorage.setItem("qiyun_moods", JSON.stringify(data.moods));
+                        if (data.aiPraise) localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
+                        triggerToast(s.snapshotImported || "导入成功 ✅ 请刷新页面", "success");
+                      } catch {
+                        triggerToast(s.snapshotImportError || "导入失败，文件格式不正确", "error");
+                      }
+                    };
+                    reader.readAsText(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
           </div>
         )}
 
