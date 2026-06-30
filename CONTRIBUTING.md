@@ -17,7 +17,7 @@
 5. 创建 Pull Request
 
 ### 代码规范
-- 前端：遵循 TypeScript 严格模式，使用 ESLint
+- 前端：遵循 TypeScript 严格模式，使用 `npm run typecheck` 做类型检查
 - 后端：遵循 Rust 官方风格指南
 - 提交信息：使用中文或英文，清晰描述变更内容
 

@@ -1,12 +1,12 @@
 [package]
-name = "aerotodo"
+name = "qiyun-list"
 version = "0.1.0"
-description = "AeroTodo - Minimalist Dual Window Todo App"
-authors = ["you"]
+description = "QiYun List - Eisenhower matrix todo desktop app"
+authors = ["QiYun List contributors"]
 edition = "2021"
 
 [lib]
-name = "aerotodo_lib"
+name = "qiyun_list_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -19,5 +19,4 @@ tauri-plugin-store = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
-
 

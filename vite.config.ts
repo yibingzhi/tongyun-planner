@@ -32,4 +32,16 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"],
+          motion: ["framer-motion"],
+          tauri: ["@tauri-apps/api", "@tauri-apps/plugin-store", "@tauri-apps/plugin-opener"],
+          calendar: ["lunar-javascript"],
+        },
+      },
+    },
+  },
 }));

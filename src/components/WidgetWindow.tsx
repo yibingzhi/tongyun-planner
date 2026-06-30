@@ -25,6 +25,7 @@ import { PRIORITY_OPTIONS, PLANNER_COLORS } from "../constants";
 import { NOTE_COLORS } from "./StickyNotesView";
 import { StickyPin } from "./StickyPin";
 import { useTranslation } from "../i18n/LanguageContext";
+import { createId } from "../utils/id";
 
 interface WidgetWindowProps {
   tasks: Task[];
@@ -180,7 +181,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     if (!newTitle.trim()) return;
 
     const newTask: Task = {
-      id: Date.now().toString(),
+      id: createId("task"),
       title: newTitle,
       description: newDesc || undefined,
       notes: newNotes || undefined,
@@ -231,7 +232,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     setTasks((prev) => {
       const task = prev.find((t) => t.id === taskId);
       if (!task) return prev;
-      const newSub: SubTask = { id: Date.now().toString(), title, completed: false };
+      const newSub: SubTask = { id: createId("subtask"), title, completed: false };
       const nextTask = { ...task, subtasks: [...(task.subtasks || []), newSub] };
       const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
       saveTasks(updated);
@@ -1071,6 +1072,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
           onAddSubtask={handleAddSubtaskWidget}
           onSaveNotes={handleSaveNotesWidget}
           onUpdateTags={handleUpdateTagsWidget}
+          onEditTask={(id, updates) => { setTasks((prev: Task[]) => { const updated = prev.map((t) => t.id === id ? { ...t, ...updates } : t); saveTasks(updated); return updated; }); }}
         />
       )}
 

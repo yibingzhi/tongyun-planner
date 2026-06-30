@@ -29,6 +29,7 @@ import { useCustomization } from "./hooks/useCustomization";
 import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
 import { useSync } from "./hooks/useSync";
+import { createId } from "./utils/id";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -345,7 +346,7 @@ function AppInner() {
               pomodoroHook.setPomodoroTimeLeft(nextTime);
 
               const newLog = {
-                id: Date.now().toString(),
+                id: createId("pomodoro-log"),
                 timestamp: Date.now(),
                 duration: pomodoroHook.focusDuration,
                 taskId: pomodoroHook.pomodoroTaskId || undefined,
@@ -903,7 +904,7 @@ function AppInner() {
           const task = tasksHook.tasks.find((t: Task) => t.id === tasksHook.detailTaskId) || tasksHook.completedTasks.find((t: Task) => t.id === tasksHook.detailTaskId);
           if (!task) return null;
           return (
-            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} />
+            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={tasksHook.handleEditTask} />
           );
         })()}
       </div>

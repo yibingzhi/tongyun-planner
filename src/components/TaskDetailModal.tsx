@@ -10,6 +10,7 @@ interface TaskDetailModalProps {
   onAddSubtask: (taskId: string, title: string) => void;
   onSaveNotes: (taskId: string, notes: string) => void;
   onUpdateTags: (taskId: string, tags: string[]) => void;
+  onEditTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
@@ -19,6 +20,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   onAddSubtask,
   onSaveNotes,
   onUpdateTags,
+  onEditTask,
 }) => {
   const { t } = useTranslation();
   const tc = t.taskCard;
@@ -26,6 +28,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [tags, setTags] = useState<string[]>(task.tags || []);
   const [tagInput, setTagInput] = useState("");
+  const [editDueDate, setEditDueDate] = useState(task.dueDate || "");
+  const [editDueTime, setEditDueTime] = useState(task.dueTime || "");
 
   return (
     <div
@@ -114,12 +118,22 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
                 t.matrix.notUrgentNotImportant
               }</span>
             </div>
-            {task.dueDate && (
-              <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4]">
-                <Calendar className="w-3 h-3" />
-                <span>{task.dueDate}{task.dueTime ? ` ${task.dueTime}` : ""}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4]">
+              <Calendar className="w-3 h-3" />
+              <input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => { setEditDueDate(e.target.value); onEditTask(task.id, { dueDate: e.target.value || undefined }); }}
+                className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-24"
+                title={t.taskCard.dueDate}
+              />
+              <input
+                type="time"
+                value={editDueTime}
+                onChange={(e) => { setEditDueTime(e.target.value); onEditTask(task.id, { dueTime: e.target.value || undefined }); }}
+                className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-16"
+              />
+            </div>
           </div>
 
           {/* Subtasks */}

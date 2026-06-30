@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    aerotodo_lib::run()
+    qiyun_list_lib::run()
 }

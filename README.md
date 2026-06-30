@@ -175,7 +175,7 @@ qiyun-list/
 5. 新建 Pull Request
 
 ### 代码规范
-- 前端：遵循 TypeScript 严格模式，使用 ESLint
+- 前端：遵循 TypeScript 严格模式，使用 `npm run typecheck` 做类型检查
 - 后端：遵循 Rust 官方风格指南
 - 提交信息：使用中文或英文，清晰描述变更内容
 
@@ -193,10 +193,6 @@ qiyun-list/
 ## 支持渠道
 
 支持渠道请查看 [SUPPORT.md](SUPPORT.md) 文件。
-
-## 致谢
-
-致谢列表请查看 [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) 文件。
 
 ## 更新日志
 
