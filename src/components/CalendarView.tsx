@@ -4,6 +4,8 @@ import type { Task } from "../types";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
 import LunarLib from "lunar-javascript";
+import { getLocalDateString } from "../utils/date";
+import { safeJsonParse } from "../utils/json";
 
 const FIXED_FESTIVALS: Record<string, string> = {
   "01-01": "元旦",
@@ -65,7 +67,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        setHolidayData(JSON.parse(cached));
+        setHolidayData(safeJsonParse(cached, {}));
         return;
       }
     } catch {}
@@ -175,7 +177,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     }
 
     // 2. 本月天数渲染
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getLocalDateString();
     for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
       const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
       const isToday = dateStr === todayStr;
@@ -266,7 +268,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                   const today = new Date();
                   setCalendarYear(today.getFullYear());
                   setCalendarMonth(today.getMonth());
-                  setSelectedCalendarDate(today.toISOString().split("T")[0]);
+                  setSelectedCalendarDate(getLocalDateString(today));
                 }}
                 className="text-[10px] px-3 py-1.5 rounded-lg bg-[#4D7C5D] hover:bg-[#3D6A4F] text-white font-extrabold transition-all cursor-pointer shadow-sm"
               >

@@ -26,6 +26,7 @@ import { NOTE_COLORS } from "./StickyNotesView";
 import { StickyPin } from "./StickyPin";
 import { useTranslation } from "../i18n/LanguageContext";
 import { createId } from "../utils/id";
+import { getLocalDateString } from "../utils/date";
 
 interface WidgetWindowProps {
   tasks: Task[];
@@ -172,7 +173,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   const [newNotes, setNewNotes] = useState("");
   const [newCategory, setNewCategory] = useState<Task["category"]>("urgent-important");
   const [newWidgetDueDate, setNewWidgetDueDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    getLocalDateString()
   );
   const [newWidgetDueTime, setNewWidgetDueTime] = useState("");
 
@@ -308,9 +309,9 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   const focusTask = pomodoroTaskId ? tasks.find(t => t.id === pomodoroTaskId) || completedTasks.find(t => t.id === pomodoroTaskId) : undefined;
 
   // 专注统计
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateString();
   const todayLogs = pomodoroLogs.filter((log) => {
-    const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+    const logDate = getLocalDateString(new Date(log.timestamp));
     return logDate === todayStr && !log.taskId?.startsWith("break");
   });
   const todayPomodoros = todayLogs.length;

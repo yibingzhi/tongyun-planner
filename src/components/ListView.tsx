@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin, Repeat, ListTodo } from "lucide-react";
 import type { Task } from "../types";
 import { FILTER_OPTIONS, getDueDateCountdown } from "../constants";
@@ -63,26 +63,35 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
   // Local state to filter only starred tasks
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
+  const tagOptions = useMemo(() => {
+    const allTags = [...new Set(tasks.flatMap((t) => t.tags || []))];
+    return [{ value: "all", label: lv.allTags }, ...allTags.map((t) => ({ value: t, label: t }))];
+  }, [lv.allTags, tasks]);
+
   // Filter tasks matching search query, category, and favorite filter
   // then sort so pinned tasks float to the top
-  const filteredTasks = tasks
-    .filter((task) => {
-      const matchesSearch =
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (task.notes || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesCategory = categoryFilter === "all" || task.category === categoryFilter;
-      const matchesTag = tagFilter === "all" || (task.tags || []).includes(tagFilter);
-      const matchesFavorite = !showFavoritesOnly || task.isFavorite;
-      
-      return matchesSearch && matchesCategory && matchesTag && matchesFavorite;
-    })
-    .sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return 0;
-    });
+  const filteredTasks = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+
+    return tasks
+      .filter((task) => {
+        const matchesSearch =
+          task.title.toLowerCase().includes(query) ||
+          (task.description || "").toLowerCase().includes(query) ||
+          (task.notes || "").toLowerCase().includes(query);
+
+        const matchesCategory = categoryFilter === "all" || task.category === categoryFilter;
+        const matchesTag = tagFilter === "all" || (task.tags || []).includes(tagFilter);
+        const matchesFavorite = !showFavoritesOnly || task.isFavorite;
+
+        return matchesSearch && matchesCategory && matchesTag && matchesFavorite;
+      })
+      .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+  }, [categoryFilter, searchQuery, showFavoritesOnly, tagFilter, tasks]);
 
   return (
     <div className="animate-fade-in-up rounded-2xl bg-white/70 border border-[#EFEBE4] p-6 flex flex-col gap-4 flex-grow overflow-y-auto max-h-[600px] custom-scrollbar select-none shadow-sm backdrop-blur-md relative">
@@ -109,10 +118,7 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
         <CustomSelect
           value={tagFilter}
           onChange={setTagFilter}
-          options={(() => {
-            const allTags = [...new Set(tasks.flatMap((t) => t.tags || []))];
-            return [{ value: "all", label: lv.allTags }, ...allTags.map((t) => ({ value: t, label: t }))];
-          })()}
+          options={tagOptions}
           className="w-32"
         />
         {/* Star Filter Button */}

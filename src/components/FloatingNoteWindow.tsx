@@ -5,6 +5,7 @@ import { StickyPin } from "./StickyPin";
 import { invoke } from "@tauri-apps/api/core";
 import { audioEngine } from "../utils/audioEngine";
 import { useTranslation } from "../i18n/LanguageContext";
+import { safeJsonParse } from "../utils/json";
 
 interface FloatingNoteWindowProps {
   noteId: string;
@@ -39,27 +40,19 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   useEffect(() => {
     const localNotes = localStorage.getItem("aero_sticky_notes");
     if (localNotes) {
-      try {
-        const notes = JSON.parse(localNotes);
+      const notes = safeJsonParse<any[]>(localNotes, []);
         const currentNote = notes.find((n: any) => n.id === noteId);
         if (currentNote) {
           setText(currentNote.text);
           setColor(currentNote.color);
         }
-      } catch (e) {
-        console.error("Failed to parse notes on float init", e);
-      }
     }
 
     const localConfig = localStorage.getItem("aero_customization_config");
     if (localConfig) {
-      try {
-        const config = JSON.parse(localConfig);
-        if (config.pinType) {
-          setPinType(config.pinType);
-        }
-      } catch (e) {
-        console.error("Failed to parse config on float init", e);
+      const config = safeJsonParse<any>(localConfig, {});
+      if (config.pinType) {
+        setPinType(config.pinType);
       }
     }
   }, [noteId]);
@@ -89,15 +82,11 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
     // Update local storage
     const localNotes = localStorage.getItem("aero_sticky_notes");
     if (localNotes) {
-      try {
-        const notes = JSON.parse(localNotes);
-        const updated = notes.map((n: any) =>
-          n.id === noteId ? { ...n, text: newText } : n
-        );
-        localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
+      const notes = safeJsonParse<any[]>(localNotes, []);
+      const updated = notes.map((n: any) =>
+        n.id === noteId ? { ...n, text: newText } : n
+      );
+      localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
     }
     syncState("edit_note_text", newText);
   };
@@ -108,15 +97,11 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
     
     const localNotes = localStorage.getItem("aero_sticky_notes");
     if (localNotes) {
-      try {
-        const notes = JSON.parse(localNotes);
-        const updated = notes.map((n: any) =>
-          n.id === noteId ? { ...n, color: newColor } : n
-        );
-        localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
+      const notes = safeJsonParse<any[]>(localNotes, []);
+      const updated = notes.map((n: any) =>
+        n.id === noteId ? { ...n, color: newColor } : n
+      );
+      localStorage.setItem("aero_sticky_notes", JSON.stringify(updated));
     }
     syncState("change_note_color", newColor);
   };

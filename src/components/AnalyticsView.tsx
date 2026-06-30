@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Clock, CheckCircle2, Heart, Coffee, BarChart3 } from "lucide-react";
 import type { Task, PomodoroLog } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
+import { getLocalDateString } from "../utils/date";
 
 interface AnalyticsViewProps {
   pomodoroLogs: PomodoroLog[];
@@ -21,9 +22,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
     const hours = Math.floor(totalDur / 60);
     const minutes = totalDur % 60;
     
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getLocalDateString();
     const todayPomos = pomodoroLogs.filter((log) => {
-      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+      const logDate = getLocalDateString(new Date(log.timestamp));
       return logDate === todayStr;
     }).length;
 
@@ -41,7 +42,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   const pomodoroCountsByDate = useMemo(() => {
     const counts: Record<string, number> = {};
     pomodoroLogs.forEach((log) => {
-      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
+      const logDate = getLocalDateString(new Date(log.timestamp));
       counts[logDate] = (counts[logDate] || 0) + 1;
     });
     return counts;
@@ -97,7 +98,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
       for (let d = 0; d < 7; d++) {
         const cellDate = new Date(startOfGrid.getTime());
         cellDate.setDate(startOfGrid.getDate() + (w * 7 + d));
-        const dateStr = cellDate.toISOString().split("T")[0];
+        const dateStr = getLocalDateString(cellDate);
 
         // O(1) Map Lookup instead of O(N) Filter
         const count = pomodoroCountsByDate[dateStr] || 0;
@@ -119,7 +120,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
           dateStr,
           count,
           colorClass,
-          isToday: dateStr === today.toISOString().split("T")[0],
+          isToday: dateStr === getLocalDateString(today),
           isFuture,
         });
       }

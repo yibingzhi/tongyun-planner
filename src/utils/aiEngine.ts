@@ -1,5 +1,6 @@
 import type { CustomizationConfig, Task } from "../types";
 import { DEFAULT_AI_CLASSIFY_PROMPT } from "../constants";
+import { getLocalDateString } from "./date";
 
 /**
  * 辅助清洗 AI 返回的 JSON 字符串，防止 Markdown 代码块标记（```json）导致 JSON.parse 报错。
@@ -279,7 +280,7 @@ export async function extractTasksFromNote(
   config: CustomizationConfig,
   noteText: string
 ): Promise<ExtractedTask[]> {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   const systemPrompt = `你是一个专业的日程和任务规划专家。你的任务是分析用户输入的文案（如客服工单、备忘或大段规划），提取并分离成结构化的待办任务。
 请严格以标准的 JSON 数组格式返回结果。数组中的每个对象代表一个提取出的任务，且必须正好包含以下六个字段：
 1. "title": (string) 简短易读的任务标题。如果是工单或系统日志，请浓缩提炼出核心矛盾和人员（例如：“【TD登陆未授权】Adrian Cheng 微信登陆故障”）。控制在 18 个字以内。

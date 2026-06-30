@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 pub struct TodoSyncPayload {
     pub task_id: String,
     pub action: String,      // 例如: "complete" (完成), "snooze" (延后), "update" (修改)
+    pub source_window: Option<String>,
     pub title: String,
     pub description: Option<String>,
     pub notes: Option<String>,
@@ -172,6 +173,7 @@ pub fn run() {
                             let _ = app.emit("todo-sync-event", TodoSyncPayload {
                                 task_id: "widget_lock".to_string(),
                                 action: "toggle_lock_from_tray".to_string(),
+                                source_window: Some("tray".to_string()),
                                 title: "".to_string(),
                                 description: None,
                                 notes: None,

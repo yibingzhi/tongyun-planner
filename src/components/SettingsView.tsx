@@ -7,6 +7,7 @@ import { StickyPin } from "./StickyPin";
 import { CustomSelect } from "./CustomSelect";
 import { testAIConnection, generatePraiseBatch } from "../utils/aiEngine";
 import { useTranslation } from "../i18n/LanguageContext";
+import { safeJsonParse } from "../utils/json";
 
 const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).map((_, i) => ({
   value: i,
@@ -69,10 +70,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   const [isAiTesting, setIsAiTesting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [aiPraiseList, setAiPraiseList] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem("qiyun_ai_praise");
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
+    return safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
   });
   const [generatingPraise, setGeneratingPraise] = useState(false);
 

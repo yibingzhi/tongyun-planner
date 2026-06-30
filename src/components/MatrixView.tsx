@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Search, Heart, Calendar, Clock, Check, Layers3, Maximize2, Minimize2, Repeat, ListTodo } from "lucide-react";
 import type { Task, TaskCategory } from "../types";
 import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
@@ -50,7 +50,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
   // State to support full screen expand/collapse for a specific quadrant
   const [expandedQuadrant, setExpandedQuadrant] = useState<TaskCategory | null>(null);
 
-  const quadrants = [
+  const quadrants = useMemo(() => [
     {
       id: "urgent-important",
       label: "I. " + m.urgentImportant,
@@ -87,17 +87,48 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
       defaultDot: "bg-[#F5EBEB]",
       icon: <Layers3 className="w-3 h-3" />,
     },
-  ] as const;
+  ] as const, [m.importantNotUrgent, m.notUrgentNotImportant, m.urgentImportant, m.urgentNotImportant]);
 
   // Filter quadrants if one is maximized
-  const activeQuadrants = expandedQuadrant
-    ? quadrants.filter((q) => q.id === expandedQuadrant)
-    : quadrants;
+  const activeQuadrants = useMemo(() => (
+    expandedQuadrant
+      ? quadrants.filter((q) => q.id === expandedQuadrant)
+      : quadrants
+  ), [expandedQuadrant, quadrants]);
 
   // Local search when not provided from parent
   const [localSearch, setLocalSearch] = useState("");
   const effectiveQuery = searchQuery !== undefined ? searchQuery : localSearch;
   const effectiveSetQuery = setSearchQuery || setLocalSearch;
+
+  const tasksByQuadrant = useMemo(() => {
+    const query = effectiveQuery.toLowerCase();
+    const grouped: Record<TaskCategory, Task[]> = {
+      "urgent-important": [],
+      "important-not-urgent": [],
+      "urgent-not-important": [],
+      "not-urgent-not-important": [],
+    };
+
+    tasks.forEach((task) => {
+      const matchesSearch = !query ||
+        task.title.toLowerCase().includes(query) ||
+        (task.description || "").toLowerCase().includes(query) ||
+        (task.notes || "").toLowerCase().includes(query);
+
+      if (matchesSearch) grouped[task.category].push(task);
+    });
+
+    Object.values(grouped).forEach((items) => {
+      items.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+    });
+
+    return grouped;
+  }, [effectiveQuery, tasks]);
 
   return (
     <div className="animate-fade-in-up select-none flex-grow flex flex-col gap-4">
@@ -118,23 +149,7 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
         }`}
       >
       {activeQuadrants.map((quad) => {
-        // Filter by search and category, then sort so pinned tasks float to the top
-        const quadrantTasks = tasks
-          .filter((t) => t.category === quad.id)
-          .filter((t) => {
-            if (!effectiveQuery) return true;
-            const q = effectiveQuery.toLowerCase();
-            return (
-              t.title.toLowerCase().includes(q) ||
-              (t.description || "").toLowerCase().includes(q) ||
-              (t.notes || "").toLowerCase().includes(q)
-            );
-          })
-          .sort((a, b) => {
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            return 0;
-          });
+        const quadrantTasks = tasksByQuadrant[quad.id];
 
         const colorKey = qColors ? qColors[quad.id] : null;
         const customColor = colorKey ? PLANNER_COLORS[colorKey] : null;

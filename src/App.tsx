@@ -30,6 +30,8 @@ import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
 import { useSync } from "./hooks/useSync";
 import { createId } from "./utils/id";
+import { getLocalDateString } from "./utils/date";
+import { safeJsonParse } from "./utils/json";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -53,11 +55,12 @@ function AppInner() {
   );
   const isFirstLoad = useRef(true);
   const isRestoringRef = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    getLocalDateString()
   );
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
@@ -80,11 +83,11 @@ function AppInner() {
 
     const savedCustomization = localStorage.getItem("aero_customization_config");
     if (savedCustomization) {
-      try {
-        const parsed = JSON.parse(savedCustomization);
+      const parsed = safeJsonParse(savedCustomization, null as any);
+      if (parsed) {
         customizationHook.setCustomizationConfig(parsed);
         if (parsed.locale) setLocale(parsed.locale);
-      } catch (e) {}
+      }
     }
 
     const savedSound = localStorage.getItem("aero_alert_sound_type");
@@ -106,7 +109,7 @@ function AppInner() {
 
         const localLogs = localStorage.getItem("aero_pomodoro_logs");
         if (localLogs) {
-          pomodoroHook.setPomodoroLogs(JSON.parse(localLogs));
+          pomodoroHook.setPomodoroLogs(safeJsonParse(localLogs, []));
         } else {
           const seededLogs = [];
           const nowMs = Date.now();
@@ -129,7 +132,7 @@ function AppInner() {
 
         const localNotes = localStorage.getItem("aero_sticky_notes");
         if (localNotes) {
-          notesHook.setStickyNotes(JSON.parse(localNotes));
+          notesHook.setStickyNotes(safeJsonParse(localNotes, []));
         } else {
           const defaultNotes = [
             { id: "note-1", text: "使用技巧：双窗口联动与幽灵锁定模式\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁。\n- 侧边栏的白噪音是完全离线纯物理波形合成，不需要消耗网络流量。", color: "tea", rotate: -1 },
@@ -141,7 +144,7 @@ function AppInner() {
         }
 
         const localCountdowns = localStorage.getItem("qiyun_countdowns");
-        if (localCountdowns) countdownHook.setCountdowns(JSON.parse(localCountdowns));
+        if (localCountdowns) countdownHook.setCountdowns(safeJsonParse(localCountdowns, []));
 
         const storedTasks = await store.get<Task[]>("tasks");
         const storedCompleted = await store.get<Task[]>("completedTasks");
@@ -151,7 +154,7 @@ function AppInner() {
         } else {
           const local = localStorage.getItem("aero_todos");
           if (local) {
-            const parsed = JSON.parse(local);
+            const parsed = safeJsonParse(local, tasksHook.INITIAL_TASKS);
             tasksHook.setTasks(parsed);
             await store.set("tasks", parsed);
           } else {
@@ -165,7 +168,7 @@ function AppInner() {
         } else {
           const localCompleted = localStorage.getItem("aero_completed_todos");
           if (localCompleted) {
-            const parsed = JSON.parse(localCompleted);
+            const parsed = safeJsonParse(localCompleted, []);
             tasksHook.setCompletedTasks(parsed);
             await store.set("completedTasks", parsed);
           } else {
@@ -178,9 +181,11 @@ function AppInner() {
       } catch (e) {
         console.warn("Store 加载失败，回退到 localStorage", e);
         const local = localStorage.getItem("aero_todos");
-        tasksHook.setTasks(local ? JSON.parse(local) : tasksHook.INITIAL_TASKS);
+        tasksHook.setTasks(safeJsonParse(local, tasksHook.INITIAL_TASKS));
         const localCompleted = localStorage.getItem("aero_completed_todos");
-        tasksHook.setCompletedTasks(localCompleted ? JSON.parse(localCompleted) : []);
+        tasksHook.setCompletedTasks(safeJsonParse(localCompleted, []));
+      } finally {
+        setIsHydrated(true);
       }
     };
     initStore();
@@ -188,18 +193,19 @@ function AppInner() {
     // Cross-window event listener
     const unlistenPromise = listen("todo-sync-event", (event: any) => {
       const p = event.payload;
+      if (p.source_window && p.source_window === label) return;
       switch (p.action) {
         case "complete":
-          tasksHook.handleComplete(p.task_id);
+          tasksHook.handleComplete(p.task_id, false);
           break;
         case "undo_complete":
-          tasksHook.handleUndoComplete(p.task_id);
+          tasksHook.handleUndoComplete(p.task_id, false);
           break;
         case "delete":
-          tasksHook.handleDeleteTask(p.task_id);
+          tasksHook.handleDeleteTask(p.task_id, false);
           break;
         case "snooze":
-          tasksHook.handleSnooze(p.task_id);
+          tasksHook.handleSnooze(p.task_id, false);
           break;
         case "add": {
           const newTask: Task = {
@@ -300,12 +306,12 @@ function AppInner() {
   }, []);
 
   // ============ State Persistence (deferred, never blocks render) ============
-  useEffect(() => { localStorage.setItem("aero_todos", JSON.stringify(tasksHook.tasks)); }, [tasksHook.tasks]);
-  useEffect(() => { localStorage.setItem("aero_completed_todos", JSON.stringify(tasksHook.completedTasks)); }, [tasksHook.completedTasks]);
-  useEffect(() => { localStorage.setItem("aero_sticky_notes", JSON.stringify(notesHook.stickyNotes)); }, [notesHook.stickyNotes]);
-  useEffect(() => { localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [customizationHook.customizationConfig]);
-  useEffect(() => { localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [pomodoroHook.pomodoroLogs]);
-  useEffect(() => { localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [countdownHook.countdowns]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("aero_todos", JSON.stringify(tasksHook.tasks)); }, [isHydrated, tasksHook.tasks]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("aero_completed_todos", JSON.stringify(tasksHook.completedTasks)); }, [isHydrated, tasksHook.completedTasks]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("aero_sticky_notes", JSON.stringify(notesHook.stickyNotes)); }, [isHydrated, notesHook.stickyNotes]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
 
   // ============ Pomodoro Timer Effect ============
   useEffect(() => {
@@ -397,7 +403,7 @@ function AppInner() {
         description: item.description || "",
         notes: item.notes || "",
         category: item.category,
-        dueDate: item.dueDate || new Date().toISOString().split("T")[0],
+        dueDate: item.dueDate || getLocalDateString(),
         dueTime: item.dueTime || undefined,
         isExplicit: true,
       });
@@ -422,7 +428,7 @@ function AppInner() {
       let aiPool: string[] = [];
       try {
         const stored = localStorage.getItem("qiyun_ai_praise");
-        if (stored) aiPool = JSON.parse(stored);
+        if (stored) aiPool = safeJsonParse(stored, []);
       } catch (e) {}
       const pool = [...fixedPool, ...aiPool];
       setCelebrationMessage(pool[Math.floor(Math.random() * pool.length)]);
@@ -455,7 +461,7 @@ function AppInner() {
 
       try {
         const now = Date.now();
-        const aiPraise = JSON.parse(localStorage.getItem("qiyun_ai_praise") || "[]");
+        const aiPraise = safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
         const backupData = {
           tasks: tasksHook.tasks,
           completedTasks: tasksHook.completedTasks,
@@ -511,7 +517,7 @@ function AppInner() {
   }, [tasksHook.setTasks, tasksHook.saveTasks, tasksHook.setCompletedTasks, tasksHook.saveCompleted, notesHook.setStickyNotes, notesHook.saveStickyNotes, customizationHook.setCustomizationConfig]);
 
   const handleBackupToCloud = useCallback(async (config: WebDavConfig) => {
-    const aiPraise = JSON.parse(localStorage.getItem("qiyun_ai_praise") || "[]");
+    const aiPraise = safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
     const backupData = {
       tasks: tasksHook.tasks,
       completedTasks: tasksHook.completedTasks,

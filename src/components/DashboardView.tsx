@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock } from "lucide-react";
 import type { Task, CustomizationConfig } from "../types";
+import { getLocalDateString } from "../utils/date";
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -22,7 +23,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const d = t.dashboard;
 
   const [nickname] = useState(() => localStorage.getItem("qiyun_nickname") || "");
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
 
   const hour = new Date().getHours();
   let greetKey: string;

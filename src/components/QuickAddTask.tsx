@@ -4,6 +4,7 @@ import type { Task, RepeatType } from "../types";
 import { PRIORITY_OPTIONS } from "../constants";
 import { CustomSelect } from "./CustomSelect";
 import { useTranslation } from "../i18n/LanguageContext";
+import { getLocalDateString } from "../utils/date";
 
 interface QuickAddTaskProps {
   handleAddTask: (taskData: {
@@ -35,7 +36,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
-  const [dueDate, setDueDate] = useState(() => defaultDueDate || new Date().toISOString().split("T")[0]);
+  const [dueDate, setDueDate] = useState(() => defaultDueDate || getLocalDateString());
   const [dueTime, setDueTime] = useState("");
   const [category, setCategory] = useState<Task["category"]>(defaultCategory);
   const [repeat, setRepeat] = useState<RepeatType>("none");
