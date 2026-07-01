@@ -605,9 +605,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           ) : proseError ? (
             <p className="text-[10px] text-red-400 font-bold text-center py-4">{t.prose?.error || "生成失败，请检查 AI 配置"}</p>
           ) : prose ? (
-            <p className="text-[11px] text-slate-700 leading-relaxed font-medium tracking-wide whitespace-pre-line">
-              {prose}
-            </p>
+            (() => {
+              const titleMatch = prose.match(/^(.+?)\n\n([\s\S]*)$/);
+              const proseTitle = titleMatch?.[1]?.trim() ?? null;
+              const proseBody = titleMatch?.[2] ?? prose;
+              return (
+                <>
+                  {proseTitle && (
+                    <h4 className="text-sm font-bold text-slate-800 mb-3 tracking-wide leading-snug">
+                      {proseTitle}
+                    </h4>
+                  )}
+                  <div className="prose-body space-y-3">
+                    {proseBody.split(/\n{2,}/).map((paragraph, idx, arr) => {
+                      const trimmed = paragraph.replace(/\n/g, "").trim();
+                      if (!trimmed) return null;
+                      const isFirst = idx === 0 && !proseTitle;
+                      return (
+                        <div key={idx} className="relative">
+                          {arr.length > 1 && idx > 0 && (
+                            <div className="flex items-center gap-2 my-2.5 opacity-30">
+                              <span className="h-px flex-grow bg-[#DEEAE2]" />
+                              <span className="text-[#B8D4C1] text-[6px]">✦</span>
+                              <span className="h-px flex-grow bg-[#DEEAE2]" />
+                            </div>
+                          )}
+                          <p className="text-[11px] text-slate-700 leading-[1.9] tracking-wide font-medium">
+                            {isFirst && (
+                              <span className="float-left text-[2.6em] leading-[0.85] font-bold text-[#4D7C5D] mr-2 mt-0.5 font-serif">
+                                {trimmed.charAt(0)}
+                              </span>
+                            )}
+                            {isFirst ? trimmed.slice(1) : trimmed}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()
           ) : (
             <p className="text-[10px] text-slate-400 font-bold text-center py-4">
               {t.prose?.empty || "点击上方按钮，让 AI 为你写一篇散文 ✨"}

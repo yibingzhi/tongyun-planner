@@ -13,8 +13,10 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-sql": "^2.4.0",
     "@tauri-apps/plugin-store": "^2.4.3",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.21.0",

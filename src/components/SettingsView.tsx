@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2 } from "lucide-react";
-import type { CustomizationConfig, WebDavConfig, AlertSoundType, Locale } from "../types";
+import React, { useState, useEffect } from "react";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server } from "lucide-react";
+import type { CustomizationConfig, AlertSoundType, Locale } from "../types";
+import type { SyncBackendType } from "../utils/sync/types";
+import { syncEngine } from "../utils/sync/engine";
 import { PLANNER_COLORS } from "../constants";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
@@ -44,8 +46,6 @@ const LOCALE_OPTIONS: SelectOption<Locale>[] = [
 interface SettingsViewProps {
   config: CustomizationConfig;
   onChange: (newConfig: CustomizationConfig) => void;
-  onBackupToCloud: (webdavConfig: WebDavConfig) => Promise<void>;
-  onRestoreFromCloud: (webdavConfig: WebDavConfig) => Promise<void>;
   alertSoundType: AlertSoundType;
   setAlertSoundType: (type: AlertSoundType) => void;
   resetTasks: () => void;
@@ -54,8 +54,6 @@ interface SettingsViewProps {
 export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   config,
   onChange,
-  onBackupToCloud,
-  onRestoreFromCloud,
   alertSoundType,
   setAlertSoundType,
   resetTasks,
@@ -66,6 +64,11 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("qiyun_webdav_url") || "");
   const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("qiyun_webdav_user") || "");
   const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("qiyun_webdav_pass") || "");
+  const [syncBackend, setSyncBackend] = useState<SyncBackendType>(() => syncEngine.currentBackend);
+  const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem("qiyun_supabase_url") || "");
+  const [supabaseKey, setSupabaseKey] = useState(() => localStorage.getItem("qiyun_supabase_anon_key") || "");
+  const [syncStatus, setSyncStatus] = useState(syncEngine.status);
+  const [syncLastTime, setSyncLastTime] = useState<number | null>(syncEngine.lastSyncTime);
   const [isLoading, setIsLoading] = useState(false);
   const [isAiTesting, setIsAiTesting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -74,54 +77,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   });
   const [generatingPraise, setGeneratingPraise] = useState(false);
 
-  const handleSaveWebDav = (url: string, user: string, pass: string) => {
-    localStorage.setItem("qiyun_webdav_url", url);
-    localStorage.setItem("qiyun_webdav_user", user);
-    localStorage.setItem("qiyun_webdav_pass", pass);
-  };
-
+  useEffect(() => {
+    return syncEngine.subscribe((state) => {
+      setSyncStatus(state.status);
+      setSyncLastTime(state.lastSyncTime);
+    });
+  }, []);
   const triggerToast = (text: string, type: "success" | "error") => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 3000);
-  };
-
-  const backup = async () => {
-    if (!webdavUrl || !webdavUser) {
-      triggerToast(s.syncFillInfo, "error");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      handleSaveWebDav(webdavUrl, webdavUser, webdavPass);
-      await onBackupToCloud({ url: webdavUrl, username: webdavUser, password: webdavPass });
-      triggerToast(s.syncBackupSuccess, "success");
-    } catch (e: any) {
-      console.error(e);
-      triggerToast(`备份失败: ${e.message || e}`, "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const restore = async () => {
-    if (!webdavUrl || !webdavUser) {
-      triggerToast(s.syncFillInfo, "error");
-      return;
-    }
-    if (!confirm(s.syncRestoreConfirm)) {
-      return;
-    }
-    setIsLoading(true);
-    try {
-      handleSaveWebDav(webdavUrl, webdavUser, webdavPass);
-      await onRestoreFromCloud({ url: webdavUrl, username: webdavUser, password: webdavPass });
-      triggerToast(s.syncRestoreSuccess, "success");
-    } catch (e: any) {
-      console.error(e);
-      triggerToast(`恢复失败: ${e.message || e}`, "error");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleColorChange = (quadId: "urgent-important" | "important-not-urgent" | "urgent-not-important" | "not-urgent-not-important", colorKey: string) => {
@@ -698,110 +662,223 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
         {/* 4. 备份同步 WebDav 面签 */}
         {subTab === "sync" && (
           <div className="space-y-4 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
+            {/* 同步后端选择 */}
             <div className="bg-[#FAF8F5] border border-[#EFEBE4] p-4 rounded-2xl flex items-start gap-3">
               <Cloud className="w-5 h-5 text-[#8B6E3C] mt-0.5" />
               <div className="text-xs text-slate-600 leading-relaxed font-medium">
-                <strong>☁️ 多窗口与云端自动同步</strong>
+                <strong>☁️ {s.syncTitle || "数据同步"}</strong>
                 <p className="mt-1">{s.syncDesc}</p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                  {s.syncUrl}
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://dav.jianguoyun.com/dav/"
-                  value={webdavUrl}
-                  onChange={(e) => {
-                    setWebdavUrl(e.target.value);
-                    handleSaveWebDav(e.target.value, webdavUser, webdavPass);
-                  }}
-                  className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
-                />
+            {/* 后端选择器 */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">同步后端</label>
+              <div className="flex gap-2">
+                {([["none", "不使用"], ["webdav", "坚果云 WebDAV"], ["supabase", "Supabase"]] as [SyncBackendType, string][]).map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => {
+                      setSyncBackend(val);
+                      syncEngine.setBackend(val);
+                    }}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-extrabold border transition-all cursor-pointer ${
+                      syncBackend === val
+                        ? "bg-[#4D7C5D] text-white border-[#4D7C5D]"
+                        : "bg-white text-slate-600 border-[#EFEBE4] hover:border-[#4D7C5D]"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+            </div>
+
+            {/* 坚果云 WebDAV 配置 */}
+            {syncBackend === "webdav" && (
+              <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    {s.syncUser}
-                  </label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{s.syncUrl}</label>
                   <input
                     type="text"
-                    placeholder="your-email@example.com"
-                    value={webdavUser}
+                    placeholder="https://dav.jianguoyun.com/dav/"
+                    value={webdavUrl}
                     onChange={(e) => {
-                      setWebdavUser(e.target.value);
-                      handleSaveWebDav(webdavUrl, e.target.value, webdavPass);
+                      setWebdavUrl(e.target.value);
+                      localStorage.setItem("qiyun_webdav_url", e.target.value);
+                    }}
+                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{s.syncUser}</label>
+                    <input
+                      type="text"
+                      placeholder="your-email@example.com"
+                      value={webdavUser}
+                      onChange={(e) => {
+                        setWebdavUser(e.target.value);
+                        localStorage.setItem("qiyun_webdav_user", e.target.value);
+                      }}
+                      className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{s.syncPass}</label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={webdavPass}
+                      onChange={(e) => {
+                        setWebdavPass(e.target.value);
+                        localStorage.setItem("qiyun_webdav_pass", e.target.value);
+                      }}
+                      className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Supabase 配置 */}
+            {syncBackend === "supabase" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Supabase URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://your-project.supabase.co"
+                    value={supabaseUrl}
+                    onChange={(e) => {
+                      setSupabaseUrl(e.target.value);
+                      localStorage.setItem("qiyun_supabase_url", e.target.value);
                     }}
                     className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    {s.syncPass}
-                  </label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Anon Key</label>
                   <input
                     type="password"
-                    placeholder="••••••••"
-                    value={webdavPass}
+                    placeholder="eyJhbGciOiJIUzI1NiIs..."
+                    value={supabaseKey}
                     onChange={(e) => {
-                      setWebdavPass(e.target.value);
-                      handleSaveWebDav(webdavUrl, webdavUser, e.target.value);
+                      setSupabaseKey(e.target.value);
+                      localStorage.setItem("qiyun_supabase_anon_key", e.target.value);
                     }}
                     className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                   />
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* 启用自动备份开关 */}
-            <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
-              <div>
-                <span className="text-xs font-bold text-slate-700 block">{s.syncAutoToggle}</span>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">{s.syncAutoToggleDesc}</span>
+            {/* 同步状态与操作 */}
+            {syncBackend !== "none" && (
+              <div className="space-y-3">
+                {/* 状态显示 */}
+                <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">
+                      {syncStatus === "syncing" ? "同步中..." :
+                       syncStatus === "success" ? "上次同步成功" :
+                       syncStatus === "error" ? "同步出错" : "等待同步"}
+                    </span>
+                    {syncLastTime && (
+                      <span className="text-[10px] text-slate-400 mt-0.5 block">
+                        {new Date(syncLastTime).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    syncStatus === "syncing" ? "bg-blue-100 text-blue-600" :
+                    syncStatus === "success" ? "bg-green-100 text-green-600" :
+                    syncStatus === "error" ? "bg-red-100 text-red-600" :
+                    "bg-slate-100 text-slate-500"
+                  }`}>
+                    {syncStatus === "syncing" ? "同步中" :
+                     syncStatus === "success" ? "已同步" :
+                     syncStatus === "error" ? "失败" : "待同步"}
+                  </span>
+                </div>
+
+                {/* 操作按钮组 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (syncBackend === "webdav") {
+                        syncEngine.webdavProvider.setConfig({
+                          url: webdavUrl,
+                          username: webdavUser,
+                          password: webdavPass || undefined,
+                        });
+                      } else {
+                        syncEngine.supabaseProvider.setConfig({
+                          url: supabaseUrl,
+                          anonKey: supabaseKey,
+                        });
+                      }
+                      setIsLoading(true);
+                      const ok = await syncEngine.testConnection();
+                      setIsLoading(false);
+                      triggerToast(ok ? "连接成功 ✅" : "连接失败 ❌", ok ? "success" : "error");
+                    }}
+                    disabled={isLoading}
+                    className="flex-1 bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] text-slate-600 py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    {isLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Server className="w-3 h-3" />}
+                    测试连接
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (syncBackend === "webdav") {
+                        syncEngine.webdavProvider.setConfig({
+                          url: webdavUrl,
+                          username: webdavUser,
+                          password: webdavPass || undefined,
+                        });
+                      } else {
+                        syncEngine.supabaseProvider.setConfig({
+                          url: supabaseUrl,
+                          anonKey: supabaseKey,
+                        });
+                      }
+                      setIsLoading(true);
+                      await syncEngine.sync();
+                      setIsLoading(false);
+                      if (syncEngine.status === "success") {
+                        triggerToast("同步成功 ✅", "success");
+                      }
+                    }}
+                    disabled={isLoading || syncStatus === "syncing"}
+                    className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] disabled:bg-slate-300 text-white py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    {isLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Cloud className="w-3 h-3" />}
+                    立即同步
+                  </button>
+                </div>
+
+                {/* 自动同步开关 */}
+                <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">自动同步</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">数据变更后每分钟自动同步到云端</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={config.enableAutoBackup !== false}
+                    onChange={(e) => {
+                      syncEngine.setAutoSync(e.target.checked);
+                      onChange({
+                        ...config,
+                        enableAutoBackup: e.target.checked,
+                      });
+                    }}
+                    className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
+                  />
+                </div>
               </div>
-              <input
-                type="checkbox"
-                checked={config.enableAutoBackup !== false}
-                onChange={(e) => {
-                  onChange({
-                    ...config,
-                    enableAutoBackup: e.target.checked,
-                  });
-                }}
-                className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
-              />
-            </div>
-
-            {/* 同步备份操作组 */}
-            <div className="flex gap-3 pt-2 relative">
-              <button
-                onClick={backup}
-                disabled={isLoading}
-                className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] disabled:bg-slate-300 text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
-              >
-                {isLoading ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Upload className="w-3.5 h-3.5" />
-                )}
-                {s.syncBackup}
-              </button>
-              <button
-                onClick={restore}
-                disabled={isLoading}
-                className="flex-1 bg-[#8B6E3C] hover:bg-[#725A31] disabled:bg-slate-300 text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
-              >
-                {isLoading ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
-                )}
-                {s.syncRestore}
-              </button>
-            </div>
+            )}
 
             {/* 本地快照备份 */}
             <div className="pt-4 border-t border-[#EFEBE4] space-y-3">

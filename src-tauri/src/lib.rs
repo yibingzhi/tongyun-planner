@@ -139,6 +139,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         // 注册 Store 持久化插件
         .plugin(tauri_plugin_store::Builder::default().build())
+        // 注册 SQL 插件（SQLite 本地数据库）
+        .plugin(tauri_plugin_sql::Builder::default().build())
         // 挂载用于多窗口间状态交互及窗口显隐控制的命令
         .invoke_handler(tauri::generate_handler![
             sync_todo_state,

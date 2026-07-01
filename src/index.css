@@ -693,6 +693,18 @@ html.transparent-window body {
   background-color: rgba(45, 47, 52, 0.8) !important;
 }
 
+/* 番茄钟/计时器 hover 状态深色模式 */
+.dark .hover\:bg-slate-200:hover { background-color: rgba(60, 65, 75, 0.4) !important; }
+.dark .hover\:bg-slate-50:hover { background-color: rgba(50, 55, 65, 0.3) !important; }
+.dark .hover\:bg-\[\#EEEAF5\]:hover { background-color: rgba(80, 55, 110, 0.2) !important; }
+.dark .hover\:text-\[\#7C5D9E\]:hover { color: #A98FD1 !important; }
+.dark .hover\:text-\[\#4D7C5D\]:hover { color: #6FAD84 !important; }
+.dark .hover\:border-\[\#4D7C5D\]:hover { border-color: #4A8A66 !important; }
+.dark .hover\:text-slate-600:hover { color: #C5C8CE !important; }
+
+/* 番茄钟圆形外边框 */
+.dark .border-\[\#FAF8F5\] { border-color: rgba(60, 65, 75, 0.5) !important; }
+
 /* 强行纠正深色模式下偏淡偏灰文字以保证对比度 */
 .dark .text-slate-800,
 .dark .text-slate-700,
@@ -727,21 +739,41 @@ html.transparent-window body {
 /* 6. 侧边栏菜单样式 */
 .dark nav button:not(.nav-active-bar) {
   color: #A9ACB3 !important;
+  border-color: transparent !important;
 }
 .dark nav button:not(.nav-active-bar):hover {
   background-color: rgba(255, 255, 255, 0.04) !important;
   color: #FFF !important;
 }
 
+/* 侧边栏选中态深色背景 */
+.dark nav button.nav-active-bar {
+  background: rgba(35, 45, 55, 0.6) !important;
+  border-color: rgba(178, 200, 223, 0.25) !important;
+  color: #D4E0F0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
 /* 7. 输入框与下拉选择框 */
-.dark input[type="text"],
+.dark input[type="text"] {
+  background-color: rgba(20, 21, 24, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFF !important;
+}
 .dark input[type="password"],
 .dark input[type="date"],
-.dark textarea,
 .dark select {
   background-color: rgba(20, 21, 24, 0.95) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   color: #FFF !important;
+}
+.dark textarea {
+  background-color: rgba(20, 21, 24, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFF !important;
+}
+.dark textarea.bg-transparent {
+  background-color: transparent !important;
 }
 .dark input[type="text"]::placeholder,
 .dark textarea::placeholder {
@@ -778,6 +810,7 @@ html.transparent-window body {
 
 /* 映射 PLANNER_COLORS 的类到暗黑模式 (精美磨砂质感) */
 .dark .bg-\[\#FCF2F0\] { background-color: rgba(85, 40, 50, 0.22) !important; }
+.dark .hover\:bg-\[\#FCF2F0\]:hover { background-color: rgba(85, 40, 50, 0.35) !important; }
 .dark .border-\[\#F5DFDB\] { border-color: rgba(232, 160, 191, 0.2) !important; }
 .dark .text-\[\#A34E36\] { color: #E8A0BF !important; }
 
@@ -859,4 +892,241 @@ html.transparent-window body {
   background: color-mix(in srgb, rgba(38, 35, 30, 0.85) var(--sunset-warmth, 50%), rgba(30, 31, 35, 0.85)) !important;
   border: 1px dashed rgba(253, 186, 116, calc(var(--sunset-warmth, 50%) / 150)) !important;
 }
+
+/* ==========================================================================
+   14. 🌓 暗黑模式缺失覆盖补充
+   ========================================================================== */
+
+/* text-slate-300/text-slate-100 补充 */
+.dark .text-slate-300 {
+  color: #7E818A !important;
+}
+.dark .text-slate-100 {
+  color: #5C5E66 !important;
+}
+
+/* bg-white 缺失透明度变体 */
+.dark .bg-white\/40,
+.dark .bg-white\/90,
+.dark .bg-white\/95,
+.dark .bg-white\/75 {
+  background-color: rgba(28, 29, 33, 0.85) !important;
+}
+
+/* bg-[#FAF8F5] 缺失透明度变体 */
+.dark .bg-\[\#FAF8F5\]\/85,
+.dark .bg-\[\#FAF8F5\]\/65,
+.dark .bg-\[\#FAF8F5\]\/30,
+.dark .bg-\[\#FAF8F5\]\/80 {
+  background-color: rgba(22, 23, 26, 0.85) !important;
+}
+
+/* border-[#EFEBE4] 缺失透明度变体 */
+.dark .border-\[\#EFEBE4\]\/40,
+.dark .border-\[\#EFEBE4\]\/75,
+.dark .border-\[\#EFEBE4\]\/80,
+.dark .border-\[\#EFEBE4\]\/90 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* hover 悬停背景补充 */
+.dark .hover\:bg-white:hover,
+.dark .hover\:bg-white\/50:hover,
+.dark .hover\:bg-white\/75:hover,
+.dark .hover\:bg-white\/80:hover {
+  background-color: rgba(45, 47, 52, 0.8) !important;
+}
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-200:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* 悬停边框补充 */
+.dark .hover\:border-slate-300:hover {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* input[type="time"] / [type="search"] / [type="number"] 补充 */
+.dark input[type="time"],
+.dark input[type="search"],
+.dark input[type="number"] {
+  background-color: rgba(20, 21, 24, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFF !important;
+}
+.dark input[type="time"]::placeholder,
+.dark input[type="search"]::placeholder {
+  color: #5C5E66 !important;
+}
+
+/* stat-card 统计卡片深色背景 */
+.dark .stat-card-todo {
+  background: rgba(25, 35, 45, 0.35) !important;
+  border-color: rgba(178, 200, 223, 0.15) !important;
+}
+.dark .stat-card-done {
+  background: rgba(25, 45, 30, 0.35) !important;
+  border-color: rgba(196, 215, 178, 0.15) !important;
+}
+.dark .stat-card-rate {
+  background: rgba(45, 25, 30, 0.35) !important;
+  border-color: rgba(232, 160, 191, 0.15) !important;
+}
+
+/* 杂项 border-slate 补充 */
+.dark .border-slate-200,
+.dark .border-slate-200\/40,
+.dark .border-slate-200\/60,
+.dark .border-slate-200\/50,
+.dark .border-slate-200\/20,
+.dark .border-slate-300,
+.dark .border-slate-100,
+.dark .border-slate-100\/60 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* hover:bg-red-50 保留红色氛围但降低饱和度 */
+.dark .hover\:bg-red-50:hover,
+.dark .hover\:bg-red-50\/50:hover {
+  background-color: rgba(120, 40, 40, 0.3) !important;
+}
+.dark .hover\:border-red-100:hover {
+  border-color: rgba(200, 80, 80, 0.25) !important;
+}
+
+/* 面板分割线补充 */
+.dark hr,
+.dark .border-b.border-\[\#EFEBE4\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 专注热力图 (FocusHeatmap) 单元格深色适配 */
+.dark .bg-\[\#F3EEE8\] { background-color: rgba(40, 42, 48, 0.6) !important; }
+.dark .bg-\[\#DEEAE2\] { background-color: rgba(30, 55, 45, 0.5) !important; }
+.dark .bg-\[\#B8D4C1\] { background-color: rgba(30, 75, 50, 0.45) !important; }
+.dark .bg-\[\#7FB08D\] { background-color: rgba(35, 95, 60, 0.5) !important; }
+.dark .bg-\[\#4D7C5D\] { background-color: rgba(45, 120, 65, 0.55) !important; }
+
+/* 番茄钟标签徽章 */
+.dark .bg-\[\#F0F5F1\] { background-color: rgba(30, 65, 45, 0.3) !important; }
+.dark .bg-\[\#EEF5F8\] { background-color: rgba(30, 55, 75, 0.3) !important; }
+.dark .bg-\[\#FBF8EC\] { background-color: rgba(70, 60, 30, 0.3) !important; }
+
+/* CustomSelect 下拉菜单深色适配 */
+.dark .bg-slate-50 {
+  background-color: rgba(28, 29, 33, 0.8) !important;
+}
+.dark .bg-\[\#FCF2F0\]\/60 {
+  background-color: rgba(85, 40, 50, 0.35) !important;
+}
+
+/* 习惯打卡标签 */
+.dark .bg-\[\#C4D7B2\] {
+  background-color: rgba(55, 110, 70, 0.5) !important;
+}
+
+/* ============ 专注统计 (AnalyticsView) 深色适配 ============ */
+
+/* 热力图单元格 */
+.dark .bg-\[\#3F684C\] { background-color: rgba(40, 85, 55, 0.6) !important; }
+.dark .bg-\[\#C4D7B2\]\/40 { background-color: rgba(80, 140, 95, 0.25) !important; }
+.dark .bg-\[\#C4D7B2\]\/70 { background-color: rgba(70, 125, 85, 0.45) !important; }
+.dark .bg-\[\#4D7C5D\]\/70 { background-color: rgba(50, 110, 70, 0.5) !important; }
+
+/* 热力图未来单元格占位 */
+.dark .bg-\[\#FAF8F5\]\/20 { background-color: rgba(22, 23, 26, 0.3) !important; }
+
+/* 热力图图例色块 */
+.dark .bg-\[\#C4D7B2\]\/40 { background-color: rgba(80, 140, 95, 0.25) !important; }
+.dark .bg-\[\#C4D7B2\]\/70 { background-color: rgba(70, 125, 85, 0.45) !important; }
+
+/* 统计卡片 — 指标卡背景 */
+.dark .bg-\[\#FCF2F0\]\/80 { background-color: rgba(60, 30, 40, 0.35) !important; }
+.dark .bg-\[\#F0F5F1\]\/80 { background-color: rgba(25, 50, 35, 0.35) !important; }
+.dark .bg-\[\#F3F2F7\]\/80 { background-color: rgba(40, 30, 60, 0.35) !important; }
+.dark .bg-\[\#FAF5ED\]\/80 { background-color: rgba(45, 35, 20, 0.35) !important; }
+
+/* 统计卡片 — 带透明度的描述文字 */
+.dark .text-\[\#A34E36\]\/80 { color: rgba(232, 160, 191, 0.8) !important; }
+.dark .text-\[\#4D7C5D\]\/80 { color: rgba(196, 215, 178, 0.8) !important; }
+.dark .text-\[\#5C528B\]\/80 { color: rgba(201, 168, 227, 0.8) !important; }
+.dark .text-\[\#8B6E3C\]\/80 { color: rgba(234, 217, 168, 0.8) !important; }
+
+/* 任务专注排行 — 进度条背景 */
+.dark .bg-slate-100 {
+  background-color: rgba(35, 36, 40, 0.6) !important;
+}
+
+/* 渐变背景色深色适配 (AI 今日建议等卡片) */
+.dark .from-\[\#F0F5F1\] {
+  --tw-gradient-from: rgba(25, 45, 30, 0.45) !important;
+}
+.dark .to-\[\#EBF3F6\] {
+  --tw-gradient-to: rgba(25, 40, 60, 0.45) !important;
+}
+.dark .from-\[\#FAF5ED\] {
+  --tw-gradient-from: rgba(40, 35, 20, 0.4) !important;
+}
+.dark .to-\[\#FFF9F5\] {
+  --tw-gradient-to: rgba(30, 31, 35, 0.4) !important;
+}
+
+/* ============ 日历视图深色适配 ============ */
+
+/* 日历日格子 — 节假日 */
+.dark .bg-\[\#FFF5F3\] { background-color: rgba(80, 35, 30, 0.3) !important; }
+.dark .border-\[\#FFD9D0\] { border-color: rgba(255, 120, 100, 0.15) !important; }
+.dark .text-\[\#D4380D\] { color: #F09080 !important; }
+.dark .text-\[\#D4380D\]\/60 { color: rgba(240, 144, 128, 0.6) !important; }
+
+/* 日历日格子 — 调休上班 */
+.dark .bg-\[\#FAFAFA\] { background-color: rgba(35, 36, 40, 0.5) !important; }
+.dark .border-\[\#E8E4DE\] { border-color: rgba(255, 255, 255, 0.06) !important; }
+
+/* 日历日格子 — 周末 */
+.dark .bg-\[\#FFF9F5\] { background-color: rgba(45, 35, 25, 0.3) !important; }
+.dark .border-\[\#F5EDE8\] { border-color: rgba(255, 255, 255, 0.04) !important; }
+.dark .text-\[\#B88A6B\] { color: #D4A77A !important; }
+
+/* 日历日格子 — 选中态 (bg-[#FCF2F0]/80) */
+.dark .bg-\[\#FCF2F0\]\/80 { background-color: rgba(70, 35, 45, 0.4) !important; }
+
+/* 日历日 badge (休/班标签) */
+.dark .bg-\[\#D4380D\] { background-color: rgba(180, 55, 20, 0.55) !important; }
+.dark .bg-\[\#B88A6B\]\/70 { background-color: rgba(140, 105, 80, 0.45) !important; }
+
+/* ============ 零散缺失覆盖补充 ============ */
+
+/* 完成页 — 图标占位 */
+.dark .bg-\[\#C4D7B2\]\/20 { background-color: rgba(55, 110, 70, 0.2) !important; }
+.dark .border-\[\#C4D7B2\]\/30 { border-color: rgba(55, 110, 70, 0.25) !important; }
+.dark .hover\:bg-\[\#FCF2F0\]\/50:hover { background-color: rgba(60, 30, 40, 0.3) !important; }
+
+/* 仪表盘 — AI 散文生成按钮 */
+.dark .bg-\[\#4D7C5D\]\/10 { background-color: rgba(55, 110, 70, 0.15) !important; }
+.dark .hover\:bg-\[\#4D7C5D\]\/20:hover { background-color: rgba(55, 110, 70, 0.25) !important; }
+
+/* 日历完成按钮 hover */
+.dark .hover\:bg-\[\#4D7C5D\]:hover { background-color: rgba(55, 110, 70, 0.5) !important; }
+
+/* 命令面板快捷键徽章 */
+.dark .text-\[\#A34E36\]\/70 { color: rgba(232, 160, 191, 0.7) !important; }
+
+/* 侧边栏背景 */
+.dark .bg-\[\#F4EFEA\]\/60 { background-color: rgba(28, 30, 36, 0.5) !important; }
+
+/* 标题栏背景 */
+.dark .bg-\[\#F4EFEA\]\/80 { background-color: rgba(22, 23, 26, 0.75) !important; }
+
+/* 窗口按钮 hover */
+.dark .hover\:bg-\[\#EFEBE4\]:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+
+/* 侧边栏 logo 渐变 */
+.dark .from-\[\#C4D7B2\] { --tw-gradient-from: rgba(65, 110, 80, 0.7) !important; }
+.dark .to-\[\#B2C8DF\] { --tw-gradient-to: rgba(55, 90, 120, 0.7) !important; }
+
+/* 日历空状态图标 */
+.dark .text-\[\#8B6E3C\]\/30 { color: rgba(180, 145, 100, 0.3) !important; }
+
 

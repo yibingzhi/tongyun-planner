@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
 import { load } from "@tauri-apps/plugin-store";
-import type { Task, AppTab, WebDavConfig } from "./types";
+import type { Task, AppTab } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardView } from "./components/DashboardView";
@@ -35,6 +35,7 @@ import { useSync, subscribeDevSync } from "./hooks/useSync";
 import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
+import { storage } from "./utils/storage";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -146,6 +147,9 @@ function AppInner() {
     if (initStartedRef.current) return;
     initStartedRef.current = true;
 
+    // 提前启动 SQLite 初始化（initStore 内部 await 等待完成）
+    const initPromise = storage.init();
+
     let label = "main";
     try {
       label = getCurrentWebviewWindow().label;
@@ -181,6 +185,9 @@ function AppInner() {
     if (savedBreak) handlersRef.current.pomodoroHook.setBreakDuration(parseInt(savedBreak, 10));
 
     const initStore = async () => {
+      // 等待 SQLite 初始化完成，确保 localStorage 已有 SQLite 数据
+      await initPromise;
+
       try {
         const store = await load("qiyun_list_data.json", { defaults: {}, autoSave: false });
         handlersRef.current.tasksHook.storeRef.current = store;
@@ -628,35 +635,6 @@ function AppInner() {
     return false;
   }, [tasksHook.setTasks, tasksHook.saveTasks, tasksHook.setCompletedTasks, tasksHook.saveCompleted, notesHook.setStickyNotes, notesHook.saveStickyNotes, customizationHook.setCustomizationConfig]);
 
-  const handleBackupToCloud = useCallback(async (config: WebDavConfig) => {
-    const aiPraise = safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
-    const backupData = {
-      tasks: tasksHook.tasks,
-      completedTasks: tasksHook.completedTasks,
-      stickyNotes: notesHook.stickyNotes,
-      customizationConfig: customizationHook.customizationConfig,
-      aiPraise,
-      timestamp: Date.now(),
-    };
-
-    if (backupData.tasks.length === 0 && backupData.completedTasks.length === 0 && backupData.stickyNotes.length === 0) {
-      console.warn("手动备份跳过: 所有数据为空");
-      return;
-    }
-
-    const { webdavUpload } = await import("./utils/webdav");
-    await webdavUpload(config, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig]);
-
-  const handleRestoreFromCloud = useCallback(async (config: WebDavConfig) => {
-    const { webdavDownload } = await import("./utils/webdav");
-    const jsonStr = await webdavDownload(config, "qiyun_list_backup.json");
-    const data = JSON.parse(jsonStr);
-    if (!restoreFromData(data)) {
-      throw new Error("备份数据格式不正确");
-    }
-  }, [restoreFromData]);
-
   const checkAndSyncFromCloud = useCallback(async (silent: boolean = false) => {
     const url = localStorage.getItem("qiyun_webdav_url");
     const username = localStorage.getItem("qiyun_webdav_user");
@@ -1030,7 +1008,7 @@ function AppInner() {
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
           )}
           {activeTab === "settings" && (
-            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} onBackupToCloud={handleBackupToCloud} onRestoreFromCloud={handleRestoreFromCloud} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />
+            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />
           )}
         </main>
 
