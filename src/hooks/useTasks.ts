@@ -9,28 +9,28 @@ const INITIAL_TASKS: Task[] = [
   {
     id: "1",
     title: "设计待办清单配色与主题风格",
-    description: "选用暖色奶茶背景、抹茶绿和蜜桃红，构建温馨清爽的日程规划风格。",
+    description: "选用暖色奶茶背景、抹茶绿和蜜桃红,构建温馨清爽的日程规划风格。",
     category: "urgent-important",
     dueDate: getLocalDateString(),
   },
   {
     id: "2",
     title: "体验白噪音与番茄工作法",
-    description: "在侧边栏开启白噪音，配合25分钟番茄时钟，体验极致专注手感。",
+    description: "在侧边栏开启白噪音,配合25分钟番茄时钟,体验极致专注手感。",
     category: "urgent-important",
     dueDate: getLocalDateString(),
   },
   {
     id: "3",
     title: "整理桌面与给绿植浇水",
-    description: "整理房间和摆件，让生活空间与心情一起回归清爽自然。",
+    description: "整理房间和摆件,让生活空间与心情一起回归清爽自然。",
     category: "important-not-urgent",
     dueDate: getLocalDateString(),
   },
   {
     id: "4",
     title: "购买并补给浅烘咖啡豆",
-    description: "生活日常补给，准备片刻的手冲咖啡度过下午。",
+    description: "生活日常补给,准备片刻的手冲咖啡度过下午。",
     category: "urgent-not-important",
     dueDate: getLocalDateString(),
   },
@@ -53,19 +53,71 @@ export function useTasks() {
 
   const storeRef = useRef<Awaited<ReturnType<typeof load>> | null>(null);
 
-  const saveTasks = useCallback(async (updatedTasks: Task[]) => {
-    if (storeRef.current) {
-      await storeRef.current.set("tasks", updatedTasks);
-      await storeRef.current.save();
+  // ============ 统一持久化(debounce + latest-wins)============
+  // 之前 saveTasks / saveCompleted 都是每次调用就同步写 localStorage + await store.save()
+  // 快速操作下(complete 同时改 tasks/completedTasks)两个 async store.save 会竞争,
+  // 且 App.tsx 顶层还有 6 个"状态一变就写 localStorage"的 effect,写 3 次 IO。
+  // 现在:localStorage 立刻写(便于 FloatingNoteWindow 读),tauri-store 用 250ms debounce
+  // 合并多次改动为一次落盘;并保留最新值防止过期覆盖。
+  const pendingTasksRef = useRef<Task[] | null>(null);
+  const pendingCompletedRef = useRef<Task[] | null>(null);
+  const flushTimerRef = useRef<number | null>(null);
+  const flushingRef = useRef(false);
+
+  const flushToStore = useCallback(async () => {
+    if (!storeRef.current) return;
+    if (flushingRef.current) return;
+    flushingRef.current = true;
+    try {
+      // 循环刷:落盘期间又来了新的写请求就再刷一次,直到没有 pending
+      while (pendingTasksRef.current !== null || pendingCompletedRef.current !== null) {
+        const t = pendingTasksRef.current;
+        const c = pendingCompletedRef.current;
+        pendingTasksRef.current = null;
+        pendingCompletedRef.current = null;
+        if (t !== null) await storeRef.current!.set("tasks", t);
+        if (c !== null) await storeRef.current!.set("completedTasks", c);
+        await storeRef.current!.set("last_updated", Date.now());
+        await storeRef.current!.save();
+      }
+    } catch (e) {
+      console.error("保存到 tauri-store 失败", e);
+    } finally {
+      flushingRef.current = false;
     }
   }, []);
 
-  const saveCompleted = useCallback(async (updatedCompleted: Task[]) => {
-    if (storeRef.current) {
-      await storeRef.current.set("completedTasks", updatedCompleted);
-      await storeRef.current.save();
+  const scheduleFlush = useCallback(() => {
+    if (flushTimerRef.current !== null) {
+      clearTimeout(flushTimerRef.current);
     }
-  }, []);
+    flushTimerRef.current = window.setTimeout(() => {
+      flushTimerRef.current = null;
+      flushToStore();
+    }, 250);
+  }, [flushToStore]);
+
+  const saveTasks = useCallback(async (updatedTasks: Task[]) => {
+    try {
+      localStorage.setItem("aero_todos", JSON.stringify(updatedTasks));
+      localStorage.setItem("qiyun_last_updated", String(Date.now()));
+      pendingTasksRef.current = updatedTasks;
+      scheduleFlush();
+    } catch (e) {
+      console.error("保存任务失败", e);
+    }
+  }, [scheduleFlush]);
+
+  const saveCompleted = useCallback(async (updatedCompleted: Task[]) => {
+    try {
+      localStorage.setItem("aero_completed_todos", JSON.stringify(updatedCompleted));
+      localStorage.setItem("qiyun_last_updated", String(Date.now()));
+      pendingCompletedRef.current = updatedCompleted;
+      scheduleFlush();
+    } catch (e) {
+      console.error("保存已完成任务失败", e);
+    }
+  }, [scheduleFlush]);
 
   const totalCount = tasks.length + completedTasks.length;
   const progressPercentage = totalCount === 0 ? 0 : Math.round((completedTasks.length / totalCount) * 100);
@@ -118,15 +170,16 @@ export function useTasks() {
   }, [saveTasks, saveCompleted, syncState]);
 
   const handleToggleFavorite = useCallback((id: string) => {
+    // 直接在 setState updater 内部计算 nextFav,取到新值后一次性广播,不再用 setTimeout(0)
+    // 避免"点击-广播-落盘"三者之间的竞态
     setTasks((prev) => {
       const task = prev.find((t) => t.id === id);
       if (!task) return prev;
       const nextFav = !task.isFavorite;
-      setTimeout(() => {
-        syncState(id, "favorite_sync", nextFav ? "true" : "false");
-      }, 0);
       const updated = prev.map((t) => (t.id === id ? { ...t, isFavorite: nextFav } : t));
       saveTasks(updated);
+      // 广播放到微任务,避免在 setState updater 内直接触发 async invoke
+      queueMicrotask(() => syncState(id, "favorite_sync", nextFav ? "true" : "false"));
       return updated;
     });
   }, [saveTasks, syncState]);
@@ -136,11 +189,9 @@ export function useTasks() {
       const task = prev.find((t) => t.id === id);
       if (!task) return prev;
       const nextPin = !task.isPinned;
-      setTimeout(() => {
-        syncState(id, "pin_sync", nextPin ? "true" : "false");
-      }, 0);
       const updated = prev.map((t) => (t.id === id ? { ...t, isPinned: nextPin } : t));
       saveTasks(updated);
+      queueMicrotask(() => syncState(id, "pin_sync", nextPin ? "true" : "false"));
       return updated;
     });
   }, [saveTasks, syncState]);
@@ -177,7 +228,8 @@ export function useTasks() {
       const nextTask = { ...task, subtasks };
       const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
       saveTasks(updated);
-      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime);
+      // 子任务变化不改文本字段:未变字段传 undefined,避免误清空
+      queueMicrotask(() => syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime));
       return updated;
     });
   }, [saveTasks, syncState]);
@@ -190,22 +242,20 @@ export function useTasks() {
       const nextTask = { ...task, subtasks: [...(task.subtasks || []), newSub] };
       const updated = prev.map((t) => (t.id === taskId ? nextTask : t));
       saveTasks(updated);
-      syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime);
+      queueMicrotask(() => syncState(taskId, "update", nextTask.title, nextTask.description, nextTask.category, nextTask.notes, nextTask.dueDate, nextTask.dueTime));
       return updated;
     });
   }, [saveTasks, syncState]);
 
   const handleSnooze = useCallback((id: string, shouldSync: boolean = true) => {
     setTasks((prev) => {
-      const updated = [...prev];
-      const item = updated.find((t) => t.id === id);
-      if (item) {
-        const filtered = updated.filter((t) => t.id !== id);
-        filtered.push(item);
-        saveTasks(filtered);
-        return filtered;
-      }
-      return prev;
+      const item = prev.find((t) => t.id === id);
+      if (!item) return prev;
+      // 显式:先从原位置移除,再追加到末尾
+      const rest = prev.filter((t) => t.id !== id);
+      const next = [...rest, item];
+      saveTasks(next);
+      return next;
     });
     if (shouldSync) syncState(id, "snooze");
   }, [saveTasks, syncState]);
@@ -263,7 +313,9 @@ export function useTasks() {
       if (!task) return prev;
       const nextTask = { ...task, ...updates };
 
-      setTimeout(() => {
+      // 广播用 queueMicrotask,不再 setTimeout(0):
+      // 好处是同一 tick 内先落盘再广播,顺序更可预测,避免 favorite+update 快速连续时错乱
+      queueMicrotask(() => {
         syncState(
           id,
           "update",
@@ -274,7 +326,7 @@ export function useTasks() {
           nextTask.dueDate,
           nextTask.dueTime
         );
-      }, 0);
+      });
 
       const updated = prev.map((t) => (t.id === id ? nextTask : t));
       saveTasks(updated);

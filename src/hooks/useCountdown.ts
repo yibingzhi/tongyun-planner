@@ -1,9 +1,13 @@
 import { useState, useCallback } from "react";
 import type { CountdownEvent } from "../types";
 import { createId } from "../utils/id";
+import { safeJsonParse } from "../utils/json";
 
 export function useCountdown() {
-  const [countdowns, setCountdowns] = useState<CountdownEvent[]>([]);
+  // lazy initializer 直接从 localStorage 恢复，避免首次 render 时被空数组覆盖
+  const [countdowns, setCountdowns] = useState<CountdownEvent[]>(() =>
+    safeJsonParse<CountdownEvent[]>(localStorage.getItem("qiyun_countdowns"), [])
+  );
 
   const saveCountdowns = useCallback((updated: CountdownEvent[]) => {
     localStorage.setItem("qiyun_countdowns", JSON.stringify(updated));

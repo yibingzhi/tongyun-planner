@@ -30,7 +30,7 @@ import { useCountdown } from "./hooks/useCountdown";
 import { useCustomization } from "./hooks/useCustomization";
 import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
-import { useSync } from "./hooks/useSync";
+import { useSync, subscribeDevSync } from "./hooks/useSync";
 import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
@@ -101,8 +101,37 @@ function AppInner() {
     });
   }, []);
 
-  // ============ Store Initialization ============
+  // ============ handler ref 转发 (#4) ============
+  // initStore 的 useEffect 依赖为 []，但需要在跨窗口 listener 里调用最新的 hook 函数。
+  // 用 ref 转发：每次 render 更新 ref.current，listener 通过 handlersRef.current.xxx 调用最新引用。
+  const handlersRef = useRef({
+    tasksHook,
+    pomodoroHook,
+    notesHook,
+    countdownHook,
+    customizationHook,
+    widgetHook,
+    setLocale,
+  });
   useEffect(() => {
+    handlersRef.current = {
+      tasksHook,
+      pomodoroHook,
+      notesHook,
+      countdownHook,
+      customizationHook,
+      widgetHook,
+      setLocale,
+    };
+  });
+
+  // ============ Store Initialization ============
+  // StrictMode guard：dev 模式下 effect 会跑两次，避免 initStore 重复执行导致数据回滚 (#13)
+  const initStartedRef = useRef(false);
+  useEffect(() => {
+    if (initStartedRef.current) return;
+    initStartedRef.current = true;
+
     let label = "main";
     try {
       label = getCurrentWebviewWindow().label;
@@ -120,309 +149,337 @@ function AppInner() {
     if (savedCustomization) {
       const parsed = safeJsonParse(savedCustomization, null as any);
       if (parsed) {
-        customizationHook.setCustomizationConfig(parsed);
-        if (parsed.locale) setLocale(parsed.locale);
+        handlersRef.current.customizationHook.setCustomizationConfig(parsed);
+        if (parsed.locale) handlersRef.current.setLocale(parsed.locale);
       }
     }
 
     const savedSound = localStorage.getItem("aero_alert_sound_type");
-    if (savedSound) pomodoroHook.setAlertSoundType(savedSound as any);
+    if (savedSound) handlersRef.current.pomodoroHook.setAlertSoundType(savedSound as any);
 
     const savedFocus = localStorage.getItem("pomodoro_focus_duration");
     const savedBreak = localStorage.getItem("pomodoro_break_duration");
     if (savedFocus) {
       const f = parseInt(savedFocus, 10);
-      pomodoroHook.setFocusDuration(f);
-      pomodoroHook.setPomodoroTimeLeft(f * 60);
+      handlersRef.current.pomodoroHook.setFocusDuration(f);
+      handlersRef.current.pomodoroHook.setPomodoroTimeLeft(f * 60);
     }
-    if (savedBreak) pomodoroHook.setBreakDuration(parseInt(savedBreak, 10));
+    if (savedBreak) handlersRef.current.pomodoroHook.setBreakDuration(parseInt(savedBreak, 10));
 
     const initStore = async () => {
       try {
         const store = await load("qiyun_list_data.json", { defaults: {}, autoSave: false });
-        tasksHook.storeRef.current = store;
+        handlersRef.current.tasksHook.storeRef.current = store;
 
+        // 番茄日志：仅从 localStorage 读取，不再生成 mock 数据
         const localLogs = localStorage.getItem("aero_pomodoro_logs");
         if (localLogs) {
-          pomodoroHook.setPomodoroLogs(safeJsonParse(localLogs, []));
-        } else {
-          const seededLogs = [];
-          const nowMs = Date.now();
-          const oneDay = 24 * 60 * 60 * 1000;
-          for (let i = 0; i < 30; i++) {
-            if (Math.random() > 0.4) {
-              const sessionsCount = Math.floor(Math.random() * 3) + 1;
-              for (let s = 0; s < sessionsCount; s++) {
-                seededLogs.push({
-                  id: `mock-log-${i}-${s}`,
-                  timestamp: nowMs - i * oneDay - Math.random() * 8 * 60 * 60 * 1000,
-                  duration: 25,
-                });
-              }
-            }
-          }
-          pomodoroHook.setPomodoroLogs(seededLogs);
-          localStorage.setItem("aero_pomodoro_logs", JSON.stringify(seededLogs));
+          handlersRef.current.pomodoroHook.setPomodoroLogs(safeJsonParse(localLogs, []));
         }
 
+        // 便签：仅从 localStorage 读取，不再自动写入示例便签
         const localNotes = localStorage.getItem("aero_sticky_notes");
         if (localNotes) {
-          notesHook.setStickyNotes(safeJsonParse(localNotes, []));
-        } else {
-          const defaultNotes = [
-            { id: "note-1", text: "使用技巧：双窗口联动与幽灵锁定模式\n- 开启幽灵锁定时，挂件近乎透明，鼠标移上去就能显现小锁，点击即可解锁。\n- 侧边栏的白噪音是完全离线纯物理波形合成，不需要消耗网络流量。", color: "tea", rotate: -1 },
-            { id: "note-2", text: "健康习惯：多喝水、放松眼睛、深呼吸\n- 每隔 45 分钟起来喝杯水\n- 视线离开屏幕看绿植 20 秒\n- 闭眼做 5 次深呼吸", color: "mint", rotate: 2 },
-            { id: "note-3", text: "手账购物备忘：豆子、水壶、纸胶带\n- 冰滴咖啡豆 (浅烘焙) 1 包\n- 便携保温小水壶 1 个\n- 记录手账专用的纸胶带 1 盒", color: "rose", rotate: -2 },
-          ];
-          notesHook.setStickyNotes(defaultNotes);
-          localStorage.setItem("aero_sticky_notes", JSON.stringify(defaultNotes));
+          handlersRef.current.notesHook.setStickyNotes(safeJsonParse(localNotes, []));
         }
 
         const localCountdowns = localStorage.getItem("qiyun_countdowns");
-        if (localCountdowns) countdownHook.setCountdowns(safeJsonParse(localCountdowns, []));
+        if (localCountdowns) handlersRef.current.countdownHook.setCountdowns(safeJsonParse(localCountdowns, []));
 
+        // ============ 基于 timestamp 的合并策略 (#7) ============
+        // 以往：localStorage 非空就用 local，把 tauri-store 里可能更新的数据反写覆盖。
+        // 现在：tauri-store 存 last_updated，localStorage 存 qiyun_last_updated，谁新用谁。
         const storedTasks = await store.get<Task[]>("tasks");
         const storedCompleted = await store.get<Task[]>("completedTasks");
+        const storeLastUpdated = (await store.get<number>("last_updated")) || 0;
+        const localLastUpdated = parseInt(localStorage.getItem("qiyun_last_updated") || "0", 10);
+        const localTasks = localStorage.getItem("aero_todos");
+        const localCompleted = localStorage.getItem("aero_completed_todos");
 
-        if (storedTasks && storedTasks.length > 0) {
-          tasksHook.setTasks(storedTasks);
+        const bothEmpty = (!storedTasks || storedTasks.length === 0) && (!localTasks || safeJsonParse<Task[]>(localTasks, []).length === 0);
+
+        let resolvedTasks: Task[];
+        let resolvedCompleted: Task[];
+
+        if (bothEmpty) {
+          resolvedTasks = handlersRef.current.tasksHook.INITIAL_TASKS;
+          resolvedCompleted = [];
+        } else if (storeLastUpdated >= localLastUpdated && storedTasks) {
+          // store 更新或时间戳齐平 → 采用 store
+          resolvedTasks = storedTasks;
+          resolvedCompleted = storedCompleted || [];
         } else {
-          const local = localStorage.getItem("aero_todos");
-          if (local) {
-            const parsed = safeJsonParse(local, tasksHook.INITIAL_TASKS);
-            tasksHook.setTasks(parsed);
-            await store.set("tasks", parsed);
-          } else {
-            tasksHook.setTasks(tasksHook.INITIAL_TASKS);
-            await store.set("tasks", tasksHook.INITIAL_TASKS);
-          }
+          // localStorage 更新 → 采用 local
+          resolvedTasks = safeJsonParse<Task[]>(localTasks, storedTasks || handlersRef.current.tasksHook.INITIAL_TASKS);
+          resolvedCompleted = safeJsonParse<Task[]>(localCompleted, storedCompleted || []);
         }
 
-        if (storedCompleted) {
-          tasksHook.setCompletedTasks(storedCompleted);
-        } else {
-          const localCompleted = localStorage.getItem("aero_completed_todos");
-          if (localCompleted) {
-            const parsed = safeJsonParse(localCompleted, []);
-            tasksHook.setCompletedTasks(parsed);
-            await store.set("completedTasks", parsed);
-          } else {
-            tasksHook.setCompletedTasks([]);
-            await store.set("completedTasks", []);
-          }
-        }
+        handlersRef.current.tasksHook.setTasks(resolvedTasks);
+        handlersRef.current.tasksHook.setCompletedTasks(resolvedCompleted);
 
-        await store.save();
+        if (localLastUpdated > storeLastUpdated) {
+          // 把较新的 local 回写 store，并对齐 last_updated
+          await store.set("tasks", resolvedTasks);
+          await store.set("completedTasks", resolvedCompleted);
+          await store.set("last_updated", localLastUpdated);
+          await store.save();
+        } else {
+          // 反过来：把较新的 store 同步到 localStorage 缓存，并对齐 last_updated
+          localStorage.setItem("aero_todos", JSON.stringify(resolvedTasks));
+          localStorage.setItem("aero_completed_todos", JSON.stringify(resolvedCompleted));
+          localStorage.setItem("qiyun_last_updated", String(storeLastUpdated));
+        }
       } catch (e) {
         console.warn("Store 加载失败，回退到 localStorage", e);
         const local = localStorage.getItem("aero_todos");
-        tasksHook.setTasks(safeJsonParse(local, tasksHook.INITIAL_TASKS));
+        handlersRef.current.tasksHook.setTasks(safeJsonParse(local, handlersRef.current.tasksHook.INITIAL_TASKS));
         const localCompleted = localStorage.getItem("aero_completed_todos");
-        tasksHook.setCompletedTasks(safeJsonParse(localCompleted, []));
+        handlersRef.current.tasksHook.setCompletedTasks(safeJsonParse(localCompleted, []));
       } finally {
         setIsHydrated(true);
       }
     };
     initStore();
 
-    // Cross-window event listener
-    const unlistenPromise = listen("todo-sync-event", (event: any) => {
-      const p = event.payload;
+    // ============ 跨窗口 event listener（通过 ref 转发调用最新 hook）============
+    const handleSyncPayload = (p: any) => {
       if (p.source_window && p.source_window === label) return;
+      const { tasksHook: tH, pomodoroHook: pH, notesHook: nH, widgetHook: wH, customizationHook: cH } = handlersRef.current;
       switch (p.action) {
         case "complete":
-          tasksHook.handleComplete(p.task_id, false);
+          tH.handleComplete(p.task_id, false);
           break;
         case "undo_complete":
-          tasksHook.handleUndoComplete(p.task_id, false);
+          tH.handleUndoComplete(p.task_id, false);
           break;
         case "delete":
-          tasksHook.handleDeleteTask(p.task_id, false);
+          tH.handleDeleteTask(p.task_id, false);
           break;
         case "snooze":
-          tasksHook.handleSnooze(p.task_id, false);
+          tH.handleSnooze(p.task_id, false);
           break;
         case "add": {
+          // add 事件的 title 必须有值；若发送方漏传（null）则安全兜底为占位符
           const newTask: Task = {
             id: p.task_id,
-            title: p.title,
+            title: p.title || "无题任务",
             notes: p.notes || undefined,
             description: p.description || undefined,
             category: p.category || "urgent-important",
             dueDate: p.due_date || undefined,
             dueTime: p.due_time || undefined,
           };
-          tasksHook.setTasks((prev: Task[]) => [newTask, ...prev.filter((t: Task) => t.id !== newTask.id)]);
+          tH.setTasks((prev: Task[]) => [newTask, ...prev.filter((t: Task) => t.id !== newTask.id)]);
           break;
         }
         case "favorite_sync":
-          tasksHook.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isFavorite: p.title === "true" } : t));
+          // p.title 是 "true"/"false"，null 时按 false 处理不影响正确性
+          tH.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isFavorite: p.title === "true" } : t));
           break;
         case "pin_sync":
-          tasksHook.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isPinned: p.title === "true" } : t));
+          tH.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isPinned: p.title === "true" } : t));
           break;
         case "update":
-          tasksHook.setTasks((prev: Task[]) => prev.map((t) =>
-            t.id === p.task_id ? { ...t, title: p.title || t.title, description: p.description || undefined, category: p.category || t.category, notes: p.notes || undefined, dueDate: p.due_date || undefined, dueTime: p.due_time || undefined } : t
-          ));
+          // 字段级 diff：null/undefined = 未提供，"" = 显式清空；title/category 不允许清空
+          tH.setTasks((prev: Task[]) => prev.map((t) => {
+            if (t.id !== p.task_id) return t;
+            const next: Task = { ...t };
+            if (p.title != null && p.title !== "") next.title = p.title;
+            if (p.description != null) next.description = p.description || undefined;
+            if (p.category != null && p.category !== "") next.category = p.category as Task["category"];
+            if (p.notes != null) next.notes = p.notes || undefined;
+            if (p.due_date != null) next.dueDate = p.due_date || undefined;
+            if (p.due_time != null) next.dueTime = p.due_time || undefined;
+            return next;
+          }));
           break;
         case "reset":
-          tasksHook.setTasks(tasksHook.INITIAL_TASKS);
-          tasksHook.setCompletedTasks([]);
+          tH.setTasks(tH.INITIAL_TASKS);
+          tH.setCompletedTasks([]);
           break;
         case "clear_completed":
-          tasksHook.setCompletedTasks([]);
+          tH.setCompletedTasks([]);
           break;
         case "lock_widget":
-          widgetHook.setIsWidgetLocked(true);
+          wH.setIsWidgetLocked(true);
           break;
         case "unlock_widget":
-          widgetHook.setIsWidgetLocked(false);
+          wH.setIsWidgetLocked(false);
           break;
         case "toggle_lock_from_tray":
-          if (label === "main") widgetHook.handleToggleWidgetLock();
+          if (label === "main") wH.handleToggleWidgetLock();
           break;
         case "pomodoro_sync":
           try {
             const data = JSON.parse(p.title);
-            pomodoroHook.setPomodoroIsActive(data.active);
-            pomodoroHook.setPomodoroTimeLeft(data.timeLeft);
-            pomodoroHook.setPomodoroIsBreak(data.isBreak);
-            pomodoroHook.setFocusDuration(data.focusDuration);
-            pomodoroHook.setBreakDuration(data.breakDuration);
-            pomodoroHook.setPomodoroSessionCount(data.sessionCount);
-            pomodoroHook.setPomodoroTaskId(data.taskId || null);
-            pomodoroHook.setPomodoroTaskTitle(data.taskTitle || null);
-            pomodoroHook.setPomodoroEndTime(data.endTime);
+            pH.setPomodoroIsActive(data.active);
+            pH.setPomodoroTimeLeft(data.timeLeft);
+            pH.setPomodoroIsBreak(data.isBreak);
+            pH.setFocusDuration(data.focusDuration);
+            pH.setBreakDuration(data.breakDuration);
+            pH.setPomodoroSessionCount(data.sessionCount);
+            pH.setPomodoroTaskId(data.taskId || null);
+            pH.setPomodoroTaskTitle(data.taskTitle || null);
+            pH.setPomodoroEndTime(data.endTime);
           } catch (e) {}
           break;
         case "add_pomodoro_log":
           try {
             const log = JSON.parse(p.title);
-            pomodoroHook.setPomodoroLogs((prev: any[]) => [log, ...prev.filter((l: any) => l.id !== log.id)]);
+            pH.setPomodoroLogs((prev: any[]) => [log, ...prev.filter((l: any) => l.id !== log.id)]);
           } catch (e) {}
           break;
         case "add_note":
           try {
             const note = JSON.parse(p.title);
-            notesHook.setStickyNotes((prev: any[]) => [note, ...prev.filter((n: any) => n.id !== note.id)]);
+            nH.setStickyNotes((prev: any[]) => [note, ...prev.filter((n: any) => n.id !== note.id)]);
           } catch (e) {}
           break;
         case "edit_note_text":
-          notesHook.setStickyNotes((prev: any[]) => prev.map((n) => n.id === p.task_id ? { ...n, text: p.title } : n));
+          nH.setStickyNotes((prev: any[]) => prev.map((n) => n.id === p.task_id ? { ...n, text: p.title } : n));
           break;
         case "change_note_color":
-          notesHook.setStickyNotes((prev: any[]) => prev.map((n) => n.id === p.task_id ? { ...n, color: p.title } : n));
+          nH.setStickyNotes((prev: any[]) => prev.map((n) => n.id === p.task_id ? { ...n, color: p.title } : n));
           break;
         case "delete_note":
-          notesHook.setStickyNotes((prev: any[]) => prev.filter((n) => n.id !== p.task_id));
+          nH.setStickyNotes((prev: any[]) => prev.filter((n) => n.id !== p.task_id));
           break;
         case "settings_sync":
           try {
             const config = JSON.parse(p.title);
-            customizationHook.setCustomizationConfig(config);
+            cH.setCustomizationConfig(config);
           } catch (e) {}
           break;
         case "restore_sync":
           try {
             const restored = JSON.parse(p.title);
-            tasksHook.setTasks(restored.tasks || []);
-            tasksHook.setCompletedTasks(restored.completedTasks || []);
-            notesHook.setStickyNotes(restored.stickyNotes || []);
-            customizationHook.setCustomizationConfig(restored.customizationConfig || customizationHook.DEFAULT_CUSTOMIZATION_CONFIG);
+            tH.setTasks(restored.tasks || []);
+            tH.setCompletedTasks(restored.completedTasks || []);
+            nH.setStickyNotes(restored.stickyNotes || []);
+            cH.setCustomizationConfig(restored.customizationConfig || cH.DEFAULT_CUSTOMIZATION_CONFIG);
           } catch (e) {}
           break;
       }
-    });
+    };
+
+    const unlistenPromise = listen("todo-sync-event", (event: any) => handleSyncPayload(event.payload));
+    // dev 模式下同源多标签广播降级 (#15)
+    const unsubDev = subscribeDevSync((event) => handleSyncPayload(event.payload));
 
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
+      unsubDev();
     };
   }, []);
 
-  // ============ State Persistence (deferred, never blocks render) ============
-  useEffect(() => { if (isHydrated) localStorage.setItem("aero_todos", JSON.stringify(tasksHook.tasks)); }, [isHydrated, tasksHook.tasks]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("aero_completed_todos", JSON.stringify(tasksHook.completedTasks)); }, [isHydrated, tasksHook.completedTasks]);
+  // ============ State Persistence (#2) ============
+  // 之前有 6 个「状态一变就写 localStorage」的 effect，与 useTasks 内部持久化重叠。
+  // 现在 tasks/completedTasks 由 useTasks 内部 debounce 落盘并同步写 localStorage，
+  // 这层只保留：其它非任务型状态（便签、番茄日志、倒计时、配置）的 localStorage 缓存。
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_sticky_notes", JSON.stringify(notesHook.stickyNotes)); }, [isHydrated, notesHook.stickyNotes]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
   useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
 
-  // ============ Pomodoro Timer Effect ============
-  useEffect(() => {
-    let interval: any = null;
-    if (pomodoroHook.pomodoroIsActive && pomodoroHook.pomodoroEndTime) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        const diff = Math.max(0, Math.round((pomodoroHook.pomodoroEndTime! - now) / 1000));
-        pomodoroHook.setPomodoroTimeLeft(diff);
-
-        if (diff <= 0) {
-          clearInterval(interval);
-          if (windowLabel === "main") {
-            pomodoroHook.playCompletionSound();
-
-            if (pomodoroHook.pomodoroIsBreak) {
-              pomodoroHook.setPomodoroIsBreak(false);
-              pomodoroHook.setPomodoroIsActive(false);
-              pomodoroHook.setPomodoroEndTime(null);
-              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification(t.notification.focusTime, { body: t.notification.focusTimeBody });
-              }
-              const nextTime = pomodoroHook.focusDuration * 60;
-              pomodoroHook.setPomodoroTimeLeft(nextTime);
-              setTimeout(() => {
-                pomodoroHook.syncPomodoro(false, nextTime, false, pomodoroHook.focusDuration, pomodoroHook.breakDuration, pomodoroHook.pomodoroSessionCount, null, null);
-              }, 50);
-            } else {
-              pomodoroHook.setPomodoroIsBreak(true);
-              pomodoroHook.setPomodoroIsActive(false);
-              pomodoroHook.setPomodoroEndTime(null);
-              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification(t.notification.pomodoroTime, { body: t.notification.pomodoroTimeBody });
-              }
-              const nextSession = pomodoroHook.pomodoroSessionCount + 1;
-              pomodoroHook.setPomodoroSessionCount(nextSession);
-              const nextTime = pomodoroHook.breakDuration * 60;
-              pomodoroHook.setPomodoroTimeLeft(nextTime);
-
-              const newLog = {
-                id: createId("pomodoro-log"),
-                timestamp: Date.now(),
-                duration: pomodoroHook.focusDuration,
-                taskId: pomodoroHook.pomodoroTaskId || undefined,
-                taskTitle: pomodoroHook.pomodoroTaskTitle || undefined,
-              };
-              pomodoroHook.setPomodoroLogs((prev: any[]) => [newLog, ...prev]);
-
-              setCelebrationMessage(
-                locale === "en" ? "Focus session done! Keep going 💪" : "专注一关完成！继续加油 💪"
-              );
-
-              pomodoroHook.setPomodoroTaskId(null);
-              pomodoroHook.setPomodoroTaskTitle(null);
-
-              setTimeout(() => {
-                pomodoroHook.syncPomodoro(false, nextTime, true, pomodoroHook.focusDuration, pomodoroHook.breakDuration, nextSession, null, null);
-              }, 50);
-            }
-          }
-        }
-      }, 1000);
-    }
-    return () => { if (interval) clearInterval(interval); };
-  }, [
-    pomodoroHook.pomodoroIsActive,
-    pomodoroHook.pomodoroEndTime,
-    pomodoroHook.pomodoroIsBreak,
-    pomodoroHook.focusDuration,
-    pomodoroHook.breakDuration,
-    pomodoroHook.pomodoroSessionCount,
-    pomodoroHook.pomodoroTaskId,
-    pomodoroHook.pomodoroTaskTitle,
+  // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
+  // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
+  // session/duration/taskId 变化都 clear+rebuild interval 引起秒表跳变或重复触发完成分支。
+  const pomodoroStateRef = useRef({
+    isBreak: pomodoroHook.pomodoroIsBreak,
+    focusDuration: pomodoroHook.focusDuration,
+    breakDuration: pomodoroHook.breakDuration,
+    sessionCount: pomodoroHook.pomodoroSessionCount,
+    taskId: pomodoroHook.pomodoroTaskId,
+    taskTitle: pomodoroHook.pomodoroTaskTitle,
+    locale,
     windowLabel,
-    pomodoroHook.syncPomodoro,
-  ]);
+    syncPomodoro: pomodoroHook.syncPomodoro,
+  });
+  useEffect(() => {
+    pomodoroStateRef.current = {
+      isBreak: pomodoroHook.pomodoroIsBreak,
+      focusDuration: pomodoroHook.focusDuration,
+      breakDuration: pomodoroHook.breakDuration,
+      sessionCount: pomodoroHook.pomodoroSessionCount,
+      taskId: pomodoroHook.pomodoroTaskId,
+      taskTitle: pomodoroHook.pomodoroTaskTitle,
+      locale,
+      windowLabel,
+      syncPomodoro: pomodoroHook.syncPomodoro,
+    };
+  });
+
+  useEffect(() => {
+    if (!pomodoroHook.pomodoroIsActive || !pomodoroHook.pomodoroEndTime) return;
+    const endTime = pomodoroHook.pomodoroEndTime;
+    let fired = false;
+
+    const tick = () => {
+      const now = Date.now();
+      const diff = Math.max(0, Math.round((endTime - now) / 1000));
+      pomodoroHook.setPomodoroTimeLeft(diff);
+
+      if (diff <= 0 && !fired) {
+        fired = true;
+        clearInterval(intervalId);
+
+        const s = pomodoroStateRef.current;
+        if (s.windowLabel !== "main") return;
+
+        pomodoroHook.playCompletionSound();
+
+        if (s.isBreak) {
+          pomodoroHook.setPomodoroIsBreak(false);
+          pomodoroHook.setPomodoroIsActive(false);
+          pomodoroHook.setPomodoroEndTime(null);
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification(t.notification.focusTime, { body: t.notification.focusTimeBody });
+          }
+          const nextTime = s.focusDuration * 60;
+          pomodoroHook.setPomodoroTimeLeft(nextTime);
+          setTimeout(() => {
+            s.syncPomodoro(false, nextTime, false, s.focusDuration, s.breakDuration, s.sessionCount, null, null);
+          }, 50);
+        } else {
+          pomodoroHook.setPomodoroIsBreak(true);
+          pomodoroHook.setPomodoroIsActive(false);
+          pomodoroHook.setPomodoroEndTime(null);
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification(t.notification.pomodoroTime, { body: t.notification.pomodoroTimeBody });
+          }
+          const nextSession = s.sessionCount + 1;
+          pomodoroHook.setPomodoroSessionCount(nextSession);
+          const nextTime = s.breakDuration * 60;
+          pomodoroHook.setPomodoroTimeLeft(nextTime);
+
+          const newLog = {
+            id: createId("pomodoro-log"),
+            timestamp: Date.now(),
+            duration: s.focusDuration,
+            taskId: s.taskId || undefined,
+            taskTitle: s.taskTitle || undefined,
+          };
+          pomodoroHook.setPomodoroLogs((prev: any[]) => [newLog, ...prev]);
+
+          setCelebrationMessage(
+            s.locale === "en" ? "Focus session done! Keep going 💪" : "专注一关完成！继续加油 💪"
+          );
+
+          pomodoroHook.setPomodoroTaskId(null);
+          pomodoroHook.setPomodoroTaskTitle(null);
+
+          setTimeout(() => {
+            s.syncPomodoro(false, nextTime, true, s.focusDuration, s.breakDuration, nextSession, null, null);
+          }, 50);
+        }
+      }
+    };
+
+    tick();
+    const intervalId = setInterval(tick, 1000);
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pomodoroHook.pomodoroIsActive, pomodoroHook.pomodoroEndTime]);
 
   // Audio cleanup
   useEffect(() => {
@@ -505,6 +562,12 @@ function AppInner() {
           aiPraise,
           timestamp: now,
         };
+
+        if (backupData.tasks.length === 0 && backupData.completedTasks.length === 0 && backupData.stickyNotes.length === 0) {
+          setSyncStatus("synced");
+          return;
+        }
+
         const { webdavUpload, webdavUploadVersion } = await import("./utils/webdav");
         const wdConfig = { url, username, password: password || "" };
         await webdavUpload(wdConfig, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
@@ -561,6 +624,12 @@ function AppInner() {
       aiPraise,
       timestamp: Date.now(),
     };
+
+    if (backupData.tasks.length === 0 && backupData.completedTasks.length === 0 && backupData.stickyNotes.length === 0) {
+      console.warn("手动备份跳过: 所有数据为空");
+      return;
+    }
+
     const { webdavUpload } = await import("./utils/webdav");
     await webdavUpload(config, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
   }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig]);
@@ -955,12 +1024,25 @@ function AppInner() {
           <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />
         )}
         {tasksHook.detailTaskId && (() => {
-          const task = tasksHook.tasks.find((t: Task) => t.id === tasksHook.detailTaskId) || tasksHook.completedTasks.find((t: Task) => t.id === tasksHook.detailTaskId);
+          const activeTask = tasksHook.tasks.find((t: Task) => t.id === tasksHook.detailTaskId);
+          const completedTask = !activeTask ? tasksHook.completedTasks.find((t: Task) => t.id === tasksHook.detailTaskId) : undefined;
+          const task = activeTask || completedTask;
           if (!task) return null;
+          const isCompleted = !activeTask && !!completedTask;
+          // 已完成任务的编辑要写回 completedTasks，避免默默丢失
+          const editHandler = isCompleted
+            ? (id: string, updates: Partial<Task>) => {
+                tasksHook.setCompletedTasks((prev: Task[]) => {
+                  const next = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
+                  tasksHook.saveCompleted(next);
+                  return next;
+                });
+              }
+            : tasksHook.handleEditTask;
           return (
-            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={tasksHook.handleEditTask} />
+            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={editHandler} />
           );
-        }        )()}
+        })()}
       </div>
     </div>
     )}

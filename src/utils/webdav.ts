@@ -55,7 +55,7 @@ export async function webdavUpload(config: WebDavConfig, filename: string, conte
   });
 
   if (!response.ok) {
-    throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    throw new Error(`E_HTTP_${response.status}: Upload failed - ${response.statusText}`);
   }
 }
 
@@ -71,7 +71,9 @@ export async function webdavDownloadVersion(config: WebDavConfig): Promise<numbe
     const text = await webdavDownload(config, "qiyun_list_version.txt");
     return parseInt(text.trim(), 10);
   } catch (e: any) {
-    if (e.message?.includes("not found") || e.message?.includes("404")) {
+    // 匹配稳定的错误码前缀，避免依赖后端文案
+    const msg: string = e?.message || "";
+    if (msg.startsWith("E_NOT_FOUND") || msg.startsWith("E_HTTP_404") || msg.includes("404") || msg.toLowerCase().includes("not found")) {
       return null;
     }
     throw e;
@@ -112,9 +114,9 @@ export async function webdavDownload(config: WebDavConfig, filename: string): Pr
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("Backup file not found on server.");
+      throw new Error("E_NOT_FOUND: Backup file not found on server.");
     }
-    throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+    throw new Error(`E_HTTP_${response.status}: ${response.statusText}`);
   }
 
   return await response.text();

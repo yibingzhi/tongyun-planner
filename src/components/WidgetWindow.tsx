@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   BookOpen,
   Unlock,
@@ -284,17 +284,6 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     }
   }, [undoToast]);
 
-  // 到期任务系统提醒（仅首次挂载时发送）
-  useEffect(() => {
-    if (dueCount > 0 && typeof Notification !== "undefined" && Notification.permission === "granted") {
-      const titles = dueTasks.slice(0, 3).map((t) => t.title);
-      const body = titles.length === 1
-        ? `「${titles[0]}」已到期`
-        : `「${titles[0]}」等 ${dueCount} 个任务已到期`;
-      new Notification(w.todayTodos, { body });
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleMouseDownDrag = (e: React.PointerEvent) => {
     // 允许按住非交互区拖拽窗口
     if (e.button === 0) {
@@ -329,6 +318,22 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     return due.getTime() <= today.getTime();
   });
   const dueCount = dueTasks.length;
+
+  // 到期任务系统提醒（仅首次挂载时发送；放在 dueCount/dueTasks 声明之后以避免 TDZ）
+  const dueNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (dueNotifiedRef.current) return;
+    dueNotifiedRef.current = true;
+    if (dueCount > 0 && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      const titles = dueTasks.slice(0, 3).map((t) => t.title);
+      const body = titles.length === 1
+        ? `「${titles[0]}」已到期`
+        : `「${titles[0]}」等 ${dueCount} 个任务已到期`;
+      new Notification(w.todayTodos, { body });
+    }
+    // 仅首挂时执行一次，故禁用依赖检查
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div

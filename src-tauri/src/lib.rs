@@ -9,7 +9,11 @@ pub struct TodoSyncPayload {
     pub task_id: String,
     pub action: String,      // 例如: "complete" (完成), "snooze" (延后), "update" (修改)
     pub source_window: Option<String>,
-    pub title: String,
+    // title/description/notes/... 全部改为 Option<String>：
+    //   None    → 表示“未提供，不要变更”
+    //   Some("") → 表示“显式清空”
+    // 前端收方按此语义处理。
+    pub title: Option<String>,
     pub description: Option<String>,
     pub notes: Option<String>,
     pub category: Option<String>,
@@ -85,7 +89,7 @@ fn webdav_upload(
     let res = req.send().map_err(|e| e.to_string())?;
 
     if !res.status().is_success() {
-        return Err(format!("Upload failed: {} {}", res.status(), res.status().canonical_reason().unwrap_or("")));
+        return Err(format!("E_HTTP_{}: Upload failed - {}", res.status().as_u16(), res.status().canonical_reason().unwrap_or("")));
     }
 
     Ok(())
@@ -117,11 +121,12 @@ fn webdav_download(
     let res = req.send().map_err(|e| e.to_string())?;
 
     if res.status() == reqwest::StatusCode::NOT_FOUND {
-        return Err("Backup file not found on server.".to_string());
+        // 使用稳定的错误标识码，前端按前缀匹配而非文案，避免本地化/大小写差异
+        return Err("E_NOT_FOUND: Backup file not found on server.".to_string());
     }
 
     if !res.status().is_success() {
-        return Err(format!("Download failed: {} {}", res.status(), res.status().canonical_reason().unwrap_or("")));
+        return Err(format!("E_HTTP_{}: {}", res.status().as_u16(), res.status().canonical_reason().unwrap_or("")));
     }
 
     res.text().map_err(|e| e.to_string())
@@ -174,7 +179,7 @@ pub fn run() {
                                 task_id: "widget_lock".to_string(),
                                 action: "toggle_lock_from_tray".to_string(),
                                 source_window: Some("tray".to_string()),
-                                title: "".to_string(),
+                                title: None,
                                 description: None,
                                 notes: None,
                                 category: None,

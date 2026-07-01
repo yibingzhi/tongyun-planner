@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-only",
+  "description": "Permissions restricted to the main window (creating new webviews, etc.)",
+  "windows": ["main"],
+  "permissions": [
+    "core:webview:allow-create-webview-window"
+  ]
+}
