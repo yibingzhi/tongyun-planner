@@ -1,13 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
-import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock, PenLine, TrendingUp } from "lucide-react";
-import type { Task, CustomizationConfig } from "../types";
+import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock, PenLine, TrendingUp, RefreshCw } from "lucide-react";
+import type { Task, PomodoroLog, CustomizationConfig } from "../types";
 import { getLocalDateString } from "../utils/date";
 import { generateProse, generateDailySuggestion } from "../utils/aiEngine";
+import { safeJsonParse } from "../utils/json";
+import { FocusHeatmap } from "./FocusHeatmap";
+
+// ============ 每日缓存工具 ============
+// 用 localStorage 做当天缓存，进 Dashboard 只在\"今天还没生成过\"时才调 AI。
+// 跨天自动过期。
+interface DailyCache<T> {
+  date: string;    // YYYY-MM-DD
+  locale?: string; // 语言切换要重新生成
+  data: T;
+}
+function readDailyCache<T>(key: string, today: string, locale: string): T | null {
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  const parsed = safeJsonParse<DailyCache<T> | null>(raw, null);
+  if (!parsed) return null;
+  if (parsed.date !== today) return null;
+  if (parsed.locale && parsed.locale !== locale) return null;
+  return parsed.data;
+}
+function writeDailyCache<T>(key: string, today: string, locale: string, data: T) {
+  const payload: DailyCache<T> = { date: today, locale, data };
+  try {
+    localStorage.setItem(key, JSON.stringify(payload));
+  } catch {
+    // 忽略配额错误
+  }
+}
 
 interface DashboardViewProps {
   tasks: Task[];
   completedTasks: Task[];
+  pomodoroLogs: PomodoroLog[];
   handleComplete: (id: string) => void;
   onTaskClick: (task: Task) => void;
   config: CustomizationConfig;
@@ -16,6 +45,7 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
   completedTasks,
+  pomodoroLogs,
   handleComplete,
   onTaskClick,
   config,
@@ -87,36 +117,63 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     })();
   }, [config.weatherCity]);
 
-  // Quote
-  const [hitokoto, setHitokoto] = useState<{ text: string; from: string } | null>(null);
+  // Quote —— 每小时缓存一次;点"换一句"强制刷新
+  // 一言不是每天固定,但也不需要每次进入都调,按小时为粒度平衡新鲜感与请求次数
+  type HitokotoData = { text: string; from: string };
+  const HITOKOTO_CACHE_KEY = "qiyun_hitokoto_hourly";
+  const currentHourKey = `${today}-${new Date().getHours()}`;
+  const [hitokoto, setHitokoto] = useState<HitokotoData | null>(() =>
+    readDailyCache<HitokotoData>(HITOKOTO_CACHE_KEY, currentHourKey, localeKey)
+  );
   const [loadingHitokoto, setLoadingHitokoto] = useState(false);
 
-  const fetchHitokoto = async () => {
+  const fetchHitokoto = async (force: boolean = false) => {
+    if (!force) {
+      const cached = readDailyCache<HitokotoData>(HITOKOTO_CACHE_KEY, currentHourKey, localeKey);
+      if (cached) {
+        setHitokoto(cached);
+        return;
+      }
+    }
     setLoadingHitokoto(true);
     try {
       const res = await fetch("https://v1.hitokoto.cn/");
       const data = await res.json();
-      setHitokoto({
+      const next: HitokotoData = {
         text: data.hitokoto,
         from: data.from_who ? `${data.from_who} · ${data.from}` : data.from,
-      });
+      };
+      setHitokoto(next);
+      writeDailyCache(HITOKOTO_CACHE_KEY, currentHourKey, localeKey, next);
     } catch {
       setHitokoto({ text: d.quoteFallback, from: "" });
     }
     setLoadingHitokoto(false);
   };
 
-  // History
-  const [historyEvents, setHistoryEvents] = useState<string[]>([]);
+  // History —— 当日缓存,历史上的今天一天内根本不会变
+  const HISTORY_CACHE_KEY = "qiyun_history_today";
+  const [historyEvents, setHistoryEvents] = useState<string[]>(() =>
+    readDailyCache<string[]>(HISTORY_CACHE_KEY, today, localeKey) || []
+  );
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (force: boolean = false) => {
+    if (!force) {
+      const cached = readDailyCache<string[]>(HISTORY_CACHE_KEY, today, localeKey);
+      if (cached && cached.length > 0) {
+        setHistoryEvents(cached);
+        return;
+      }
+    }
     setLoadingHistory(true);
     try {
       const res = await fetch("https://v1.nsuuu.com/api/history");
       const data = await res.json();
       if (data.code === 200 && Array.isArray(data.data)) {
-        setHistoryEvents(data.data.slice(0, 10)); // Fetch up to 10 events for sliding
+        const events = data.data.slice(0, 10);
+        setHistoryEvents(events);
+        writeDailyCache(HISTORY_CACHE_KEY, today, localeKey, events);
       } else {
         setHistoryEvents([]);
       }
@@ -127,38 +184,83 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   useEffect(() => {
-    fetchHitokoto();
-    fetchHistory();
-  }, []);
+    // 有缓存的走 fetchXxx(false) 直接命中;没有才发请求
+    fetchHitokoto(false);
+    fetchHistory(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today, currentHourKey, localeKey]);
 
-  // AI Daily Suggestion
-  const [dailySuggestion, setDailySuggestion] = useState<string | null>(null);
+  // AI Daily Suggestion —— 当日缓存,只在跨天/语言变化时重新生成
+  const SUGGESTION_CACHE_KEY = "qiyun_ai_daily_suggestion";
+  const localeKey = config.locale || "zh-CN";
+  const [dailySuggestion, setDailySuggestion] = useState<string | null>(() =>
+    readDailyCache<string>(SUGGESTION_CACHE_KEY, today, localeKey)
+  );
   const [suggestionLoading, setSuggestionLoading] = useState(false);
-  useEffect(() => {
+
+  const generateSuggestion = async (force: boolean = false) => {
     if (!config.aiApiKey) return;
+    if (!force) {
+      const cached = readDailyCache<string>(SUGGESTION_CACHE_KEY, today, localeKey);
+      if (cached) {
+        setDailySuggestion(cached);
+        return;
+      }
+    }
     setSuggestionLoading(true);
-    (async () => {
-      const todayTasks = tasks
+    try {
+      const todayTasksBrief = tasks
         .filter((t) => t.dueDate === today)
         .map((t) => ({ title: t.title, category: t.category, dueTime: t.dueTime, description: t.description }));
-      const result = await generateDailySuggestion(config, todayTasks, config.locale || "zh-CN");
-      if (result) setDailySuggestion(result);
+      const result = await generateDailySuggestion(config, todayTasksBrief, localeKey);
+      if (result) {
+        setDailySuggestion(result);
+        writeDailyCache(SUGGESTION_CACHE_KEY, today, localeKey, result);
+      }
+    } finally {
       setSuggestionLoading(false);
-    })();
-  }, [config.aiApiKey]);
+    }
+  };
 
-  // Prose
-  const [prose, setProse] = useState<string | null>(null);
+  useEffect(() => {
+    if (!config.aiApiKey) return;
+    // 优先用缓存;跨天/切语言/未生成过时才调 API
+    const cached = readDailyCache<string>(SUGGESTION_CACHE_KEY, today, localeKey);
+    if (cached) {
+      setDailySuggestion(cached);
+      return;
+    }
+    generateSuggestion(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.aiApiKey, today, localeKey]);
+
+  // Prose —— 同样当日缓存,进入 Dashboard 自动生成一次,支持手动重新生成
+  const PROSE_CACHE_KEY = "qiyun_ai_daily_prose";
+  const [prose, setProse] = useState<string | null>(() =>
+    readDailyCache<string>(PROSE_CACHE_KEY, today, localeKey)
+  );
   const [proseLoading, setProseLoading] = useState(false);
   const [proseError, setProseError] = useState(false);
 
-  const handleGenerateProse = async () => {
+  const handleGenerateProse = async (force: boolean = false) => {
+    if (!config.aiApiKey) {
+      setProseError(true);
+      return;
+    }
+    if (!force) {
+      const cached = readDailyCache<string>(PROSE_CACHE_KEY, today, localeKey);
+      if (cached) {
+        setProse(cached);
+        return;
+      }
+    }
     setProseLoading(true);
     setProseError(false);
     try {
-      const result = await generateProse(config, config.locale || "zh-CN");
+      const result = await generateProse(config, localeKey);
       if (result) {
         setProse(result);
+        writeDailyCache(PROSE_CACHE_KEY, today, localeKey, result);
       } else {
         setProseError(true);
       }
@@ -167,6 +269,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
     setProseLoading(false);
   };
+
+  // 进入 Dashboard 自动生成一次(有缓存直接用,不发请求)
+  useEffect(() => {
+    if (!config.aiApiKey) return;
+    const cached = readDailyCache<string>(PROSE_CACHE_KEY, today, localeKey);
+    if (cached) {
+      setProse(cached);
+      return;
+    }
+    handleGenerateProse(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.aiApiKey, today, localeKey]);
 
   // Format local date elegantly
   const localDateStr = new Date().toLocaleDateString(
@@ -348,6 +462,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         );
       })()}
 
+      {/* 专注热力图 —— 只有产生过番茄记录时才显示 */}
+      {pomodoroLogs.length > 0 && (
+        <FocusHeatmap pomodoroLogs={pomodoroLogs} weeks={12} />
+      )}
+
       {/* Quote + History in 2-column on wide screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Quote */}
@@ -372,7 +491,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="text-[8px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-[#4D7C5D]" /> Daily Inspiration
             </span>
-            <button onClick={fetchHitokoto} className="text-[9px] font-black text-[#4D7C5D] hover:underline cursor-pointer">
+            <button onClick={() => fetchHitokoto(true)} className="text-[9px] font-black text-[#4D7C5D] hover:underline cursor-pointer">
               换一句
             </button>
           </div>
@@ -426,12 +545,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
 
 
-      {/* AI 每日建议 */}
+      {/* AI 每日建议 —— 当日缓存，进入即用；右上角提供手动重新生成 */}
       {config.aiApiKey && (dailySuggestion || suggestionLoading) && (
         <div className="rounded-2xl bg-gradient-to-r from-[#F0F5F1] to-[#EBF3F6] border border-[#DEEAE2] p-4.5 shadow-2xs">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-[#4D7C5D]" />
-            <span className="text-[9px] font-black text-[#4D7C5D] tracking-widest uppercase">AI 今日建议</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#4D7C5D]" />
+              <span className="text-[9px] font-black text-[#4D7C5D] tracking-widest uppercase">AI 今日建议</span>
+            </div>
+            <button
+              onClick={() => generateSuggestion(true)}
+              disabled={suggestionLoading}
+              className={`text-[9px] font-black flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                suggestionLoading
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-white/60 text-[#4D7C5D] hover:bg-white hover:scale-105 border border-[#DEEAE2]"
+              }`}
+              title="重新生成今日建议"
+            >
+              <RefreshCw className={`w-2.5 h-2.5 ${suggestionLoading ? "animate-spin" : ""}`} />
+              换一条
+            </button>
           </div>
           {suggestionLoading ? (
             <div className="flex items-center gap-2">
@@ -451,7 +585,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <PenLine className="w-3.5 h-3.5" /> {t.prose?.title || "AI 散文"}
           </span>
           <button
-            onClick={handleGenerateProse}
+            onClick={() => handleGenerateProse(true)}
             disabled={proseLoading}
             className={`text-[9px] font-black flex items-center gap-1 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
               proseLoading

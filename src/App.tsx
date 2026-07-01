@@ -15,6 +15,7 @@ import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
 import { WidgetWindow } from "./components/WidgetWindow";
+import { CommandPalette } from "./components/CommandPalette";
 import { SettingsView } from "./components/SettingsView";
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
@@ -68,6 +69,19 @@ function AppInner() {
 
   const [activeTab, setActiveTab] = useState<AppTab>("home");
   const [flowMode, setFlowMode] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Cmd/Ctrl+K 全局快捷键
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
     safeJsonParse(localStorage.getItem("qiyun_habits") || "[]", [])
   );
@@ -989,7 +1003,7 @@ function AppInner() {
           )}
 
           {activeTab === "home" && (
-            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
+            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} pomodoroLogs={pomodoroHook.pomodoroLogs} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
             <MatrixView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
@@ -1045,6 +1059,22 @@ function AppInner() {
         })()}
       </div>
     </div>
+    )}
+    {/* 全局命令面板 Cmd/Ctrl+K */}
+    {windowLabel === "main" && (
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        tasks={tasksHook.tasks}
+        stickyNotes={notesHook.stickyNotes}
+        onTaskClick={(task) => { tasksHook.handleTaskClick(task); setCommandPaletteOpen(false); }}
+        onNavigate={(tab) => { setActiveTab(tab); setFlowMode(false); }}
+        onCreateTask={() => { /* ListView 的 QuickAddTask 会自动获焦 */ }}
+        onStartFocus={pomodoroHook.handleStartFocus}
+        onToggleWidget={widgetHook.handleToggleWidget}
+        onToggleWidgetLock={() => widgetHook.handleToggleWidgetLock()}
+        onEnterFlowMode={() => setFlowMode(true)}
+      />
     )}
   </>
 );
