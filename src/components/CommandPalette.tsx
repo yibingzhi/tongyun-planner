@@ -161,6 +161,27 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     setActiveIdx(0);
   }, [query]);
 
+  const sectionLabel: Record<CommandItem["section"], string> = {
+    navigation: "页面",
+    actions: "操作",
+    tasks: "任务",
+    notes: "便签",
+  };
+
+  const { grouped, flatOrder } = useMemo(() => {
+    const grouped: { section: CommandItem["section"]; items: CommandItem[]; startIdx: number }[] = [];
+    let cursor = 0;
+    for (const section of ["actions", "navigation", "tasks", "notes"] as CommandItem["section"][]) {
+      const items = filtered.filter((it) => it.section === section);
+      if (items.length > 0) {
+        grouped.push({ section, items, startIdx: cursor });
+        cursor += items.length;
+      }
+    }
+    const flatOrder: CommandItem[] = grouped.flatMap((g) => g.items);
+    return { grouped, flatOrder };
+  }, [filtered]);
+
   // 键盘操作 — 基于 flatOrder 而非 filtered，保证键盘顺序和显示一致
   useEffect(() => {
     if (!open) return;
@@ -193,28 +214,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const el = listRef.current.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
     if (el) el.scrollIntoView({ block: "nearest" });
   }, [activeIdx]);
-
-  // 分组 + flatOrder 放在 useMemo 里，保证在 useEffect 依赖中引用稳定
-  const sectionLabel: Record<CommandItem["section"], string> = {
-    navigation: "页面",
-    actions: "操作",
-    tasks: "任务",
-    notes: "便签",
-  };
-
-  const { grouped, flatOrder } = useMemo(() => {
-    const grouped: { section: CommandItem["section"]; items: CommandItem[]; startIdx: number }[] = [];
-    let cursor = 0;
-    for (const section of ["actions", "navigation", "tasks", "notes"] as CommandItem["section"][]) {
-      const items = filtered.filter((it) => it.section === section);
-      if (items.length > 0) {
-        grouped.push({ section, items, startIdx: cursor });
-        cursor += items.length;
-      }
-    }
-    const flatOrder: CommandItem[] = grouped.flatMap((g) => g.items);
-    return { grouped, flatOrder };
-  }, [filtered]);
 
   if (!open) return null;
 

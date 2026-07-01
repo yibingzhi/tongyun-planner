@@ -55,6 +55,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const [nickname] = useState(() => localStorage.getItem("qiyun_nickname") || "");
   const today = getLocalDateString();
+  const localeKey = config.locale || "zh-CN";
 
   const hour = new Date().getHours();
   let greetKey: string;
@@ -192,7 +193,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // AI Daily Suggestion —— 当日缓存,只在跨天/语言变化时重新生成
   const SUGGESTION_CACHE_KEY = "qiyun_ai_daily_suggestion";
-  const localeKey = config.locale || "zh-CN";
   const [dailySuggestion, setDailySuggestion] = useState<string | null>(() =>
     readDailyCache<string>(SUGGESTION_CACHE_KEY, today, localeKey)
   );
