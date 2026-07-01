@@ -48,9 +48,8 @@ html.transparent-window body {
 
 /* 挂件专用暖白轻质毛玻璃 (Widget Warm Light Glassmorphism) */
 .glassmorphism-dark {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(25px) saturate(120%);
-  -webkit-backdrop-filter: blur(25px) saturate(120%);
+  background: #FFFFFF;
+  background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 12px 35px -8px rgba(120, 110, 95, 0.18), 0 1px 1px 0 rgba(255, 255, 255, 0.5) inset;
 }
@@ -631,7 +630,8 @@ html.transparent-window body {
 }
 
 .dark .glassmorphism-dark {
-  background: rgba(26, 27, 30, 0.85) !important;
+  background: #1A1B1E !important;
+  background-clip: padding-box !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.6), 
               0 1px 1px 0 rgba(255, 255, 255, 0.05) inset !important;
@@ -1128,5 +1128,11 @@ html.transparent-window body {
 
 /* 日历空状态图标 */
 .dark .text-\[\#8B6E3C\]\/30 { color: rgba(180, 145, 100, 0.3) !important; }
+
+/* ============ 侧边栏导航 hover 深色模式修复 ============ */
+.dark .hover\:text-slate-800:hover { color: #E3E4E6 !important; }
+.dark .hover\:text-slate-700:hover { color: #E3E4E6 !important; }
+.dark .hover\:bg-slate-100\/50:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+.dark .hover\:bg-\[\#F0F5F1\]:hover { background-color: rgba(30, 65, 45, 0.35) !important; }
 
 
