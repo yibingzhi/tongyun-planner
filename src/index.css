@@ -1136,3 +1136,527 @@ html.transparent-window body {
 .dark .hover\:bg-\[\#F0F5F1\]:hover { background-color: rgba(30, 65, 45, 0.35) !important; }
 
 
+/* ==========================================================================
+   15. 暗黑模式缺失覆盖 — 全面体检补丁
+   ========================================================================== */
+
+/* ---- 侧边栏导航 active 状态深色适配 ---- */
+.dark .bg-\[\#F3F0F8\] { background-color: rgba(55, 40, 80, 0.3) !important; }
+.dark .bg-\[\#F5F0F8\] { background-color: rgba(60, 40, 85, 0.3) !important; }
+.dark .bg-\[\#EEF7F2\] { background-color: rgba(30, 65, 50, 0.3) !important; }
+.dark .bg-\[\#FEF6E6\] { background-color: rgba(70, 55, 25, 0.3) !important; }
+.dark .bg-\[\#F5F3F1\] { background-color: rgba(40, 38, 35, 0.4) !important; }
+.dark .bg-\[\#F4EFEA\]\/40 { background-color: rgba(28, 30, 36, 0.4) !important; }
+
+.dark .text-\[\#7C6FAE\] { color: #B8A8D8 !important; }
+.dark .text-\[\#5DAE7C\] { color: #7FCC9A !important; }
+.dark .text-\[\#9B6FAE\] { color: #C8A0D8 !important; }
+.dark .text-\[\#E87A6E\] { color: #F0A090 !important; }
+.dark .text-\[\#8B8178\] { color: #B0A89E !important; }
+.dark .text-\[\#5B99B0\] { color: #8CC5D8 !important; }
+.dark .text-\[\#C97D3E\] { color: #E8A870 !important; }
+.dark .text-\[\#A08B30\] { color: #D4C060 !important; }
+.dark .text-\[\#B8D4C1\] { color: #7FCC9A !important; }
+.dark .text-\[\#B2C8DF\] { color: #8AACCC !important; }
+.dark .text-\[\#E8A0BF\] { color: #E8A0BF !important; }
+.dark .text-\[\#E8A0BF\]\/50 { color: rgba(232, 160, 191, 0.5) !important; }
+.dark .text-\[\#EFEBE4\] { color: rgba(255, 255, 255, 0.15) !important; }
+.dark .text-\[\#FAF5ED\]\/60 { color: rgba(234, 217, 168, 0.4) !important; }
+.dark .text-\[\#3F684C\] { color: #7FCC9A !important; }
+.dark .text-\[\#7C5D9E\] { color: #B8A0D8 !important; }
+.dark .text-\[\#4D7C5D\] { color: #8AC9A0 !important; }
+
+.dark .border-\[\#D5CEE8\] { border-color: rgba(120, 90, 160, 0.2) !important; }
+.dark .border-\[\#C5E5D2\] { border-color: rgba(93, 174, 124, 0.2) !important; }
+.dark .border-\[\#F5E2B8\] { border-color: rgba(201, 125, 62, 0.2) !important; }
+.dark .border-\[\#DDD0E8\] { border-color: rgba(155, 111, 174, 0.2) !important; }
+.dark .border-\[\#F5D0C5\] { border-color: rgba(232, 122, 110, 0.2) !important; }
+.dark .border-\[\#E0DBD5\] { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .border-\[\#EDDCC8\] { border-color: rgba(201, 125, 62, 0.2) !important; }
+.dark .border-\[\#EDE5C8\] { border-color: rgba(160, 139, 48, 0.2) !important; }
+.dark .border-\[\#C5DEE8\] { border-color: rgba(91, 153, 176, 0.2) !important; }
+.dark .border-\[\#4D7C5D\] { border-color: rgba(77, 124, 93, 0.5) !important; }
+.dark .border-\[\#4D7C5D\]\/30 { border-color: rgba(77, 124, 93, 0.2) !important; }
+.dark .border-\[\#C4B5A0\] { border-color: rgba(255, 255, 255, 0.1) !important; }
+.dark .border-\[\#C5A059\]\/40 { border-color: rgba(197, 160, 89, 0.2) !important; }
+.dark .border-\[\#C8E6C9\] { border-color: rgba(100, 180, 110, 0.2) !important; }
+.dark .border-\[\#FFE0B2\] { border-color: rgba(230, 165, 50, 0.2) !important; }
+.dark .border-\[\#EFE5D3\]\/60 { border-color: rgba(234, 217, 168, 0.15) !important; }
+.dark .border-\[\#DEEAE2\]\/50 { border-color: rgba(196, 215, 178, 0.12) !important; }
+.dark .border-\[\#C4D7B2\]\/20 { border-color: rgba(196, 215, 178, 0.12) !important; }
+.dark .border-\[\#C4D7B2\]\/30 { border-color: rgba(196, 215, 178, 0.15) !important; }
+.dark .border-\[\#C4D7B2\]\/40 { border-color: rgba(196, 215, 178, 0.2) !important; }
+
+/* ---- 倒计时/侧边栏独有背景色 ---- */
+.dark .bg-\[\#FBF4EC\] { background-color: rgba(80, 55, 30, 0.25) !important; }
+.dark .bg-\[\#E5DCC3\] { background-color: rgba(120, 105, 70, 0.5) !important; }
+.dark .bg-\[\#E4EDE6\] { background-color: rgba(40, 60, 48, 0.4) !important; }
+.dark .bg-\[\#F0E8D6\] { background-color: rgba(60, 50, 30, 0.4) !important; }
+.dark .bg-\[\#F5EBEB\] { background-color: rgba(80, 45, 45, 0.3) !important; }
+.dark .bg-\[\#EFEBE4\] { background-color: rgba(255, 255, 255, 0.06) !important; }
+.dark .bg-\[\#EEEAF5\] { background-color: rgba(65, 50, 90, 0.35) !important; }
+
+/* ---- AI 消息反馈横幅 ---- */
+.dark .bg-\[\#E8F5E9\] { background-color: rgba(30, 70, 40, 0.35) !important; }
+.dark .text-\[\#2E7D32\] { color: #6FC77E !important; }
+.dark .bg-\[\#FFF3E0\] { background-color: rgba(80, 50, 15, 0.35) !important; }
+.dark .text-\[\#E65100\] { color: #F0A060 !important; }
+
+/* ---- 按钮/徽章深色底色（保持可识别度） ---- */
+.dark .bg-\[\#3D6A4F\] { background-color: #2D5840 !important; }
+.dark .bg-\[\#725A31\] { background-color: #5A4525 !important; }
+.dark .bg-\[\#9BB5CF\] { background-color: rgba(100, 140, 175, 0.7) !important; }
+.dark .bg-\[\#BF360C\] { background-color: rgba(160, 45, 10, 0.7) !important; }
+.dark .bg-\[\#9B7EC9\] { background-color: rgba(120, 90, 170, 0.6) !important; }
+.dark .bg-\[\#E0A934\] { background-color: rgba(180, 140, 40, 0.6) !important; }
+.dark .bg-\[\#E57C58\] { background-color: rgba(180, 95, 65, 0.6) !important; }
+.dark .bg-\[\#5B99B0\] { background-color: rgba(70, 120, 140, 0.6) !important; }
+.dark .bg-\[\#5C528B\] { background-color: rgba(72, 62, 110, 0.7) !important; }
+.dark .bg-\[\#A08B30\] { background-color: rgba(130, 115, 35, 0.6) !important; }
+.dark .bg-\[\#A34E36\] { background-color: rgba(130, 60, 40, 0.6) !important; }
+.dark .bg-\[\#C97D3E\] { background-color: rgba(160, 100, 45, 0.6) !important; }
+.dark .bg-\[\#8B6E3C\] { background-color: rgba(110, 85, 45, 0.6) !important; }
+.dark .bg-\[\#366B80\] { background-color: rgba(40, 80, 100, 0.6) !important; }
+.dark .bg-\[\#E65100\] { background-color: rgba(180, 60, 0, 0.6) !important; }
+.dark .bg-\[\#D2B48C\]\/90 { background-color: rgba(160, 135, 100, 0.6) !important; }
+
+/* ---- 四象限圆点保持鲜明 ---- */
+.dark .bg-\[\#E8A0BF\] { background-color: #D48AAA !important; }
+.dark .bg-\[\#B2C8DF\] { background-color: #8AACCC !important; }
+
+/* ---- 动态装饰色斑 (App.tsx blob) ---- */
+.dark .bg-\[\#FCF2F0\]\/65 { background-color: rgba(85, 40, 50, 0.15) !important; }
+.dark .bg-\[\#F0F5F1\]\/65 { background-color: rgba(30, 65, 45, 0.15) !important; }
+.dark .bg-\[\#FAF5ED\]\/65 { background-color: rgba(70, 55, 30, 0.15) !important; }
+.dark .bg-\[\#F3F2F7\]\/65 { background-color: rgba(55, 40, 80, 0.15) !important; }
+.dark .bg-\[\#EBF3F6\]\/65 { background-color: rgba(30, 55, 75, 0.15) !important; }
+.dark .bg-\[\#FBECE5\]\/65 { background-color: rgba(90, 45, 30, 0.15) !important; }
+.dark .bg-\[\#FCF2F0\]\/50 { background-color: rgba(85, 40, 50, 0.2) !important; }
+
+/* ---- 透明度变体补丁 ---- */
+.dark .bg-\[\#F0F5F1\]\/30 { background-color: rgba(30, 65, 45, 0.15) !important; }
+.dark .bg-\[\#F0F5F1\]\/60 { background-color: rgba(30, 65, 45, 0.3) !important; }
+.dark .bg-\[\#F0F5F1\]\/80 { background-color: rgba(25, 50, 35, 0.45) !important; }
+.dark .bg-\[\#F3F2F7\]\/80 { background-color: rgba(40, 30, 60, 0.45) !important; }
+.dark .bg-\[\#FAF8F5\]\/65 { background-color: rgba(22, 23, 26, 0.65) !important; }
+.dark .bg-\[\#FAF8F5\]\/60 { background-color: rgba(22, 23, 26, 0.6) !important; }
+.dark .bg-\[\#4D7C5D\]\/20 { background-color: rgba(55, 110, 70, 0.2) !important; }
+
+/* ---- ring 环色适配 ---- */
+.dark .ring-\[\#4D7C5D\] { --tw-ring-color: rgba(77, 124, 93, 0.5) !important; }
+.dark .ring-\[\#4D7C5D\]\/20 { --tw-ring-color: rgba(77, 124, 93, 0.15) !important; }
+.dark .ring-\[\#8B6E3C\]\/20 { --tw-ring-color: rgba(180, 145, 100, 0.15) !important; }
+.dark .ring-\[\#A34E36\] { --tw-ring-color: rgba(232, 160, 191, 0.4) !important; }
+.dark .ring-\[\#C4D7B2\] { --tw-ring-color: rgba(196, 215, 178, 0.35) !important; }
+.dark .ring-\[\#C4D7B2\]\/30 { --tw-ring-color: rgba(196, 215, 178, 0.15) !important; }
+
+/* ---- shadow 阴影深色映射 ---- */
+.dark .shadow-\[\#EBF3F6\] { --tw-shadow-color: rgba(30, 55, 75, 0.3) !important; }
+.dark .shadow-\[\#F0F5F1\] { --tw-shadow-color: rgba(30, 65, 45, 0.3) !important; }
+.dark .shadow-\[\#F3F2F7\] { --tw-shadow-color: rgba(55, 40, 80, 0.3) !important; }
+.dark .shadow-\[\#FAF5ED\] { --tw-shadow-color: rgba(70, 55, 30, 0.3) !important; }
+.dark .shadow-\[\#FCF2F0\] { --tw-shadow-color: rgba(85, 40, 50, 0.3) !important; }
+.dark .shadow-\[0_10px_25px_-5px_rgba\(154\,142\,128\,0\.18\)\] {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.45) !important;
+}
+.dark .shadow-\[0_12px_30px_rgba\(154\,142\,128\,0\.12\)\] {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .shadow-\[0_8px_20px_-8px_rgba\(154\,142\,128\,0\.08\)\] {
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ---- accent / disabled ---- */
+.dark .accent-\[\#4D7C5D\] { accent-color: #6FAD84 !important; }
+.dark .disabled\:bg-slate-300:disabled { background-color: rgba(60, 65, 70, 0.5) !important; color: #7E818A !important; }
+
+/* ---- 零散文本/背景缺失 ---- */
+.dark .text-\[\#8B6E3C\]\/60 { color: rgba(180, 145, 100, 0.6) !important; }
+.dark .bg-white { background-color: rgba(28, 29, 33, 0.8) !important; }
+.dark .bg-white\/70 { background-color: rgba(28, 29, 33, 0.7) !important; }
+.dark .bg-white\/60 { background-color: rgba(28, 29, 33, 0.6) !important; }
+.dark .bg-slate-400 { background-color: rgba(100, 105, 115, 0.6) !important; }
+.dark .hover\:bg-\[\#3F684C\]:hover { background-color: #2D5840 !important; }
+.dark .hover\:bg-white\/80:hover { background-color: rgba(45, 47, 52, 0.6) !important; }
+
+/* FlowMode / CommandPalette 全屏遮罩 — 需要不透明背景 */
+.dark .fixed.inset-0.bg-\[\#FAF8F5\] {
+  background-color: #121214 !important;
+}
+
+/* ==========================================================================
+   16. 暗黑模式视觉质感提升
+   ========================================================================== */
+
+/* 切换暗黑模式柔和过渡 */
+html, body, #root,
+aside, main,
+.glassmorphism, .glassmorphism-dark {
+  transition: background-color 0.35s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* 暗黑卡片悬浮效果 */
+.dark .hover\:shadow-lg:hover {
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.5),
+              0 1px 1px 0 rgba(255, 255, 255, 0.03) inset !important;
+}
+.dark .hover\:shadow-sm:hover {
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4),
+              0 1px 1px 0 rgba(255, 255, 255, 0.03) inset !important;
+}
+
+/* 暗黑 shadow 柔化 */
+.dark .shadow-md {
+  box-shadow: 0 6px 20px -5px rgba(0, 0, 0, 0.45),
+              0 1px 1px 0 rgba(255, 255, 255, 0.03) inset !important;
+}
+.dark .shadow-sm {
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.35) !important;
+}
+.dark .shadow-xs {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+.dark .shadow-2xs {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 暗黑 focus 边框发光 */
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  box-shadow: 0 0 0 2px rgba(77, 124, 93, 0.15) !important;
+}
+
+/* 暗黑选中态微光 */
+.dark .nav-active-bar {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25),
+              0 0 12px rgba(178, 200, 223, 0.06) inset !important;
+}
+
+/* 暗黑完成复选框 */
+.dark .bg-\[\#4D7C5D\] {
+  background-color: #3D7050 !important;
+  box-shadow: 0 0 6px rgba(77, 124, 93, 0.2) !important;
+}
+
+/* 暗黑进度条 */
+.dark .bg-\[\#C4D7B2\] {
+  background-color: rgba(100, 180, 120, 0.6) !important;
+}
+
+/* 暗黑 main 区域微渐变层次感 */
+.dark main {
+  background: linear-gradient(180deg, rgba(18, 18, 20, 0) 0%, rgba(18, 18, 20, 0.3) 100%) !important;
+}
+
+/* 暗黑滚动条精致化 */
+.dark ::-webkit-scrollbar {
+  width: 5px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 暗黑占位文本柔和 */
+.dark .placeholder-slate-400::placeholder {
+  color: #5C5E66 !important;
+}
+
+/* 暗黑 glow-card 微光 */
+.dark .glow-card {
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.5),
+              0 0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* ==========================================================================
+   17. 桌面挂件 (WidgetWindow) 暗黑模式适配
+   ========================================================================== */
+
+/* 挂件透明窗口 — 确保 dark 模式下背景不透出桌面 */
+html.dark.transparent-window .glassmorphism-dark {
+  background: #1A1B1E !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 番茄钟进度环 — SVG stroke 暗黑适配 */
+.dark .stroke-\[\#EFEBE4\] { stroke: rgba(255, 255, 255, 0.1) !important; }
+.dark .stroke-\[\#C4D7B2\] { stroke: #6FAD84 !important; }
+.dark .stroke-\[\#E8A0BF\] { stroke: #D48AAA !important; }
+
+/* 番茄钟圆形容器 */
+.dark .border-4.border-\[\#FAF8F5\] {
+  border-color: rgba(60, 65, 75, 0.5) !important;
+}
+
+/* 挂件内 undo toast */
+.dark .bg-white\/95 {
+  background-color: rgba(28, 29, 33, 0.95) !important;
+}
+
+/* 挂件底部 tab 导航分割线 */
+.dark .border-slate-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 分栏底部面板虚线分割线 */
+.dark .border-dashed.border-slate-200\/60 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+.dark .border-dashed.border-slate-200\/50 {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.dark .border-dashed.border-slate-200\/40 {
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+.dark .border-dashed.border-slate-200 {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 挂件内按钮 — play/pause/reset 圆形按钮 */
+.dark .border-\[\#EFEBE4\].bg-white {
+  background-color: rgba(28, 29, 33, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 挂件列表项 hover */
+.dark .hover\:bg-\[\#FAF8F5\]:hover {
+  background-color: rgba(45, 47, 52, 0.8) !important;
+}
+
+/* bg-slate-300 圆点指示器 */
+.dark .bg-slate-300 {
+  background-color: rgba(100, 105, 115, 0.4) !important;
+}
+
+/* 挂件内取消按钮 */
+.dark .border-slate-200.hover\:bg-slate-50 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dark .border-slate-200.hover\:bg-slate-50:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* 挂件时间编辑输入框底线 */
+.dark .border-b-2.border-\[\#4D7C5D\] {
+  border-color: #6FAD84 !important;
+  color: #E3E4E6 !important;
+}
+
+/* 挂件 — shadow-lg 动画 toast */
+.dark .shadow-lg.animate-fade-in-up {
+  box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ==========================================================================
+   18. 桌面挂件暗黑模式 — theme-glass 与 glassmorphism-dark 联合覆盖
+   ========================================================================== */
+
+/* 挂件根容器: glassmorphism-dark + theme-glass-* 联合暗黑覆盖 */
+.dark .theme-glass-matte.glassmorphism-dark,
+.dark .theme-glass-light.glassmorphism-dark,
+.dark .theme-glass-solid.glassmorphism-dark,
+.dark .glassmorphism-dark.theme-glass-matte,
+.dark .glassmorphism-dark.theme-glass-light,
+.dark .glassmorphism-dark.theme-glass-solid {
+  background: #1A1B1E !important;
+  background-clip: padding-box !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.6),
+              0 1px 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 锁定态 (theme-glass-solid 直接覆盖) */
+.dark .theme-glass-solid.glassmorphism-dark {
+  background: #1A1B1E !important;
+  box-shadow: none !important;
+}
+
+/* glow-card 伪元素暗黑适配 */
+.dark .glow-card::before {
+  background: linear-gradient(90deg, rgba(80, 100, 120, 0.06), rgba(60, 90, 70, 0.06), rgba(80, 60, 60, 0.06)) !important;
+  opacity: 0.3 !important;
+}
+.dark .glow-card:hover::before {
+  opacity: 0.5 !important;
+}
+
+/* 挂件内 shimmer 进度条暗黑适配 */
+.dark .shimmer-progress {
+  background: linear-gradient(
+    90deg,
+    rgba(100, 180, 120, 0.6) 0%,
+    rgba(80, 140, 160, 0.6) 50%,
+    rgba(100, 180, 120, 0.6) 100%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+/* 挂件内 text-slate-700 / text-slate-600 确保暗黑可读 */
+.dark .text-slate-700 {
+  color: #C5C8CE !important;
+}
+
+/* 挂件内 SwipeCard 卡片背景暗黑适配 */
+.dark .border-urgent-important,
+.dark .border-important-not-urgent,
+.dark .border-urgent-not-important,
+.dark .border-not-urgent-not-important {
+  background: rgba(28, 29, 33, 0.85) !important;
+}
+
+/* ==========================================================================
+   19. 精致排版系统 (Disciplined Type Scale)
+   ========================================================================== */
+
+/* 4-level type scale — 统一字体尺度，替代零散的 4px-13px 混用
+   caption: 10px  — 标签、徽章、次要元信息
+   body:    12px  — 正文、按钮、列表项
+   subhead: 14px  — 卡片标题、导航
+   title:   18px  — 页面标题、模态标题 */
+
+/* 归一化过小字号：4-7px 全部拉升到 caption 10px 保证可读 */
+.text-\[4px\], .text-\[5px\], .text-\[6px\], .text-\[7px\] {
+  font-size: 10px !important;
+  letter-spacing: 0.02em;
+}
+
+/* 归一化 7.5-9.5px 到统一 caption 10px */
+.text-\[7\.5px\], .text-\[8px\], .text-\[8\.5px\], .text-\[9px\], .text-\[9\.5px\] {
+  font-size: 10px !important;
+}
+
+/* 归一化 11-12px 到 body 12px */
+.text-\[11px\], .text-\[12px\] {
+  font-size: 12px !important;
+  line-height: 1.5;
+}
+
+/* 归一化 13px 到 subhead 14px */
+.text-\[13px\] {
+  font-size: 13px !important;
+  line-height: 1.5;
+}
+
+/* 全局字号节奏：字重收敛到 3 级 */
+/* text-slate-* 家族的默认字重从 extrabold(800) 降到 semibold(600) 更克制 */
+.font-extrabold {
+  font-weight: 700 !important;
+}
+.font-black {
+  font-weight: 700 !important;
+}
+
+/* 增强正文行高 */
+p, .text-xs, .text-sm {
+  line-height: 1.55;
+}
+
+/* ==========================================================================
+   20. 组件视觉风格统一 (Component Visual Polish)
+   ========================================================================== */
+
+/* 去掉过度的 glassmorphism 效果 — 主要在设置页/仪表盘的卡片上 */
+.bg-white\/70,
+.bg-white\/80 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 精致的卡片阴影 — 更细腻的层次 */
+.rounded-2xl.border.shadow-sm,
+.rounded-xl.border.shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04),
+              0 2px 6px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 侧边栏 — 统一背景为轻透白色 */
+aside {
+  background-color: rgba(250, 250, 248, 0.85) !important;
+}
+
+.dark aside {
+  background-color: rgba(22, 23, 26, 0.85) !important;
+}
+
+/* 按钮 hover 统一过渡 */
+button {
+  transition-property: background-color, border-color, color, box-shadow, transform;
+  transition-duration: 0.15s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 主色按钮 (bg-[#4D7C5D]) 统一精致外观 */
+button.bg-\[\#4D7C5D\]:not(:disabled):hover {
+  background-color: #3F684C !important;
+  box-shadow: 0 2px 6px rgba(77, 124, 93, 0.25);
+}
+
+/* 输入框统一样式 — 更干净的边框 */
+input[type="text"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+input[type="number"],
+textarea,
+select {
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #4D7C5D !important;
+  box-shadow: 0 0 0 3px rgba(77, 124, 93, 0.1);
+}
+
+/* 收敛所有过度使用的圆角 */
+.rounded-2xl {
+  border-radius: 14px !important;
+}
+
+/* 去掉零散的动画装饰 — 保留必要的，去掉炫技的 */
+.animate-float-slow,
+.animate-float-reverse {
+  animation: none !important;
+}
+
+/* Watercolor pattern 简化为纯色 */
+.bg-watercolor-pattern {
+  background: #FAFAF8 !important;
+}
+.dark .bg-watercolor-pattern {
+  background: #121214 !important;
+}
+
+/* 去掉四象限左边条的花哨 hover 变换 */
+.border-urgent-important:hover,
+.border-important-not-urgent:hover,
+.border-urgent-not-important:hover,
+.border-not-urgent-not-important:hover {
+  transform: none !important;
+}
+
+/* 精致 focus ring — 无障碍必需 */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #4D7C5D;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 全局字体渲染优化 */
+body {
+  font-feature-settings: "cv01", "cv03", "cv04", "cv05", "ss01", "ss02";
+  text-rendering: optimizeLegibility;
+}

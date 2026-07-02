@@ -725,29 +725,7 @@ function AppInner() {
     }
   };
 
-  const getWatercolorBlobs = () => {
-    const style = customizationHook.customizationConfig.watercolorStyle || "oasis";
-    if (style === "none") return null;
-    let blob1 = "bg-[#FCF2F0]/65";
-    let blob2 = "bg-[#F0F5F1]/65";
-    let blob3 = "bg-[#FAF5ED]/65";
-    if (style === "aurora") {
-      blob1 = "bg-[#F3F2F7]/65";
-      blob2 = "bg-[#EBF3F6]/65";
-      blob3 = "bg-[#FAF5ED]/65";
-    } else if (style === "sunny") {
-      blob1 = "bg-[#FBECE5]/65";
-      blob2 = "bg-[#FAF5ED]/65";
-      blob3 = "bg-[#FCF2F0]/65";
-    }
-    return (
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className={`absolute top-[-10%] left-[-15%] w-[55vw] h-[55vw] rounded-full ${blob1} blur-[100px] animate-float-slow`} />
-        <div className={`absolute bottom-[-10%] right-[-15%] w-[50vw] h-[50vw] rounded-full ${blob2} blur-[100px] animate-float-reverse`} />
-        <div className={`absolute top-[25%] right-[10%] w-[40vw] h-[40vw] rounded-full ${blob3} blur-[90px] animate-float-slow`} />
-      </div>
-    );
-  };
+  // Watercolor blobs removed — clean background for calm precision design
 
   // ============ FloatingNote / Widget / Main Render ============
   if (windowLabel.startsWith("note-")) {
@@ -808,10 +786,9 @@ function AppInner() {
           onExit={() => setFlowMode(false)}
         />
       ) : (
-        <div className={`w-full h-full min-h-screen bg-[#FAF8F5] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-glass-${customizationHook.customizationConfig.interfaceGlass || "matte"} theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
+        <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
       <TitleBar />
       <div className="flex flex-grow min-h-0 relative">
-        {getWatercolorBlobs()}
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}

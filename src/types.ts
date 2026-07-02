@@ -44,7 +44,7 @@ export interface StickyNote {
 
 export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
-export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "settings";
+export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "settings" | "tasks" | "focus" | "archive";
 
 export interface CountdownEvent {
   id: string;
@@ -103,5 +103,4 @@ export interface WebDavConfig {
   username: string;
   password?: string;
 }
-
 

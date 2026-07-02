@@ -10,6 +10,131 @@ import { CustomSelect } from "./CustomSelect";
 import { testAIConnection, generatePraiseBatch } from "../utils/aiEngine";
 import { useTranslation } from "../i18n/LanguageContext";
 import { safeJsonParse } from "../utils/json";
+import { audioEngine } from "../utils/audioEngine";
+
+const THEME_PRESETS = [
+  {
+    id: "mint-light",
+    name: "Mint Light (抹茶绿 浅色)",
+    darkMode: "light" as const,
+    qColors: {
+      "urgent-important": "rose",
+      "important-not-urgent": "mint",
+      "urgent-not-important": "sky",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#E8A0BF", "#C4D7B2", "#B2C8DF", "#E0A934"],
+  },
+  {
+    id: "lemon-light",
+    name: "Lemon Light (甘菊黄 浅色)",
+    darkMode: "light" as const,
+    qColors: {
+      "urgent-important": "coral",
+      "important-not-urgent": "yellow",
+      "urgent-not-important": "mint",
+      "not-urgent-not-important": "sky",
+    },
+    previewColors: ["#E57C58", "#E0A934", "#C4D7B2", "#B2C8DF"],
+  },
+  {
+    id: "rose-light",
+    name: "Rose Light (蜜桃粉 浅色)",
+    darkMode: "light" as const,
+    qColors: {
+      "urgent-important": "rose",
+      "important-not-urgent": "lavender",
+      "urgent-not-important": "coral",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#E8A0BF", "#9B7EC9", "#E57C58", "#E0A934"],
+  },
+  {
+    id: "sky-light",
+    name: "Sky Light (天空蓝 浅色)",
+    darkMode: "light" as const,
+    qColors: {
+      "urgent-important": "sky",
+      "important-not-urgent": "mint",
+      "urgent-not-important": "lavender",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#B2C8DF", "#C4D7B2", "#9B7EC9", "#E0A934"],
+  },
+  {
+    id: "lavender-light",
+    name: "Lavender Light (香芋紫 浅色)",
+    darkMode: "light" as const,
+    qColors: {
+      "urgent-important": "lavender",
+      "important-not-urgent": "rose",
+      "urgent-not-important": "sky",
+      "not-urgent-not-important": "mint",
+    },
+    previewColors: ["#9B7EC9", "#E8A0BF", "#B2C8DF", "#C4D7B2"],
+  },
+  // Dark 变体
+  {
+    id: "mint-dark",
+    name: "Mint Dark (抹茶绿 深色)",
+    darkMode: "dark" as const,
+    qColors: {
+      "urgent-important": "rose",
+      "important-not-urgent": "mint",
+      "urgent-not-important": "sky",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#D48AAA", "#6FAD84", "#8AACCC", "#D4C060"],
+  },
+  {
+    id: "lemon-dark",
+    name: "Lemon Dark (甘菊黄 深色)",
+    darkMode: "dark" as const,
+    qColors: {
+      "urgent-important": "coral",
+      "important-not-urgent": "yellow",
+      "urgent-not-important": "mint",
+      "not-urgent-not-important": "sky",
+    },
+    previewColors: ["#E57C58", "#D4C060", "#6FAD84", "#8AACCC"],
+  },
+  {
+    id: "rose-dark",
+    name: "Rose Dark (蜜桃粉 深色)",
+    darkMode: "dark" as const,
+    qColors: {
+      "urgent-important": "rose",
+      "important-not-urgent": "lavender",
+      "urgent-not-important": "coral",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#D48AAA", "#B8A0D8", "#E57C58", "#D4C060"],
+  },
+  {
+    id: "sky-dark",
+    name: "Sky Dark (天空蓝 深色)",
+    darkMode: "dark" as const,
+    qColors: {
+      "urgent-important": "sky",
+      "important-not-urgent": "mint",
+      "urgent-not-important": "lavender",
+      "not-urgent-not-important": "yellow",
+    },
+    previewColors: ["#8AACCC", "#6FAD84", "#B8A0D8", "#D4C060"],
+  },
+  {
+    id: "lavender-dark",
+    name: "Lavender Dark (香芋紫 深色)",
+    darkMode: "dark" as const,
+    qColors: {
+      "urgent-important": "lavender",
+      "important-not-urgent": "rose",
+      "urgent-not-important": "sky",
+      "not-urgent-not-important": "mint",
+    },
+    previewColors: ["#B8A0D8", "#D48AAA", "#8AACCC", "#6FAD84"],
+  },
+];
 
 const SUNSET_HOUR_OPTIONS: SelectOption<number>[] = Array.from({ length: 24 }).map((_, i) => ({
   value: i,
@@ -228,6 +353,51 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       }`}
                     >
                       {mode.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 🎨 推荐主题预设 */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                🎨 推荐主题预设 (10 个主题平铺)
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {THEME_PRESETS.map((preset) => {
+                  const isMatch =
+                    config.darkMode === preset.darkMode &&
+                    JSON.stringify(config.qColors) === JSON.stringify(preset.qColors);
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => {
+                        audioEngine.playStickSound();
+                        onChange({
+                          ...config,
+                          darkMode: preset.darkMode,
+                          qColors: preset.qColors,
+                        });
+                      }}
+                      className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer text-left flex flex-col justify-between gap-1.5 hover:scale-103 active:scale-97 ${
+                        isMatch
+                          ? "border-[#4D7C5D] bg-[#F0F5F1]/30 ring-1 ring-[#4D7C5D]/20 shadow-xs"
+                          : "bg-white border-[#EFEBE4] hover:border-slate-300"
+                      }`}
+                    >
+                      <span className="text-[9px] font-bold text-slate-700 truncate block w-full">
+                        {preset.name.split(" ")[0]} {preset.darkMode === "dark" ? "🌙" : "☀️"}
+                      </span>
+                      <div className="flex gap-1">
+                        {preset.previewColors.map((c, i) => (
+                          <span
+                            key={i}
+                            className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-2xs"
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
                     </button>
                   );
                 })}
