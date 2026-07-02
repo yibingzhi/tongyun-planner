@@ -137,6 +137,24 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   const tc = t.taskCard;
   const cm = t.common;
 
+  // Sync dark mode to widget window (separate webview)
+  useEffect(() => {
+    const mode = customizationConfig?.darkMode || "light";
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => {
+      if (mode === "dark" || (mode === "auto" && mediaQuery.matches)) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+    update();
+    if (mode === "auto") {
+      mediaQuery.addEventListener("change", update);
+      return () => mediaQuery.removeEventListener("change", update);
+    }
+  }, [customizationConfig?.darkMode]);
+
   const [widgetView, setWidgetView] = useState<"card" | "list" | "add" | "timer" | "notes">("card");
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);

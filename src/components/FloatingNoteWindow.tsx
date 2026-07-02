@@ -18,6 +18,28 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   const [pinType, setPinType] = useState<"pin" | "tape" | "clip" | "heart" | "smiley">("pin");
   const [isFolded, setIsFolded] = useState(false);
 
+  // Sync dark mode to floating note window (separate webview)
+  useEffect(() => {
+    const raw = localStorage.getItem("aero_customization_config");
+    let mode = "light";
+    if (raw) {
+      try { mode = JSON.parse(raw).darkMode || "light"; } catch {}
+    }
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => {
+      if (mode === "dark" || (mode === "auto" && mediaQuery.matches)) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    };
+    update();
+    if (mode === "auto") {
+      mediaQuery.addEventListener("change", update);
+      return () => mediaQuery.removeEventListener("change", update);
+    }
+  }, []);
+
   const handleToggleFold = () => {
     audioEngine.playStickSound();
     setIsFolded((prev) => {
