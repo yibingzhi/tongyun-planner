@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   Timer,
   Archive,
+  Newspaper,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -349,6 +350,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
           {/* 4. Notes */}
           <NavButton tab="notes" icon={<StickyNote className="w-4 h-4" />} label={s.notes} count={stickyNotesCount} />
+
+          {/* 4.5. News / RSS */}
+          <NavButton tab="news" icon={<Newspaper className="w-4 h-4" />} label={s.news || "朝花夕拾"} />
 
           {/* 5. Archive (expandable: Completed / Countdown) */}
           <div>

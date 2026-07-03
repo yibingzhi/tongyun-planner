@@ -1,5 +1,5 @@
 import type { SyncProvider, SyncBackendType } from "./types";
-import { getLocalSyncData, applySyncData } from "./types";
+import { getLocalSyncData, getLocalSyncVersion, applySyncData, normalizeSyncData } from "./types";
 import { WebDAVProvider } from "./webdavProvider";
 import { SupabaseProvider } from "./supabaseProvider";
 
@@ -38,6 +38,13 @@ export class SyncEngine {
     const saved = localStorage.getItem("qiyun_sync_backend") as SyncBackendType | null;
     if (saved === "webdav" || saved === "supabase") {
       this._currentBackend = saved;
+    } else {
+      // 有 WebDAV 凭据但未选后端时，自动启用 WebDAV
+      const url = localStorage.getItem("qiyun_webdav_url");
+      const user = localStorage.getItem("qiyun_webdav_user");
+      if (url && user) {
+        this._currentBackend = "webdav";
+      }
     }
     const lastSync = localStorage.getItem("qiyun_last_sync_time");
     if (lastSync) this._lastSyncTime = parseInt(lastSync, 10);
@@ -113,21 +120,23 @@ export class SyncEngine {
     this.notify();
 
     try {
+      const localVersion = getLocalSyncVersion();
       const localData = getLocalSyncData();
-      const remoteData = await provider.pull();
-      const localVersion = localData.version;
+      const rawRemote = await provider.pull();
+      const remoteData = rawRemote ? normalizeSyncData(rawRemote) ?? rawRemote : null;
       const remoteVersion = remoteData?.version || 0;
 
       if (remoteData === null) {
         await provider.push(localData);
       } else if (remoteVersion > localVersion) {
         applySyncData(remoteData);
-      } else if (localVersion > remoteVersion) {
+      } else if (localVersion > remoteVersion || (localVersion === remoteVersion && this.dirty)) {
         await provider.push(localData);
       }
 
       this._lastSyncTime = Date.now();
       localStorage.setItem("qiyun_last_sync_time", String(this._lastSyncTime));
+      localStorage.setItem("aero_last_backup_time", String(this._lastSyncTime));
       this._status = "success";
       this.dirty = false;
     } catch (e: any) {

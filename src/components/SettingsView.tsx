@@ -3,6 +3,7 @@ import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moo
 import type { CustomizationConfig, AlertSoundType, Locale } from "../types";
 import type { SyncBackendType } from "../utils/sync/types";
 import { syncEngine } from "../utils/sync/engine";
+import { normalizeSyncData, applySyncData } from "../utils/sync/types";
 import { PLANNER_COLORS } from "../constants";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
@@ -1108,17 +1109,16 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     reader.onload = (ev) => {
                       try {
                         const data = JSON.parse(ev.target?.result as string);
-                        if (data.tasks) localStorage.setItem("aero_todos", JSON.stringify(data.tasks));
-                        if (data.completedTasks) localStorage.setItem("aero_completed_todos", JSON.stringify(data.completedTasks));
-                        if (data.stickyNotes) localStorage.setItem("aero_sticky_notes", JSON.stringify(data.stickyNotes));
-                        if (data.customizationConfig) localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
-                        if (data.pomodoroLogs) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(data.pomodoroLogs));
-                        if (data.countdowns) localStorage.setItem("qiyun_countdowns", JSON.stringify(data.countdowns));
-                        if (data.habits) localStorage.setItem("qiyun_habits", JSON.stringify(data.habits));
-                        if (data.habitLogs) localStorage.setItem("qiyun_habit_logs", JSON.stringify(data.habitLogs));
-                        if (data.moods) localStorage.setItem("qiyun_moods", JSON.stringify(data.moods));
-                        if (data.aiPraise) localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
-                        triggerToast(s.snapshotImported || "导入成功 ✅ 请刷新页面", "success");
+                        const normalized = normalizeSyncData(data);
+                        if (!normalized) {
+                          triggerToast(s.snapshotImportError || "导入失败，文件格式不正确", "error");
+                          return;
+                        }
+                        applySyncData(normalized);
+                        if (data.aiPraise) {
+                          localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
+                        }
+                        triggerToast(s.snapshotImported || "导入成功 ✅", "success");
                       } catch {
                         triggerToast(s.snapshotImportError || "导入失败，文件格式不正确", "error");
                       }

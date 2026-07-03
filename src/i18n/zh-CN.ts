@@ -11,6 +11,7 @@ const zhCN: Translations = {
     completed: "已完成",
     remaining: "剩余待办",
     home: "主页",
+    news: "朝花夕拾",
     matrix: "四象限看板",
     list: "待办清单",
     calendar: "日历日程",
@@ -64,6 +65,7 @@ const zhCN: Translations = {
 
   header: {
     home: "主页",
+    news: "朝花夕拾 · 报人风报与热点订阅",
     matrix: "四象限优先级看板",
     list: "待办任务列表",
     calendar: "日历日程看板",

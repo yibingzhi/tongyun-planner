@@ -11,6 +11,7 @@ const en: Translations = {
     completed: "Completed",
     remaining: "Remaining",
     home: "Home",
+    news: "Daily News",
     matrix: "Matrix Board",
     list: "Task List",
     calendar: "Calendar",
@@ -64,6 +65,7 @@ const en: Translations = {
 
   header: {
     home: "Home",
+    news: "Daily News · Newspaper & RSS Feed",
     matrix: "Eisenhower Matrix",
     list: "Task List",
     calendar: "Calendar View",
