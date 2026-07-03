@@ -19,7 +19,7 @@ import {
   ChevronLeft,
   Timer,
   Archive,
-  Compass,
+  Newspaper,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -86,7 +86,7 @@ interface SidebarProps {
 
 // Map old tab values to new grouped structure for active detection
 const TASKS_GROUP: AppTab[] = ["matrix", "list", "calendar"];
-const FOCUS_GROUP: AppTab[] = ["analytics", "habits"];
+const FOCUS_GROUP: AppTab[] = ["analytics", "habits", "mood"];
 const ARCHIVE_GROUP: AppTab[] = ["completed", "countdown"];
 
 
@@ -344,12 +344,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               <div className="mt-0.5 space-y-0.5">
                 <SubNavButton tab="analytics" label={s.analytics || "统计"} />
                 <SubNavButton tab="habits" label={s.habits || "习惯"} count={habitsCount} />
+                <SubNavButton tab="mood" label={s.mood || "心情"} />
               </div>
             )}
           </div>
 
           {/* 4. Notes */}
           <NavButton tab="notes" icon={<StickyNote className="w-4 h-4" />} label={s.notes} count={stickyNotesCount} />
+
+          {/* 4.5. News / RSS */}
+          <NavButton tab="news" icon={<Newspaper className="w-4 h-4" />} label={s.news || "朝花夕拾"} />
 
           {/* 5. Archive (expandable: Completed / Countdown) */}
           <div>
@@ -376,9 +380,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               </div>
             )}
           </div>
-
-          {/* 6. Explore */}
-          <NavButton tab="explore" icon={<Compass className="w-4 h-4" />} label={s.explore || "视野"} />
         </nav>
 
         {/* Flow Mode — accent button */}

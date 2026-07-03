@@ -11,6 +11,7 @@ import { ListView } from "./components/ListView";
 import { TaskDetailModal } from "./components/TaskDetailModal";
 import { CalendarView } from "./components/CalendarView";
 import { StickyNotesView } from "./components/StickyNotesView";
+import { NewsView } from "./components/NewsView";
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { CompletedView } from "./components/CompletedView";
@@ -21,7 +22,7 @@ import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
 import { FlowMode } from "./components/FlowMode";
 import { HabitsView } from "./components/HabitsView";
-import { ExploreView } from "./components/ExploreView";
+import { MoodView } from "./components/MoodView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -37,6 +38,8 @@ import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
 import { storage } from "./utils/storage";
+import { syncEngine } from "./utils/sync/engine";
+import { SYNC_APPLIED_EVENT, bumpSyncVersion, type SyncData } from "./utils/sync/types";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -55,9 +58,6 @@ function AppInner() {
     const saved = localStorage.getItem("aero_last_backup_time");
     return saved ? parseInt(saved, 10) : null;
   });
-  const lastSyncVersionRef = useRef<number>(
-    parseInt(localStorage.getItem("qiyun_sync_version") || "0", 10)
-  );
   const isFirstLoad = useRef(true);
   const isRestoringRef = useRef(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -90,6 +90,12 @@ function AppInner() {
   const [habitLogs, setHabitLogs] = useState<Record<string, string[]>>(() =>
     safeJsonParse(localStorage.getItem("qiyun_habit_logs") || "{}", {})
   );
+  const [moods, setMoods] = useState<Record<string, number>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_moods") || "{}", {})
+  );
+  const [moodNotes, setMoodNotes] = useState<Record<string, string>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_mood_notes") || "{}", {})
+  );
 
   const handleAddHabit = useCallback((title: string, emoji: string) => {
     const newHabit = { id: createId("habit"), title, emoji };
@@ -113,6 +119,22 @@ function AppInner() {
       const dayLogs = prev[date] || [];
       const updated = { ...prev, [date]: dayLogs.includes(habitId) ? dayLogs.filter((id) => id !== habitId) : [...dayLogs, habitId] };
       localStorage.setItem("qiyun_habit_logs", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleSetMood = useCallback((date: string, mood: number) => {
+    setMoods((prev) => {
+      const updated = { ...prev, [date]: mood };
+      localStorage.setItem("qiyun_moods", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleSetMoodNote = useCallback((date: string, note: string) => {
+    setMoodNotes((prev) => {
+      const updated = { ...prev, [date]: note };
+      localStorage.setItem("qiyun_mood_notes", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -291,36 +313,55 @@ function AppInner() {
             dueDate: p.due_date || undefined,
             dueTime: p.due_time || undefined,
           };
-          tH.setTasks((prev: Task[]) => [newTask, ...prev.filter((t: Task) => t.id !== newTask.id)]);
+          tH.setTasks((prev: Task[]) => {
+            const updated = [newTask, ...prev.filter((t: Task) => t.id !== newTask.id)];
+            tH.saveTasks(updated);
+            return updated;
+          });
           break;
         }
         case "favorite_sync":
           // p.title 是 "true"/"false"，null 时按 false 处理不影响正确性
-          tH.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isFavorite: p.title === "true" } : t));
+          tH.setTasks((prev: Task[]) => {
+            const updated = prev.map((t) => t.id === p.task_id ? { ...t, isFavorite: p.title === "true" } : t);
+            tH.saveTasks(updated);
+            return updated;
+          });
           break;
         case "pin_sync":
-          tH.setTasks((prev: Task[]) => prev.map((t) => t.id === p.task_id ? { ...t, isPinned: p.title === "true" } : t));
+          tH.setTasks((prev: Task[]) => {
+            const updated = prev.map((t) => t.id === p.task_id ? { ...t, isPinned: p.title === "true" } : t);
+            tH.saveTasks(updated);
+            return updated;
+          });
           break;
         case "update":
           // 字段级 diff：null/undefined = 未提供，"" = 显式清空；title/category 不允许清空
-          tH.setTasks((prev: Task[]) => prev.map((t) => {
-            if (t.id !== p.task_id) return t;
-            const next: Task = { ...t };
-            if (p.title != null && p.title !== "") next.title = p.title;
-            if (p.description != null) next.description = p.description || undefined;
-            if (p.category != null && p.category !== "") next.category = p.category as Task["category"];
-            if (p.notes != null) next.notes = p.notes || undefined;
-            if (p.due_date != null) next.dueDate = p.due_date || undefined;
-            if (p.due_time != null) next.dueTime = p.due_time || undefined;
-            return next;
-          }));
+          tH.setTasks((prev: Task[]) => {
+            const updated = prev.map((t) => {
+              if (t.id !== p.task_id) return t;
+              const next: Task = { ...t };
+              if (p.title != null && p.title !== "") next.title = p.title;
+              if (p.description != null) next.description = p.description || undefined;
+              if (p.category != null && p.category !== "") next.category = p.category as Task["category"];
+              if (p.notes != null) next.notes = p.notes || undefined;
+              if (p.due_date != null) next.dueDate = p.due_date || undefined;
+              if (p.due_time != null) next.dueTime = p.due_time || undefined;
+              return next;
+            });
+            tH.saveTasks(updated);
+            return updated;
+          });
           break;
         case "reset":
           tH.setTasks(tH.INITIAL_TASKS);
           tH.setCompletedTasks([]);
+          tH.saveTasks(tH.INITIAL_TASKS);
+          tH.saveCompleted([]);
           break;
         case "clear_completed":
           tH.setCompletedTasks([]);
+          tH.saveCompleted([]);
           break;
         case "lock_widget":
           wH.setIsWidgetLocked(true);
@@ -375,9 +416,14 @@ function AppInner() {
         case "restore_sync":
           try {
             const restored = JSON.parse(p.title);
-            tH.setTasks(restored.tasks || []);
-            tH.setCompletedTasks(restored.completedTasks || []);
-            nH.setStickyNotes(restored.stickyNotes || []);
+            const tasks = restored.tasks || [];
+            const completed = restored.completedTasks || [];
+            const notes = restored.stickyNotes || [];
+            tH.setTasks(tasks);
+            tH.saveTasks(tasks);
+            tH.setCompletedTasks(completed);
+            tH.saveCompleted(completed);
+            nH.setStickyNotes(notes);
             cH.setCustomizationConfig(restored.customizationConfig || cH.DEFAULT_CUSTOMIZATION_CONFIG);
           } catch (e) {}
           break;
@@ -402,6 +448,8 @@ function AppInner() {
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
   useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_moods", JSON.stringify(moods)); }, [isHydrated, moods]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_mood_notes", JSON.stringify(moodNotes)); }, [isHydrated, moodNotes]);
 
   // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
   // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
@@ -549,132 +597,78 @@ function AppInner() {
     }
   }, [tasksHook.tasks, originalHandleComplete, customizationHook.customizationConfig.enableCelebration]);
 
-  // ============ WebDAV Auto Backup (debounced via ref to avoid timer starvation) ============
-  const backupDirtyRef = useRef(false);
-  // Mark dirty whenever data changes — does NOT restart the interval
+  // ============ 云端同步（统一走 syncEngine）============
+  const applySyncDataToState = useCallback((data: SyncData) => {
+    isRestoringRef.current = true;
+    tasksHook.setTasks(data.tasks);
+    tasksHook.saveTasks(data.tasks);
+    tasksHook.setCompletedTasks(data.completedTasks);
+    tasksHook.saveCompleted(data.completedTasks);
+    notesHook.setStickyNotes(data.stickyNotes);
+    pomodoroHook.setPomodoroLogs(data.pomodoroLogs);
+    countdownHook.setCountdowns(data.countdowns);
+    setHabits(data.habits);
+    setHabitLogs(data.habitLogs);
+    localStorage.setItem("qiyun_habits", JSON.stringify(data.habits));
+    localStorage.setItem("qiyun_habit_logs", JSON.stringify(data.habitLogs));
+    localStorage.setItem("qiyun_moods", JSON.stringify(data.moods));
+    if (data.customizationConfig) {
+      customizationHook.setCustomizationConfig(data.customizationConfig);
+    }
+  }, [tasksHook, notesHook, pomodoroHook, countdownHook, customizationHook]);
+
+  // 监听 syncEngine 拉取远程数据后刷新 UI
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const data = (e as CustomEvent<SyncData>).detail;
+      applySyncDataToState(data);
+    };
+    window.addEventListener(SYNC_APPLIED_EVENT, handler);
+    return () => window.removeEventListener(SYNC_APPLIED_EVENT, handler);
+  }, [applySyncDataToState]);
+
+  // syncEngine 状态 → Sidebar 指示器
+  useEffect(() => {
+    return syncEngine.subscribe((state) => {
+      if (state.status === "syncing") setSyncStatus("syncing");
+      else if (state.status === "error") setSyncStatus("error");
+      else if (state.status === "success") setSyncStatus("synced");
+      if (state.lastSyncTime) setLastBackupTime(state.lastSyncTime);
+    });
+  }, []);
+
+  // 数据变更 → 标记脏 + 递增版本号
   useEffect(() => {
     if (isFirstLoad.current) return;
     if (isRestoringRef.current) { isRestoringRef.current = false; return; }
-    backupDirtyRef.current = true;
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig]);
+    bumpSyncVersion();
+    syncEngine.markDirty();
+  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, moodNotes]);
 
-  // Single stable interval that checks the dirty flag every 15s
+  // 初始化 syncEngine 自动同步开关
+  useEffect(() => {
+    if (!isHydrated) return;
+    syncEngine.setAutoSync(customizationHook.customizationConfig.enableAutoBackup !== false);
+  }, [isHydrated, customizationHook.customizationConfig.enableAutoBackup]);
+
   useEffect(() => {
     isFirstLoad.current = false;
+  }, []);
 
-    const url = localStorage.getItem("qiyun_webdav_url");
-    const username = localStorage.getItem("qiyun_webdav_user");
-    const password = localStorage.getItem("qiyun_webdav_pass");
-
-    if (customizationHook.customizationConfig.enableAutoBackup === false || !url || !username) return;
-
-    const interval = setInterval(async () => {
-      if (!backupDirtyRef.current) return;
-      backupDirtyRef.current = false;
-      setSyncStatus("syncing");
-
-      try {
-        const now = Date.now();
-        const aiPraise = safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
-        const backupData = {
-          tasks: tasksHook.tasks,
-          completedTasks: tasksHook.completedTasks,
-          stickyNotes: notesHook.stickyNotes,
-          customizationConfig: customizationHook.customizationConfig,
-          aiPraise,
-          timestamp: now,
-        };
-
-        if (backupData.tasks.length === 0 && backupData.completedTasks.length === 0 && backupData.stickyNotes.length === 0) {
-          setSyncStatus("synced");
-          return;
-        }
-
-        const { webdavUpload, webdavUploadVersion } = await import("./utils/webdav");
-        const wdConfig = { url, username, password: password || "" };
-        await webdavUpload(wdConfig, "qiyun_list_backup.json", JSON.stringify(backupData, null, 2));
-        await webdavUploadVersion(wdConfig, now);
-        lastSyncVersionRef.current = now;
-        localStorage.setItem("qiyun_sync_version", now.toString());
-        setLastBackupTime(now);
-        localStorage.setItem("aero_last_backup_time", now.toString());
-        setSyncStatus("synced");
-      } catch (e) {
-        console.error("自动同步备份失败:", e);
-        setSyncStatus("error");
-      }
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [customizationHook.customizationConfig.enableAutoBackup]);
-
-  // WebDAV restore logic
-  const restoreFromData = useCallback((data: any) => {
-    if (data && (Array.isArray(data.tasks) || Array.isArray(data.stickyNotes))) {
-      isRestoringRef.current = true;
-      if (Array.isArray(data.tasks)) {
-        tasksHook.setTasks(data.tasks);
-        tasksHook.saveTasks(data.tasks);
-      }
-      if (Array.isArray(data.completedTasks)) {
-        tasksHook.setCompletedTasks(data.completedTasks);
-        tasksHook.saveCompleted(data.completedTasks);
-      }
-      if (Array.isArray(data.stickyNotes)) {
-        notesHook.setStickyNotes(data.stickyNotes);
-        notesHook.saveStickyNotes(data.stickyNotes);
-      }
-      if (data.customizationConfig) {
-        customizationHook.setCustomizationConfig(data.customizationConfig);
-        localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
-      }
-      if (data.aiPraise) {
-        localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
-      }
-      return true;
-    }
-    return false;
-  }, [tasksHook.setTasks, tasksHook.saveTasks, tasksHook.setCompletedTasks, tasksHook.saveCompleted, notesHook.setStickyNotes, notesHook.saveStickyNotes, customizationHook.setCustomizationConfig]);
-
-  const checkAndSyncFromCloud = useCallback(async (silent: boolean = false) => {
-    const url = localStorage.getItem("qiyun_webdav_url");
-    const username = localStorage.getItem("qiyun_webdav_user");
-    const password = localStorage.getItem("qiyun_webdav_pass");
-    if (!url || !username) return;
-    try {
-      const { webdavDownloadVersion, webdavDownload } = await import("./utils/webdav");
-      const remoteVersion = await webdavDownloadVersion({ url, username, password: password || "" });
-      if (remoteVersion && remoteVersion > lastSyncVersionRef.current) {
-        const jsonStr = await webdavDownload({ url, username, password: password || "" }, "qiyun_list_backup.json");
-        const data = JSON.parse(jsonStr);
-        if (restoreFromData(data)) {
-          lastSyncVersionRef.current = remoteVersion;
-          localStorage.setItem("qiyun_sync_version", remoteVersion.toString());
-          if (!silent) setSyncStatus("synced");
-        }
-      }
-    } catch (e) {
-      if (!silent) console.warn("自动同步检查失败:", e);
-    }
-  }, [restoreFromData]);
-
-  // Startup cloud check
+  // 启动时与定期从云端拉取
   useEffect(() => {
-    if (customizationHook.customizationConfig.enableAutoBackup === false) return;
-    const url = localStorage.getItem("qiyun_webdav_url");
-    if (!url) return;
-    const timer = setTimeout(() => checkAndSyncFromCloud(true), 3000);
+    if (!isHydrated || customizationHook.customizationConfig.enableAutoBackup === false) return;
+    if (!syncEngine.isConfigured()) return;
+    const timer = setTimeout(() => syncEngine.sync(), 3000);
     return () => clearTimeout(timer);
-  }, [customizationHook.customizationConfig.enableAutoBackup, checkAndSyncFromCloud]);
+  }, [isHydrated, customizationHook.customizationConfig.enableAutoBackup]);
 
-  // Periodic cloud sync
   useEffect(() => {
-    if (customizationHook.customizationConfig.enableAutoBackup === false) return;
-    const url = localStorage.getItem("qiyun_webdav_url");
-    if (!url) return;
-    const interval = setInterval(() => checkAndSyncFromCloud(true), 300000);
+    if (!isHydrated || customizationHook.customizationConfig.enableAutoBackup === false) return;
+    if (!syncEngine.isConfigured()) return;
+    const interval = setInterval(() => syncEngine.sync(), 300000);
     return () => clearInterval(interval);
-  }, [customizationHook.customizationConfig.enableAutoBackup, checkAndSyncFromCloud]);
+  }, [isHydrated, customizationHook.customizationConfig.enableAutoBackup]);
 
   // Add task with AI auto-categorize
   const handleAddTaskWithAI = useCallback(async (taskData: {
@@ -783,7 +777,6 @@ function AppInner() {
       {flowMode ? (
         <FlowMode
           tasks={tasksHook.tasks}
-          pomodoroLogs={pomodoroHook.pomodoroLogs}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
         />
@@ -846,12 +839,16 @@ function AppInner() {
                       : activeTab === "analytics" ? t.header.analytics
                       : activeTab === "settings" ? t.header.settings
                       : activeTab === "countdown" ? t.header.countdown
-                      : activeTab === "explore" ? t.header.explore
+                      : activeTab === "news" ? t.header.news
+                      : activeTab === "habits" ? (t.sidebar.habits || "习惯打卡")
+                      : activeTab === "mood" ? (t.sidebar.mood || "心情日记")
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
                     {activeTab === "settings"
                       ? "自定义主题色调、材质滤镜与系统字体，个性化配置您的待办看板。"
+                      : activeTab === "news"
+                      ? "阅读纸质风骨的每日热点，或订阅您喜爱的 RSS 资讯源。"
                       : "规划今日待办，有条不紊地记录生活的每个瞬间。"}
                   </p>
                 </div>
@@ -961,7 +958,7 @@ function AppInner() {
           )}
 
           {activeTab === "home" && (
-            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
+            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} pomodoroLogs={pomodoroHook.pomodoroLogs} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
             <MatrixView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
@@ -975,8 +972,11 @@ function AppInner() {
           {activeTab === "notes" && (
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
           )}
+          {activeTab === "news" && (
+            <NewsView config={customizationHook.customizationConfig} />
+          )}
           {activeTab === "analytics" && (
-            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} customizationConfig={customizationHook.customizationConfig} />
+            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} />
           )}
           {activeTab === "completed" && (
             <CompletedView completedTasks={tasksHook.completedTasks} handleClearCompleted={tasksHook.handleClearCompleted} handleUndoComplete={tasksHook.handleUndoComplete} handleDeleteTask={tasksHook.handleDeleteTask} />
@@ -987,8 +987,8 @@ function AppInner() {
           {activeTab === "habits" && (
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
           )}
-          {activeTab === "explore" && (
-            <ExploreView />
+          {activeTab === "mood" && (
+            <MoodView moods={moods} moodNotes={moodNotes} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} />
           )}
           {activeTab === "settings" && (
             <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />

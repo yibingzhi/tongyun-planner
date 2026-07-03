@@ -1,5 +1,12 @@
-import type { SyncProvider, SyncBackendType } from "./types";
-import { getLocalSyncData, applySyncData } from "./types";
+import type { SyncProvider, SyncBackendType, SyncCategory } from "./types";
+import {
+  getLocalSyncData,
+  getLocalSyncVersion,
+  applySyncData,
+  normalizeSyncData,
+  ALL_SYNC_CATEGORIES,
+  SYNC_APPLIED_EVENT,
+} from "./types";
 import { WebDAVProvider } from "./webdavProvider";
 import { SupabaseProvider } from "./supabaseProvider";
 
@@ -23,7 +30,7 @@ export class SyncEngine {
   private _errorMessage: string | null = null;
   private listeners: Set<SyncListener> = new Set();
   private autoSyncTimer: ReturnType<typeof setInterval> | null = null;
-  private dirty = false;
+  private dirtyCategories: Set<SyncCategory> = new Set();
   private enableAutoSync = false;
 
   constructor() {
@@ -38,6 +45,13 @@ export class SyncEngine {
     const saved = localStorage.getItem("qiyun_sync_backend") as SyncBackendType | null;
     if (saved === "webdav" || saved === "supabase") {
       this._currentBackend = saved;
+    } else {
+      // 有 WebDAV 凭据但未选后端时，自动启用 WebDAV
+      const url = localStorage.getItem("qiyun_webdav_url");
+      const user = localStorage.getItem("qiyun_webdav_user");
+      if (url && user) {
+        this._currentBackend = "webdav";
+      }
     }
     const lastSync = localStorage.getItem("qiyun_last_sync_time");
     if (lastSync) this._lastSyncTime = parseInt(lastSync, 10);
@@ -49,6 +63,9 @@ export class SyncEngine {
   get status(): SyncStatus { return this._status; }
   get lastSyncTime(): number | null { return this._lastSyncTime; }
   get errorMessage(): string | null { return this._errorMessage; }
+
+  /** Check whether any category is dirty */
+  get dirty(): boolean { return this.dirtyCategories.size > 0; }
 
   setBackend(type: SyncBackendType): void {
     this._currentBackend = type;
@@ -63,8 +80,17 @@ export class SyncEngine {
     else this.stopAutoSync();
   }
 
-  markDirty(): void {
-    this.dirty = true;
+  /**
+   * Mark specific categories as dirty.
+   * If no categories are specified, marks ALL as dirty (backward compat).
+   */
+  markDirty(...cats: SyncCategory[]): void {
+    if (cats.length === 0) {
+      // Legacy call with no args — mark everything
+      for (const c of ALL_SYNC_CATEGORIES) this.dirtyCategories.add(c);
+    } else {
+      for (const c of cats) this.dirtyCategories.add(c);
+    }
   }
 
   subscribe(listener: SyncListener): () => void {
@@ -113,29 +139,63 @@ export class SyncEngine {
     this.notify();
 
     try {
-      const localData = getLocalSyncData();
-      const remoteData = await provider.pull();
-      const localVersion = localData.version;
-      const remoteVersion = remoteData?.version || 0;
-
-      if (remoteData === null) {
-        await provider.push(localData);
-      } else if (remoteVersion > localVersion) {
-        applySyncData(remoteData);
-      } else if (localVersion > remoteVersion) {
-        await provider.push(localData);
+      if (this._currentBackend === "webdav") {
+        await this.syncWebDAV();
+      } else {
+        // Supabase still uses single-file approach
+        await this.syncSingleFile(provider);
       }
 
       this._lastSyncTime = Date.now();
       localStorage.setItem("qiyun_last_sync_time", String(this._lastSyncTime));
+      localStorage.setItem("aero_last_backup_time", String(this._lastSyncTime));
       this._status = "success";
-      this.dirty = false;
+      this.dirtyCategories.clear();
     } catch (e: any) {
       this._status = "error";
       this._errorMessage = e?.message || "同步失败";
     }
 
     this.notify();
+  }
+
+  /** Multi-file incremental sync for WebDAV */
+  private async syncWebDAV(): Promise<void> {
+    // Pull first: apply any remote-newer categories
+    await this.webdavProvider.pull();
+
+    // Then push dirty categories
+    if (this.dirtyCategories.size > 0) {
+      // Re-read local data after pull might have updated some categories
+      const freshData = getLocalSyncData();
+      await this.webdavProvider.push(freshData, this.dirtyCategories);
+    } else {
+      // No explicit dirty set — push will compare manifests
+      const freshData = getLocalSyncData();
+      await this.webdavProvider.push(freshData);
+    }
+
+    // Fire event so UI updates
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(SYNC_APPLIED_EVENT, { detail: getLocalSyncData() }));
+    }
+  }
+
+  /** Legacy single-file sync for Supabase */
+  private async syncSingleFile(provider: SyncProvider): Promise<void> {
+    const localVersion = getLocalSyncVersion();
+    const localData = getLocalSyncData();
+    const rawRemote = await provider.pull();
+    const remoteData = rawRemote ? normalizeSyncData(rawRemote) ?? rawRemote : null;
+    const remoteVersion = remoteData?.version || 0;
+
+    if (remoteData === null) {
+      await provider.push(localData);
+    } else if (remoteVersion > localVersion) {
+      applySyncData(remoteData);
+    } else if (localVersion > remoteVersion || (localVersion === remoteVersion && this.dirty)) {
+      await provider.push(localData);
+    }
   }
 
   startAutoSync(): void {
