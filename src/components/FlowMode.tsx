@@ -1,16 +1,19 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { X, CheckCircle2, ListTodo } from "lucide-react";
-import type { Task } from "../types";
+import type { Task, PomodoroLog } from "../types";
 import { getLocalDateString } from "../utils/date";
+import { FocusHeatmap } from "./FocusHeatmap";
 
 interface FlowModeProps {
   tasks: Task[];
+  pomodoroLogs: PomodoroLog[];
   handleComplete: (id: string) => void;
   onExit: () => void;
 }
 
 export const FlowMode: React.FC<FlowModeProps> = ({
   tasks,
+  pomodoroLogs,
   handleComplete,
   onExit,
 }) => {
@@ -120,7 +123,7 @@ export const FlowMode: React.FC<FlowModeProps> = ({
         </button>
       </div>
 
-      <div className="flex-grow flex items-center justify-center px-8">
+      <div className="flex-grow flex flex-col items-center justify-center px-8 overflow-y-auto">
         <div className={`max-w-lg w-full transition-all duration-500 ${showComplete ? "scale-95 opacity-0" : "scale-100 opacity-100"}`}>
           <div className={`w-1.5 h-1.5 rounded-full mb-4 ${getQuadColor(currentTask.category)}`} />
           <h1 className="text-3xl font-bold text-[#2D323A] leading-tight mb-4">
@@ -156,6 +159,12 @@ export const FlowMode: React.FC<FlowModeProps> = ({
             </button>
           </div>
         </div>
+
+        {pomodoroLogs.length > 0 && (
+          <div className="w-full max-w-2xl mt-6 pb-4">
+            <FocusHeatmap pomodoroLogs={pomodoroLogs} weeks={12} />
+          </div>
+        )}
       </div>
     </div>
   );

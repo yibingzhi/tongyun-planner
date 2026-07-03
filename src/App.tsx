@@ -21,6 +21,7 @@ import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
 import { FlowMode } from "./components/FlowMode";
 import { HabitsView } from "./components/HabitsView";
+import { ExploreView } from "./components/ExploreView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -782,6 +783,7 @@ function AppInner() {
       {flowMode ? (
         <FlowMode
           tasks={tasksHook.tasks}
+          pomodoroLogs={pomodoroHook.pomodoroLogs}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
         />
@@ -844,6 +846,7 @@ function AppInner() {
                       : activeTab === "analytics" ? t.header.analytics
                       : activeTab === "settings" ? t.header.settings
                       : activeTab === "countdown" ? t.header.countdown
+                      : activeTab === "explore" ? t.header.explore
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -958,7 +961,7 @@ function AppInner() {
           )}
 
           {activeTab === "home" && (
-            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} pomodoroLogs={pomodoroHook.pomodoroLogs} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
+            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
             <MatrixView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
@@ -973,7 +976,7 @@ function AppInner() {
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
           )}
           {activeTab === "analytics" && (
-            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} />
+            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} customizationConfig={customizationHook.customizationConfig} />
           )}
           {activeTab === "completed" && (
             <CompletedView completedTasks={tasksHook.completedTasks} handleClearCompleted={tasksHook.handleClearCompleted} handleUndoComplete={tasksHook.handleUndoComplete} handleDeleteTask={tasksHook.handleDeleteTask} />
@@ -983,6 +986,9 @@ function AppInner() {
           )}
           {activeTab === "habits" && (
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
+          )}
+          {activeTab === "explore" && (
+            <ExploreView />
           )}
           {activeTab === "settings" && (
             <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />

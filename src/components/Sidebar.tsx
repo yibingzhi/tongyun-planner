@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   Timer,
   Archive,
+  Compass,
 } from "lucide-react";
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
@@ -375,6 +376,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               </div>
             )}
           </div>
+
+          {/* 6. Explore */}
+          <NavButton tab="explore" icon={<Compass className="w-4 h-4" />} label={s.explore || "视野"} />
         </nav>
 
         {/* Flow Mode — accent button */}

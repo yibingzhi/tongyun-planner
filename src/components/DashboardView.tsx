@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock, PenLine, TrendingUp, RefreshCw } from "lucide-react";
-import type { Task, PomodoroLog, CustomizationConfig } from "../types";
+import type { Task, CustomizationConfig } from "../types";
 import { getLocalDateString } from "../utils/date";
 import { generateProse, generateDailySuggestion } from "../utils/aiEngine";
 import { safeJsonParse } from "../utils/json";
-import { FocusHeatmap } from "./FocusHeatmap";
+
 
 // ============ 每日缓存工具 ============
 // 用 localStorage 做当天缓存，进 Dashboard 只在\"今天还没生成过\"时才调 AI。
@@ -36,7 +36,6 @@ function writeDailyCache<T>(key: string, today: string, locale: string, data: T)
 interface DashboardViewProps {
   tasks: Task[];
   completedTasks: Task[];
-  pomodoroLogs: PomodoroLog[];
   handleComplete: (id: string) => void;
   onTaskClick: (task: Task) => void;
   config: CustomizationConfig;
@@ -45,7 +44,6 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   tasks,
   completedTasks,
-  pomodoroLogs,
   handleComplete,
   onTaskClick,
   config,
@@ -461,11 +459,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         );
       })()}
-
-      {/* 专注热力图 —— 只有产生过番茄记录时才显示 */}
-      {pomodoroLogs.length > 0 && (
-        <FocusHeatmap pomodoroLogs={pomodoroLogs} weeks={12} />
-      )}
 
       {/* Quote + History in 2-column on wide screens */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
