@@ -60,6 +60,40 @@ fn set_widget_click_through(app: AppHandle, ignore: bool) -> Result<(), String> 
 }
 
 // 6. WebDAV 云备份指令 (在 Rust 端运行以规避前端浏览器的 CORS 限制)
+// WebDAV 创建目录 (MKCOL)
+#[tauri::command]
+fn webdav_mkcol(
+    url: String,
+    username: String,
+    password: Option<String>,
+    dirname: String,
+) -> Result<(), String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, dirname);
+
+    let mut req = client.request(reqwest::Method::from_bytes(b"MKCOL").unwrap(), &target_url);
+
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+
+    // 405 = already exists, which is fine
+    if res.status().is_success() || res.status().as_u16() == 405 {
+        Ok(())
+    } else {
+        Err(format!("E_HTTP_{}: MKCOL failed - {}", res.status().as_u16(), res.status().canonical_reason().unwrap_or("")))
+    }
+}
+
 #[tauri::command]
 fn webdav_upload(
     url: String,
@@ -132,6 +166,27 @@ fn webdav_download(
     res.text().map_err(|e| e.to_string())
 }
 
+// 7. RSS 代理拉取命令：在 Rust 端 GET 远程 RSS/Atom XML，绕过前端 CORS 限制
+#[tauri::command]
+fn fetch_rss(url: String) -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .user_agent("QiYunList/1.0 RSS Reader")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let res = client.get(&url)
+        .header("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
+        .send()
+        .map_err(|e| format!("E_NETWORK: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("E_HTTP_{}: {}", res.status().as_u16(), res.status().canonical_reason().unwrap_or("")));
+    }
+
+    res.text().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -146,8 +201,10 @@ pub fn run() {
             sync_todo_state,
             toggle_widget_window,
             set_widget_click_through,
+            webdav_mkcol,
             webdav_upload,
-            webdav_download
+            webdav_download,
+            fetch_rss
         ])
         // 6. 初始化系统托盘
         .setup(|app| {

@@ -20,6 +20,7 @@ const en: Translations = {
     history: "History",
     countdown: "Countdown",
     habits: "Habits",
+    mood: "Mood",
     settings: "Settings",
     focusMode: "Focus",
     breakMode: "Break",
@@ -74,6 +75,7 @@ const en: Translations = {
     settings: "Customization",
     completed: "Completed Archive",
     countdown: "Countdown",
+    mood: "Mood Diary",
   },
 
   matrix: {

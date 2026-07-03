@@ -1,15 +1,28 @@
-import type { SyncProvider, SyncData } from "./types";
+import type { SyncProvider, SyncData, SyncManifest, SyncCategory } from "./types";
+import {
+  ALL_SYNC_CATEGORIES,
+  SYNC_CATEGORY_FILES,
+  getLocalManifest,
+  getCategoryPayload,
+  applyCategoryPayload,
+  normalizeSyncData,
+  getLocalSyncData,
+} from "./types";
 import type { WebDavConfig } from "../../types";
 import { invoke } from "@tauri-apps/api/core";
 
 const SYNC_TIMEOUT = 30000;
+const MANIFEST_FILE = "manifest.json";
+const LEGACY_BACKUP_FILE = "qiyun_list_backup.json";
+const REMOTE_DIR = "QiYunList/";
+
 const isTauri = () => typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
 function invokeWithTimeout<T>(cmd: string, args: Record<string, unknown>, ms = SYNC_TIMEOUT): Promise<T> {
   return Promise.race([
     invoke<T>(cmd, args),
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`WebDAV timeout (${ms / 1000}s)`)), ms)
+      setTimeout(() => reject(new Error("WebDAV timeout (" + (ms / 1000) + "s)")), ms)
     ),
   ]);
 }
@@ -25,14 +38,14 @@ async function uploadFile(config: WebDavConfig, filename: string, content: strin
     return;
   }
 
-  const baseUrl = config.url.endsWith("/") ? config.url : `${config.url}/`;
-  const token = btoa(`${config.username}:${config.password || ""}`);
-  const res = await fetch(`${baseUrl}${filename}`, {
+  const baseUrl = config.url.endsWith("/") ? config.url : config.url + "/";
+  const token = btoa(config.username + ":" + (config.password || ""));
+  const res = await fetch(baseUrl + filename, {
     method: "PUT",
-    headers: { Authorization: `Basic ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: "Basic " + token, "Content-Type": "application/json" },
     body: content,
   });
-  if (!res.ok) throw new Error(`E_HTTP_${res.status}`);
+  if (!res.ok) throw new Error("E_HTTP_" + res.status);
 }
 
 async function downloadFile(config: WebDavConfig, filename: string): Promise<string> {
@@ -45,15 +58,50 @@ async function downloadFile(config: WebDavConfig, filename: string): Promise<str
     });
   }
 
-  const baseUrl = config.url.endsWith("/") ? config.url : `${config.url}/`;
-  const token = btoa(`${config.username}:${config.password || ""}`);
-  const res = await fetch(`${baseUrl}${filename}`, {
+  const baseUrl = config.url.endsWith("/") ? config.url : config.url + "/";
+  const token = btoa(config.username + ":" + (config.password || ""));
+  const res = await fetch(baseUrl + filename, {
     method: "GET",
-    headers: { Authorization: `Basic ${token}` },
+    headers: { Authorization: "Basic " + token },
   });
   if (res.status === 404) throw new Error("E_NOT_FOUND");
-  if (!res.ok) throw new Error(`E_HTTP_${res.status}`);
+  if (!res.ok) throw new Error("E_HTTP_" + res.status);
   return await res.text();
+}
+
+async function ensureDir(config: WebDavConfig, dirname: string): Promise<void> {
+  if (!config.url || !config.username) return;
+
+  if (isTauri()) {
+    await invokeWithTimeout("webdav_mkcol", {
+      url: config.url, username: config.username,
+      password: config.password || null, dirname,
+    });
+    return;
+  }
+
+  // Browser fallback: MKCOL via fetch
+  const baseUrl = config.url.endsWith("/") ? config.url : config.url + "/";
+  const token = btoa(config.username + ":" + (config.password || ""));
+  const res = await fetch(baseUrl + dirname, {
+    method: "MKCOL",
+    headers: { Authorization: "Basic " + token },
+  });
+  // 405 = already exists, which is fine
+  if (!res.ok && res.status !== 405) {
+    throw new Error("E_HTTP_" + res.status);
+  }
+}
+
+async function tryDownload(config: WebDavConfig, filename: string): Promise<string | null> {
+  try {
+    return await downloadFile(config, filename);
+  } catch (e: any) {
+    // Tauri invoke rejects with a plain string, not an Error object
+    const msg = typeof e === "string" ? e : e?.message || "";
+    if (msg.startsWith("E_NOT_FOUND")) return null;
+    throw e;
+  }
 }
 
 export class WebDAVProvider implements SyncProvider {
@@ -88,34 +136,144 @@ export class WebDAVProvider implements SyncProvider {
   async test(): Promise<boolean> {
     if (!this.config) return false;
     try {
-      await uploadFile(this.config, "qiyun_list_test.txt", "ok");
+      await ensureDir(this.config, REMOTE_DIR);
+      await uploadFile(this.config, REMOTE_DIR + "qiyun_list_test.txt", "ok");
       return true;
-    } catch { return false; }
+    } catch (_e) { return false; }
   }
 
-  async push(data: SyncData): Promise<void> {
+  /* ── Multi-file incremental push ── */
+
+  /**
+   * Push changed categories only.
+   * @param data       Full local SyncData
+   * @param dirtyOnly  If provided, only these categories are pushed.
+   *                   If omitted, compares local manifest vs remote manifest.
+   */
+  async push(data: SyncData, dirtyOnly?: Set<SyncCategory>): Promise<void> {
     if (!this.config) throw new Error("WebDAV not configured");
-    const json = JSON.stringify(data);
-    await uploadFile(this.config, "qiyun_list_backup.json", json);
-    await uploadFile(this.config, "qiyun_list_version.txt", String(data.version));
+
+    // Ensure remote directory exists before uploading
+    await ensureDir(this.config, REMOTE_DIR);
+
+    const localManifest = getLocalManifest();
+    let remoteManifest: SyncManifest | null = null;
+
+    // Determine which categories need pushing
+    let toPush: SyncCategory[];
+    if (dirtyOnly && dirtyOnly.size > 0) {
+      toPush = [...dirtyOnly];
+    } else {
+      // Compare with remote manifest
+      remoteManifest = await this.getRemoteManifest();
+      if (remoteManifest) {
+        toPush = ALL_SYNC_CATEGORIES.filter(
+          cat => localManifest[cat].version > (remoteManifest![cat]?.version || 0)
+        );
+      } else {
+        // No remote manifest — push everything (first sync or migration)
+        toPush = [...ALL_SYNC_CATEGORIES];
+      }
+    }
+
+    // Upload changed files
+    for (const cat of toPush) {
+      const payload = getCategoryPayload(data, cat);
+      const json = JSON.stringify(payload);
+      await uploadFile(this.config, REMOTE_DIR + SYNC_CATEGORY_FILES[cat], json);
+      localManifest[cat].size = json.length;
+    }
+
+    // Always upload manifest last
+    await uploadFile(this.config, REMOTE_DIR + MANIFEST_FILE, JSON.stringify(localManifest));
   }
+
+  /* ── Multi-file incremental pull ── */
 
   async pull(): Promise<SyncData | null> {
     if (!this.config) throw new Error("WebDAV not configured");
+
+    // Try new multi-file format first
+    const remoteManifest = await this.getRemoteManifest();
+
+    if (remoteManifest) {
+      return this.pullMultiFile(remoteManifest);
+    }
+
+    // Fall back to legacy single-file format
+    return this.pullLegacy();
+  }
+
+  private async pullMultiFile(remoteManifest: SyncManifest): Promise<SyncData | null> {
+    if (!this.config) return null;
+    const localManifest = getLocalManifest();
+
+    // Download only categories where remote is newer
+    const localData = getLocalSyncData();
+    let anyUpdated = false;
+
+    for (const cat of ALL_SYNC_CATEGORIES) {
+      const remoteVer = remoteManifest[cat]?.version || 0;
+      const localVer = localManifest[cat]?.version || 0;
+
+      if (remoteVer > localVer) {
+        const json = await tryDownload(this.config!, REMOTE_DIR + SYNC_CATEGORY_FILES[cat]);
+        if (json) {
+          const payload = JSON.parse(json);
+          applyCategoryPayload(cat, payload);
+          // Update local category version to match remote
+          localStorage.setItem("qiyun_cat_ver_" + cat, String(remoteVer));
+          anyUpdated = true;
+        }
+      }
+    }
+
+    if (anyUpdated) {
+      // Re-read the full local data after applying partial updates
+      return getLocalSyncData();
+    }
+
+    return localData;
+  }
+
+  /** Legacy: read the old single qiyun_list_backup.json */
+  private async pullLegacy(): Promise<SyncData | null> {
+    if (!this.config) return null;
+    const json = await tryDownload(this.config, LEGACY_BACKUP_FILE);
+    if (!json) {
+      // Also try inside REMOTE_DIR
+      const json2 = await tryDownload(this.config, REMOTE_DIR + LEGACY_BACKUP_FILE);
+      if (!json2) return null;
+      return normalizeSyncData(JSON.parse(json2));
+    }
+    return normalizeSyncData(JSON.parse(json));
+  }
+
+  /* ── Manifest helpers ── */
+
+  async getRemoteManifest(): Promise<SyncManifest | null> {
+    if (!this.config) return null;
+    const json = await tryDownload(this.config, REMOTE_DIR + MANIFEST_FILE);
+    if (!json) return null;
     try {
-      const json = await downloadFile(this.config, "qiyun_list_backup.json");
-      return JSON.parse(json) as SyncData;
-    } catch (e: any) {
-      if (e?.message?.startsWith("E_NOT_FOUND")) return null;
-      throw e;
+      return JSON.parse(json) as SyncManifest;
+    } catch (_e) {
+      return null;
     }
   }
 
   async getRemoteVersion(): Promise<number | null> {
+    // Check new manifest first
+    const manifest = await this.getRemoteManifest();
+    if (manifest) {
+      // Return max version across all categories
+      return Math.max(...ALL_SYNC_CATEGORIES.map(cat => manifest[cat]?.version || 0));
+    }
+    // Legacy fallback
     if (!this.config) return null;
     try {
       const text = await downloadFile(this.config, "qiyun_list_version.txt");
       return parseInt(text.trim(), 10);
-    } catch { return null; }
+    } catch (_e) { return null; }
   }
 }

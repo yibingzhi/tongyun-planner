@@ -86,7 +86,7 @@ interface SidebarProps {
 
 // Map old tab values to new grouped structure for active detection
 const TASKS_GROUP: AppTab[] = ["matrix", "list", "calendar"];
-const FOCUS_GROUP: AppTab[] = ["analytics", "habits"];
+const FOCUS_GROUP: AppTab[] = ["analytics", "habits", "mood"];
 const ARCHIVE_GROUP: AppTab[] = ["completed", "countdown"];
 
 
@@ -344,6 +344,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
               <div className="mt-0.5 space-y-0.5">
                 <SubNavButton tab="analytics" label={s.analytics || "统计"} />
                 <SubNavButton tab="habits" label={s.habits || "习惯"} count={habitsCount} />
+                <SubNavButton tab="mood" label={s.mood || "心情"} />
               </div>
             )}
           </div>

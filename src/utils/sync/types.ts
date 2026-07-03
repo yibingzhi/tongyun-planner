@@ -15,6 +15,39 @@ export interface SyncData {
 
 export type SyncBackendType = "webdav" | "supabase" | "none";
 
+/** Keys matching each slice of SyncData that gets its own file on WebDAV */
+export type SyncCategory =
+  | "tasks"
+  | "completedTasks"
+  | "stickyNotes"
+  | "pomodoroLogs"
+  | "countdowns"
+  | "habits"      // habits + habitLogs + moods bundled
+  | "config";     // customizationConfig
+
+export const ALL_SYNC_CATEGORIES: SyncCategory[] = [
+  "tasks", "completedTasks", "stickyNotes", "pomodoroLogs",
+  "countdowns", "habits", "config",
+];
+
+/** Remote filename for each category */
+export const SYNC_CATEGORY_FILES: Record<SyncCategory, string> = {
+  tasks: "tasks.json",
+  completedTasks: "completed.json",
+  stickyNotes: "notes.json",
+  pomodoroLogs: "pomodoro.json",
+  countdowns: "countdowns.json",
+  habits: "habits.json",
+  config: "config.json",
+};
+
+export interface SyncManifestEntry {
+  version: number;   // timestamp of last change
+  size?: number;     // byte length, informational
+}
+
+export type SyncManifest = Record<SyncCategory, SyncManifestEntry>;
+
 export interface SyncBackendConfig {
   type: SyncBackendType;
   webdav?: { url: string; username: string; password?: string };
@@ -41,6 +74,79 @@ export function bumpSyncVersion(): number {
   const v = Date.now();
   localStorage.setItem("qiyun_sync_version", String(v));
   return v;
+}
+
+/* ── Per-category local version tracking ── */
+
+const CAT_VERSION_PREFIX = "qiyun_cat_ver_";
+
+/** Get the local version stamp for a single category */
+export function getLocalCategoryVersion(cat: SyncCategory): number {
+  return parseInt(localStorage.getItem(CAT_VERSION_PREFIX + cat) || "0", 10);
+}
+
+/** Bump the local version stamp for one or more categories */
+export function bumpCategoryVersion(...cats: SyncCategory[]): number {
+  const v = Date.now();
+  for (const cat of cats) {
+    localStorage.setItem(CAT_VERSION_PREFIX + cat, String(v));
+  }
+  // Also bump global version for backward compat
+  localStorage.setItem("qiyun_sync_version", String(v));
+  return v;
+}
+
+/** Build the local manifest from per-category version stamps */
+export function getLocalManifest(): SyncManifest {
+  const m = {} as SyncManifest;
+  for (const cat of ALL_SYNC_CATEGORIES) {
+    m[cat] = { version: getLocalCategoryVersion(cat) };
+  }
+  return m;
+}
+
+/** Extract a single category's payload from SyncData */
+export function getCategoryPayload(data: SyncData, cat: SyncCategory): unknown {
+  switch (cat) {
+    case "tasks":          return data.tasks;
+    case "completedTasks": return data.completedTasks;
+    case "stickyNotes":    return data.stickyNotes;
+    case "pomodoroLogs":   return data.pomodoroLogs;
+    case "countdowns":     return data.countdowns;
+    case "habits":         return { habits: data.habits, habitLogs: data.habitLogs, moods: data.moods };
+    case "config":         return data.customizationConfig;
+  }
+}
+
+/** Apply a single category's payload into localStorage */
+export function applyCategoryPayload(cat: SyncCategory, payload: unknown): void {
+  switch (cat) {
+    case "tasks":
+      localStorage.setItem("aero_todos", JSON.stringify(payload));
+      break;
+    case "completedTasks":
+      localStorage.setItem("aero_completed_todos", JSON.stringify(payload));
+      break;
+    case "stickyNotes":
+      localStorage.setItem("aero_sticky_notes", JSON.stringify(payload));
+      break;
+    case "pomodoroLogs":
+      localStorage.setItem("aero_pomodoro_logs", JSON.stringify(payload));
+      break;
+    case "countdowns":
+      localStorage.setItem("qiyun_countdowns", JSON.stringify(payload));
+      break;
+    case "habits": {
+      const h = payload as { habits?: unknown; habitLogs?: unknown; moods?: unknown };
+      localStorage.setItem("qiyun_habits", JSON.stringify(h.habits || []));
+      localStorage.setItem("qiyun_habit_logs", JSON.stringify(h.habitLogs || {}));
+      localStorage.setItem("qiyun_moods", JSON.stringify(h.moods || {}));
+      break;
+    }
+    case "config":
+      if (payload) localStorage.setItem("aero_customization_config", JSON.stringify(payload));
+      break;
+  }
 }
 
 function readJson<T>(key: string, fallback: string): T {

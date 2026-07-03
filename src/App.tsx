@@ -22,6 +22,7 @@ import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
 import { FlowMode } from "./components/FlowMode";
 import { HabitsView } from "./components/HabitsView";
+import { MoodView } from "./components/MoodView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -89,6 +90,12 @@ function AppInner() {
   const [habitLogs, setHabitLogs] = useState<Record<string, string[]>>(() =>
     safeJsonParse(localStorage.getItem("qiyun_habit_logs") || "{}", {})
   );
+  const [moods, setMoods] = useState<Record<string, number>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_moods") || "{}", {})
+  );
+  const [moodNotes, setMoodNotes] = useState<Record<string, string>>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_mood_notes") || "{}", {})
+  );
 
   const handleAddHabit = useCallback((title: string, emoji: string) => {
     const newHabit = { id: createId("habit"), title, emoji };
@@ -112,6 +119,22 @@ function AppInner() {
       const dayLogs = prev[date] || [];
       const updated = { ...prev, [date]: dayLogs.includes(habitId) ? dayLogs.filter((id) => id !== habitId) : [...dayLogs, habitId] };
       localStorage.setItem("qiyun_habit_logs", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleSetMood = useCallback((date: string, mood: number) => {
+    setMoods((prev) => {
+      const updated = { ...prev, [date]: mood };
+      localStorage.setItem("qiyun_moods", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const handleSetMoodNote = useCallback((date: string, note: string) => {
+    setMoodNotes((prev) => {
+      const updated = { ...prev, [date]: note };
+      localStorage.setItem("qiyun_mood_notes", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -425,6 +448,8 @@ function AppInner() {
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
   useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_moods", JSON.stringify(moods)); }, [isHydrated, moods]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_mood_notes", JSON.stringify(moodNotes)); }, [isHydrated, moodNotes]);
 
   // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
   // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
@@ -618,7 +643,7 @@ function AppInner() {
     if (isRestoringRef.current) { isRestoringRef.current = false; return; }
     bumpSyncVersion();
     syncEngine.markDirty();
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs]);
+  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, moodNotes]);
 
   // 初始化 syncEngine 自动同步开关
   useEffect(() => {
@@ -816,6 +841,7 @@ function AppInner() {
                       : activeTab === "countdown" ? t.header.countdown
                       : activeTab === "news" ? t.header.news
                       : activeTab === "habits" ? (t.sidebar.habits || "习惯打卡")
+                      : activeTab === "mood" ? (t.sidebar.mood || "心情日记")
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -960,6 +986,9 @@ function AppInner() {
           )}
           {activeTab === "habits" && (
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
+          )}
+          {activeTab === "mood" && (
+            <MoodView moods={moods} moodNotes={moodNotes} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} />
           )}
           {activeTab === "settings" && (
             <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />

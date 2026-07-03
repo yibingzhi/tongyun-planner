@@ -20,6 +20,7 @@ const zhCN: Translations = {
     history: "历史归档",
     countdown: "倒数日",
     habits: "习惯打卡",
+    mood: "心情日记",
     settings: "系统设置",
     focusMode: "专注模式",
     breakMode: "休息模式",
@@ -74,6 +75,7 @@ const zhCN: Translations = {
     settings: "个性界面装扮",
     completed: "已完成历史归档",
     countdown: "倒数日",
+    mood: "心情日记",
   },
 
   matrix: {
