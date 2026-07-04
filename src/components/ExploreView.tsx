@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Compass, Rss, Plus, Trash2, ExternalLink, RefreshCw, Globe, Newspaper, TrendingUp, Code2, Loader2, ChevronRight, Settings2 } from "lucide-react";
 import { createId } from "../utils/id";
+import { fetchWithRetry } from "../utils/cache";
 
 interface Article {
   id: string;
@@ -95,7 +96,7 @@ export const ExploreView: React.FC = React.memo(() => {
     setAddUrl("");
     setFetching((prev) => ({ ...prev, [id]: true }));
     try {
-      const result = await fetchRSS(url, proxy);
+      const result = await fetchWithRetry(() => fetchRSS(url, proxy), 1, 1500);
       setFeeds((prev) => prev.map((f) => f.id === id ? { ...f, title: result.title, articles: result.articles, lastFetched: Date.now(), error: undefined } : f));
     } catch (e) {
       setFeeds((prev) => prev.map((f) => f.id === id ? { ...f, error: String(e) } : f));
@@ -108,7 +109,7 @@ export const ExploreView: React.FC = React.memo(() => {
     if (feed.type === "preset" && feed.url === "https://github.com/trending") return;
     setFetching((prev) => ({ ...prev, [feed.id]: true }));
     try {
-      const result = await fetchRSS(feed.url, proxy);
+      const result = await fetchWithRetry(() => fetchRSS(feed.url, proxy), 1, 1500);
       setFeeds((prev) => prev.map((f) => f.id === feed.id ? { ...f, title: result.title, articles: result.articles, lastFetched: Date.now(), error: undefined } : f));
     } catch (e) {
       setFeeds((prev) => prev.map((f) => f.id === feed.id ? { ...f, error: String(e) } : f));

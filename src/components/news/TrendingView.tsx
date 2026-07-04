@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { openExternal } from "../../utils/openExternal";
 import { PLATFORMS, type TrendingItem } from "./types";
 import { parseRSSXML } from "./rssParser";
+import { getCachedData, setCachedData, fetchWithRetry } from "../../utils/cache";
 
 const isTauri =
   typeof window !== "undefined" &&
   (window as any).__TAURI_INTERNALS__ !== undefined;
 
 const MAX_PER_CARD = 8;
-const CACHE_TTL = 60000;
+const CACHE_TTL = 30 * 60 * 1000;
 
 async function fetchPlatformData(platform: string): Promise<TrendingItem[]> {
   const fetchUrl = async (url: string): Promise<string> => {
@@ -37,7 +38,6 @@ async function fetchPlatformData(platform: string): Promise<TrendingItem[]> {
       ? await invoke<string>("fetch_rss", { url: "https://www.producthunt.com/feed" })
       : await (async () => {
           const raw = await fetchUrl("https://www.producthunt.com/feed");
-          // allorigins /raw returns plain XML, /get wraps in JSON
           if (raw.trim().startsWith("{")) {
             return JSON.parse(raw).contents;
           }
@@ -54,43 +54,42 @@ async function fetchPlatformData(platform: string): Promise<TrendingItem[]> {
   return (json.list || []).slice(0, MAX_PER_CARD);
 }
 
+async function fetchPlatformDataWithRetry(platform: string): Promise<TrendingItem[]> {
+  return fetchWithRetry(() => fetchPlatformData(platform), 1, 1500);
+}
+
 export const TrendingView: React.FC = () => {
-  const [allTrendingData, setAllTrendingData] = useState<Record<string, TrendingItem[]>>({});
+  const [allTrendingData, setAllTrendingData] = useState<Record<string, TrendingItem[]>>(() => {
+    const cached: Record<string, TrendingItem[]> = {};
+    for (const p of PLATFORMS) {
+      const data = getCachedData<TrendingItem[]>("trending_" + p.key, CACHE_TTL);
+      if (data) cached[p.key] = data;
+    }
+    return cached;
+  });
   const [loadingPlatforms, setLoadingPlatforms] = useState<Set<string>>(new Set());
   const [errorPlatforms, setErrorPlatforms] = useState<Record<string, string>>({});
-  const trendingCache = useRef<Map<string, { data: TrendingItem[]; time: number }>>(new Map());
 
   const fetchAllPlatforms = useCallback(async (force = false) => {
     const platformKeys = PLATFORMS.map((p) => p.key);
 
-    if (!force) {
-      const uncached = platformKeys.filter((key) => {
-        const cached = trendingCache.current.get(key);
-        return !cached || Date.now() - cached.time >= CACHE_TTL;
-      });
-      if (uncached.length === 0) return;
-      setLoadingPlatforms(new Set(uncached));
-    } else {
-      setLoadingPlatforms(new Set(platformKeys));
-    }
+    const needsFetch = force
+      ? platformKeys
+      : platformKeys.filter((key) => !getCachedData<TrendingItem[]>("trending_" + key, CACHE_TTL));
+
+    if (!force && needsFetch.length === 0) return;
+    setLoadingPlatforms(new Set(needsFetch));
 
     const results: { key: string; data: TrendingItem[]; error: string | null }[] = [];
-    const queue = platformKeys.filter((key) => {
-      if (!force) {
-        const cached = trendingCache.current.get(key);
-        return !cached || Date.now() - cached.time >= CACHE_TTL;
-      }
-      return true;
-    });
 
     const CONCURRENCY = 3;
-    for (let i = 0; i < queue.length; i += CONCURRENCY) {
-      const batch = queue.slice(i, i + CONCURRENCY);
+    for (let i = 0; i < needsFetch.length; i += CONCURRENCY) {
+      const batch = needsFetch.slice(i, i + CONCURRENCY);
       const batchResults = await Promise.all(
         batch.map(async (key) => {
           try {
-            const data = await fetchPlatformData(key);
-            trendingCache.current.set(key, { data, time: Date.now() });
+            const data = await fetchPlatformDataWithRetry(key);
+            setCachedData("trending_" + key, data);
             return { key, data, error: null };
           } catch (e: any) {
             return { key, data: [] as TrendingItem[], error: e.message || "加载失败" };
@@ -100,11 +99,11 @@ export const TrendingView: React.FC = () => {
       results.push(...batchResults);
     }
 
-    // Merge with cached entries that were skipped
+    // Merge cached entries that were skipped
     for (const key of platformKeys) {
       if (!results.find((r) => r.key === key)) {
-        const cached = trendingCache.current.get(key);
-        if (cached) results.push({ key, data: cached.data, error: null });
+        const cached = getCachedData<TrendingItem[]>("trending_" + key, CACHE_TTL);
+        if (cached) results.push({ key, data: cached, error: null });
       }
     }
 
@@ -121,8 +120,8 @@ export const TrendingView: React.FC = () => {
 
   const retryPlatform = useCallback((key: string) => {
     setLoadingPlatforms((prev) => new Set(prev).add(key));
-    fetchPlatformData(key).then((data) => {
-      trendingCache.current.set(key, { data, time: Date.now() });
+    fetchPlatformDataWithRetry(key).then((data) => {
+      setCachedData("trending_" + key, data);
       setAllTrendingData((prev) => ({ ...prev, [key]: data }));
       setErrorPlatforms((prev) => { const n = { ...prev }; delete n[key]; return n; });
     }).catch((err: any) => {

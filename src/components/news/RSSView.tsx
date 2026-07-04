@@ -6,6 +6,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { parseRSSXML } from "./rssParser";
 import { safeJsonParse } from "../../utils/json";
+import { getCachedData, setCachedData, fetchWithRetry } from "../../utils/cache";
 import {
   DEFAULT_FEEDS, FEED_CATEGORY_LABELS, FEED_CATEGORY_COLORS,
   type RSSFeed, type Article
@@ -14,6 +15,8 @@ import {
 const isTauri =
   typeof window !== "undefined" &&
   (window as any).__TAURI_INTERNALS__ !== undefined;
+
+const RSS_CACHE_TTL = 30 * 60 * 1000;
 
 interface RSSViewProps {
   searchQuery: string;
@@ -37,10 +40,20 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
   const [newFeedCategory, setNewFeedCategory] = useState<RSSFeed["category"]>("custom");
 
   const loadFeedArticles = useCallback(async (feed: RSSFeed) => {
-    setLoading(true);
+    const cacheKey = "rss_" + feed.url;
+    const cached = getCachedData<Article[]>(cacheKey, RSS_CACHE_TTL);
+
     setErrorMessage(null);
-    setArticles([]);
-    try {
+
+    if (cached) {
+      setArticles(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setArticles([]);
+    }
+
+    const doFetch = async (): Promise<Article[]> => {
       let xmlText: string | null = null;
       if (isTauri) {
         try {
@@ -60,14 +73,20 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
       if (xmlText) {
         const parsed = parseRSSXML(xmlText);
         if (parsed.length > 0) {
-          setArticles(parsed.map((a) => ({ ...a, feedId: feed.id, feedName: feed.name })));
-          setLoading(false);
-          return;
+          return parsed.map((a) => ({ ...a, feedId: feed.id, feedName: feed.name }));
         }
       }
-      setErrorMessage("无法拉取该订阅源。请确认 URL 正确且网络通畅，或在「订阅管理」中更换源。");
+      throw new Error("无法拉取该订阅源。请确认 URL 正确且网络通畅，或在「订阅管理」中更换源。");
+    };
+
+    try {
+      const fresh = await fetchWithRetry(doFetch, 1, 1500);
+      setCachedData(cacheKey, fresh);
+      setArticles(fresh);
     } catch (e: any) {
-      setErrorMessage("加载失败: " + (e?.message || e));
+      if (!cached) {
+        setErrorMessage(e?.message || String(e));
+      }
     } finally {
       setLoading(false);
     }
