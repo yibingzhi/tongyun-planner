@@ -9,6 +9,7 @@ export function useStickyNotes() {
 
   const saveStickyNotes = useCallback((updatedNotes: StickyNote[]) => {
     setStickyNotes(updatedNotes);
+    localStorage.setItem("aero_sticky_notes", JSON.stringify(updatedNotes));
   }, []);
 
   const handleAddNote = useCallback(() => {

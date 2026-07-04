@@ -16,16 +16,17 @@ export function useWidget() {
   }, []);
 
   const handleToggleWidgetLock = useCallback(async (forceState?: boolean) => {
+    let nextState = false;
     setIsWidgetLocked((prev) => {
-      const nextState = forceState !== undefined ? forceState : !prev;
-      WebviewWindow.getByLabel("widget")
-        .then((widget) => (widget || getCurrentWebviewWindow()).setAlwaysOnTop(nextState))
-        .catch((e) => {
-          console.error("设置窗口置顶失败", e);
-        });
-      syncState("widget_lock", nextState ? "lock_widget" : "unlock_widget");
+      nextState = forceState !== undefined ? forceState : !prev;
       return nextState;
     });
+    WebviewWindow.getByLabel("widget")
+      .then((widget) => (widget || getCurrentWebviewWindow()).setAlwaysOnTop(nextState))
+      .catch((e) => {
+        console.error("设置窗口置顶失败", e);
+      });
+    syncState("widget_lock", nextState ? "lock_widget" : "unlock_widget");
   }, [syncState]);
 
   return {

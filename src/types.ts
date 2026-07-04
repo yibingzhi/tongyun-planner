@@ -4,12 +4,21 @@ export type TaskCategory =
   | "important-not-urgent"
   | "not-urgent-not-important";
 
-export type RepeatType = "daily" | "weekly" | "monthly" | "none";
+export type RepeatType = "daily" | "weekly" | "monthly" | "none" | string;
 
 export interface SubTask {
   id: string;
   title: string;
   completed: boolean;
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  path: string;
+  type: string;
+  size: number;
+  createdAt: string;
 }
 
 export interface Task {
@@ -25,6 +34,8 @@ export interface Task {
   repeat?: RepeatType;
   subtasks?: SubTask[];
   tags?: string[];
+  dependsOn?: string[];  // task IDs that must be completed first
+  attachments?: Attachment[];
 }
 
 export interface PomodoroLog {
@@ -44,7 +55,7 @@ export interface StickyNote {
 
 export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
-export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "mood" | "settings" | "tasks" | "focus" | "archive" | "news";
+export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "mood" | "settings" | "tasks" | "focus" | "archive" | "news" | "gantt";
 
 export interface CountdownEvent {
   id: string;
@@ -96,6 +107,17 @@ export interface CustomizationConfig {
   aiModel?: string;
   aiAutoCategorize?: boolean;
   enableAutoBackup?: boolean;
+  syncInterval?: number; // seconds: 15, 30, 60, 300, 900, 1800, 3600, 0(manual)
+}
+
+export interface TimeBlock {
+  id: string;
+  date: string;        // YYYY-MM-DD
+  startTime: string;   // HH:mm
+  endTime: string;     // HH:mm
+  taskId?: string;
+  title: string;
+  color: string;
 }
 
 export interface WebDavConfig {

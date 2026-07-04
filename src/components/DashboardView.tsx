@@ -101,13 +101,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     (async () => {
       try {
         const res = await fetch(`https://uapis.cn/api/v1/misc/weather?city=${encodeURIComponent(city)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setWeather({
-          temp: data.temperature,
-          icon: data.weather_icon,
-          city: data.city,
-          weather: data.weather,
-          alerts: data.alerts || [],
+          temp: data?.temperature ?? 0,
+          icon: data?.weather_icon ?? "",
+          city: data?.city ?? city,
+          weather: data?.weather ?? "",
+          alerts: data?.alerts ?? [],
         });
       } catch {
         // weather unavailable
@@ -137,10 +138,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setLoadingHitokoto(true);
     try {
       const res = await fetch("https://v1.hitokoto.cn/");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const next: HitokotoData = {
-        text: data.hitokoto,
-        from: data.from_who ? `${data.from_who} · ${data.from}` : data.from,
+        text: data?.hitokoto ?? d.quoteFallback,
+        from: data?.from_who ? `${data.from_who} · ${data?.from ?? ""}` : (data?.from ?? ""),
       };
       setHitokoto(next);
       writeDailyCache(HITOKOTO_CACHE_KEY, currentHourKey, localeKey, next);

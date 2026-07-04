@@ -73,10 +73,10 @@ export class SyncEngine {
     this.notify();
   }
 
-  setAutoSync(enabled: boolean): void {
+  setAutoSync(enabled: boolean, interval?: number): void {
     this.enableAutoSync = enabled;
     localStorage.setItem("qiyun_auto_sync", enabled ? "true" : "false");
-    if (enabled) this.startAutoSync();
+    if (enabled) this.startAutoSync(interval);
     else this.stopAutoSync();
   }
 
@@ -198,14 +198,16 @@ export class SyncEngine {
     }
   }
 
-  startAutoSync(): void {
+  startAutoSync(intervalMs?: number): void {
     this.stopAutoSync();
     if (!this.enableAutoSync) return;
+    const ms = intervalMs !== undefined ? intervalMs : 60000;
+    if (ms <= 0) return; // manual mode
     this.autoSyncTimer = setInterval(() => {
       if (this.dirty && this.isConfigured()) {
         this.sync();
       }
-    }, 60000);
+    }, ms);
   }
 
   stopAutoSync(): void {

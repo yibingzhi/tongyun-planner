@@ -603,6 +603,7 @@ html.transparent-window body {
 
 .dark aside .border-\[\#EFEBE4\],
 .dark main .border-\[\#EFEBE4\],
+.dark .border-\[\#EFEBE4\],
 .dark main .border-b,
 .dark main .border-t,
 .dark main .border-r,
@@ -995,6 +996,20 @@ html.transparent-window body {
   border-color: rgba(200, 80, 80, 0.25) !important;
 }
 
+/* NewsView 主内容区背景 + 悬停态 */
+.dark .bg-\[\#FCFAF4\] {
+  background-color: rgba(22, 23, 26, 0.85) !important;
+}
+.dark .hover\:bg-white\/60:hover {
+  background-color: rgba(45, 47, 52, 0.55) !important;
+}
+.dark .hover\:border-\[\#EFEBE4\]:hover {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+.dark .hover\:border-\[\#E8E0D0\]:hover {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* 面板分割线补充 */
 .dark hr,
 .dark .border-b.border-\[\#EFEBE4\] {
@@ -1358,7 +1373,8 @@ aside, main,
 }
 
 /* 暗黑占位文本柔和 */
-.dark .placeholder-slate-400::placeholder {
+.dark .placeholder-slate-400::placeholder,
+.dark .placeholder-slate-400\/60::placeholder {
   color: #5C5E66 !important;
 }
 
@@ -1599,6 +1615,7 @@ aside {
 .dark .hover\:bg-slate-300:hover { background-color: rgba(100, 105, 115, 0.4) !important; }
 .dark .hover\:bg-black\/10:hover { background-color: rgba(255, 255, 255, 0.08) !important; }
 .dark .hover\:bg-black\/5:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+.dark .bg-black\/5 { background-color: rgba(255, 255, 255, 0.08) !important; }
 .dark .hover\:bg-white\/30:hover { background-color: rgba(45, 47, 52, 0.5) !important; }
 .dark .hover\:border-\[\#EFEBE4\]:hover { border-color: rgba(255, 255, 255, 0.12) !important; }
 .dark .hover\:border-\[\#C4D7B2\]:hover { border-color: rgba(55, 110, 70, 0.5) !important; }

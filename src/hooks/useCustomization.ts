@@ -26,7 +26,7 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiAutoCategorize: false,
   enableAutoBackup: true,
   enableCelebration: true,
-  locale: (localStorage.getItem("qiyun_locale") as "zh-CN" | "en") || "zh-CN",
+      locale: (localStorage.getItem("qiyun_locale") === "en" ? "en" : "zh-CN") as "zh-CN" | "en",
 };
 
 export function useCustomization() {

@@ -247,6 +247,9 @@ const en: Translations = {
     distDetail: "{completed}/{total} ({pct}%) • {distPct}% of all",
     taskBreakdown: "Task Focus Time Breakdown",
     taskBreakdownItem: "{count} pomodoros • {duration} min",
+    monthlyTrendLabel: "{month} trend",
+    bestDay: "Best day: {date} · {count} pomodoros",
+    tagItem: "{count} times · {duration} min",
   },
 
   completed: {

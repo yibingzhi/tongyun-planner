@@ -1033,21 +1033,41 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
                   <div>
                     <span className="text-xs font-bold text-slate-700 block">自动同步</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">数据变更后每分钟自动同步到云端</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">数据变更后自动同步到云端</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={config.enableAutoBackup !== false}
                     onChange={(e) => {
-                      syncEngine.setAutoSync(e.target.checked);
-                      onChange({
-                        ...config,
-                        enableAutoBackup: e.target.checked,
-                      });
+                      syncEngine.setAutoSync(e.target.checked, (config.syncInterval || 60) * 1000);
+                      onChange({ ...config, enableAutoBackup: e.target.checked });
                     }}
                     className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
                   />
                 </div>
+                {config.enableAutoBackup !== false && (
+                  <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50 mt-2">
+                    <span className="text-[10px] font-bold text-slate-600 block">同步间隔</span>
+                    <select
+                      value={config.syncInterval || 60}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        syncEngine.setAutoSync(true, val * 1000);
+                        onChange({ ...config, syncInterval: val });
+                      }}
+                      className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]"
+                    >
+                      <option value={15}>每15秒</option>
+                      <option value={30}>每30秒</option>
+                      <option value={60}>每1分钟</option>
+                      <option value={300}>每5分钟</option>
+                      <option value={900}>每15分钟</option>
+                      <option value={1800}>每30分钟</option>
+                      <option value={3600}>每小时</option>
+                      <option value={0}>仅手动</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 

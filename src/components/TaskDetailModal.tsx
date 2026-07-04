@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag } from "lucide-react";
+import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag, Zap, Link2, Unlink } from "lucide-react";
 import type { Task } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
+import { parseNaturalDate, formatNaturalPreview } from "../utils/dateParser";
 
 interface TaskDetailModalProps {
   task: Task;
@@ -11,6 +12,7 @@ interface TaskDetailModalProps {
   onSaveNotes: (taskId: string, notes: string) => void;
   onUpdateTags: (taskId: string, tags: string[]) => void;
   onEditTask: (taskId: string, updates: Partial<Task>) => void;
+  allTasks?: Task[]; // for dependency selection
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
@@ -21,6 +23,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   onSaveNotes,
   onUpdateTags,
   onEditTask,
+  allTasks,
 }) => {
   const { t } = useTranslation();
   const tc = t.taskCard;
@@ -118,22 +121,52 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
                 t.matrix.notUrgentNotImportant
               }</span>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4]">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] dark:bg-[#3D424A] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A]">
               <Calendar className="w-3 h-3" />
               <input
                 type="date"
                 value={editDueDate}
                 onChange={(e) => { setEditDueDate(e.target.value); onEditTask(task.id, { dueDate: e.target.value || undefined }); }}
-                className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-24"
+                className="bg-transparent border-none text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none cursor-pointer w-24"
                 title={t.taskCard.dueDate}
               />
               <input
                 type="time"
                 value={editDueTime}
                 onChange={(e) => { setEditDueTime(e.target.value); onEditTask(task.id, { dueTime: e.target.value || undefined }); }}
-                className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-16"
+                className="bg-transparent border-none text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none cursor-pointer w-16"
               />
+              {/* Natural date parser */}
+              <NLPDateInputDetail onParse={(d, t) => { if (d) { setEditDueDate(d); onEditTask(task.id, { dueDate: d }); } if (t) { setEditDueTime(t); onEditTask(task.id, { dueTime: t }); } }} />
             </div>
+
+            {/* Dependencies */}
+            {allTasks && allTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Link2 className="w-3 h-3 text-slate-500" />
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">前置任务</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {(task.dependsOn || []).map((depId) => {
+                    const depTask = allTasks.find(t => t.id === depId);
+                    return (
+                      <div key={depId} className="flex items-center gap-2 bg-[#FAF8F5] dark:bg-[#3D424A] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A]">
+                        <span className="flex-1 text-[10px] text-slate-700 dark:text-slate-200 font-medium truncate">{depTask?.title || '已删除'}</span>
+                        {depTask && <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${depTask.dueDate ? 'bg-[#F0F5F1] text-[#4D7C5D]' : 'text-slate-400'}`}>{depTask.dueDate || '无日期'}</span>}
+                        <button onClick={() => onEditTask(task.id, { dependsOn: (task.dependsOn || []).filter(id => id !== depId) })} className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
+                          <Unlink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <DepTaskSearch
+                    allTasks={allTasks.filter(t => t.id !== task.id && !(task.dependsOn || []).includes(t.id))}
+                    onSelect={(depId) => onEditTask(task.id, { dependsOn: [...(task.dependsOn || []), depId] })}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Subtasks */}
@@ -214,3 +247,56 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
     </div>
   );
 });
+
+// Dependency task search component
+const DepTaskSearch: React.FC<{ allTasks: Task[]; onSelect: (id: string) => void }> = ({ allTasks, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const filtered = allTasks.filter(t => t.title.toLowerCase().includes(query.toLowerCase())).slice(0, 6);
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#4D7C5D] transition-colors cursor-pointer">
+        <Plus className="w-3 h-3" /> 添加依赖
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#2D323A] border border-[#EFEBE4] dark:border-[#3D424A] rounded-xl shadow-lg p-2 w-64 animate-fade-in-up">
+          <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索任务..." autoFocus className="w-full bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1.5 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2] mb-1.5" />
+          <div className="max-h-32 overflow-y-auto space-y-0.5">
+            {filtered.map(t => (
+              <button key={t.id} onClick={() => { onSelect(t.id); setOpen(false); setQuery(""); }} className="w-full text-left px-2 py-1.5 rounded-lg text-[10px] text-slate-600 dark:text-slate-300 hover:bg-[#F0F5F1] dark:hover:bg-[#3D424A] transition-colors cursor-pointer truncate">
+                {t.title}
+              </button>
+            ))}
+            {filtered.length === 0 && <p className="text-[9px] text-slate-400 text-center py-2">无匹配任务</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Natural language date input for TaskDetailModal
+const NLPDateInputDetail: React.FC<{ onParse: (date?: string, time?: string) => void }> = ({ onParse }) => {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const handleConfirm = () => {
+    const parsed = parseNaturalDate(text);
+    if (parsed) { onParse(parsed.dueDate, parsed.dueTime); setText(""); setOpen(false); }
+  };
+  return (
+    <div className="relative inline-flex">
+      <button type="button" onClick={() => setOpen(!open)} className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" title="自然语言解析日期">
+        <Zap className="w-3 h-3" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-white dark:bg-[#2D323A] border border-[#EFEBE4] dark:border-[#3D424A] rounded-xl shadow-lg p-2 animate-fade-in-up min-w-[180px]">
+          <div className="flex items-center gap-1.5">
+            <input type="text" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); if (e.key === "Escape") setOpen(false); }} placeholder="明天下午3点" className="flex-grow bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2]" />
+            <button type="button" onClick={handleConfirm} className="text-[10px] px-2 py-1 rounded-lg bg-[#4D7C5D] text-white font-bold hover:bg-[#3F684C] transition-colors cursor-pointer">确定</button>
+          </div>
+          {text && (() => { const preview = parseNaturalDate(text); return preview ? <p className="text-[9px] text-slate-400 mt-1 px-1">→ {formatNaturalPreview(preview)}</p> : null; })()}
+        </div>
+      )}
+    </div>
+  );
+};

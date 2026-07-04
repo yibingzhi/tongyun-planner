@@ -16,29 +16,30 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
   const [text, setText] = useState("");
   const [color, setColor] = useState("tea");
   const [pinType, setPinType] = useState<"pin" | "tape" | "clip" | "heart" | "smiley">("pin");
+  const [darkMode, setDarkMode] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem("aero_customization_config");
+      return raw ? JSON.parse(raw).darkMode || "light" : "light";
+    } catch { return "light"; }
+  });
   const [isFolded, setIsFolded] = useState(false);
 
-  // Sync dark mode to floating note window (separate webview)
+  // Apply dark class when darkMode changes
   useEffect(() => {
-    const raw = localStorage.getItem("aero_customization_config");
-    let mode = "light";
-    if (raw) {
-      try { mode = JSON.parse(raw).darkMode || "light"; } catch {}
-    }
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const update = () => {
-      if (mode === "dark" || (mode === "auto" && mediaQuery.matches)) {
+      if (darkMode === "dark" || (darkMode === "auto" && mediaQuery.matches)) {
         document.documentElement.classList.add("dark");
       } else {
         document.documentElement.classList.remove("dark");
       }
     };
     update();
-    if (mode === "auto") {
+    if (darkMode === "auto") {
       mediaQuery.addEventListener("change", update);
       return () => mediaQuery.removeEventListener("change", update);
     }
-  }, []);
+  }, [darkMode]);
 
   const handleToggleFold = () => {
     audioEngine.playStickSound();
@@ -172,6 +173,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
           try {
             const config = JSON.parse(payload.title);
             setPinType(config.pinType || "pin");
+            if (config.darkMode) setDarkMode(config.darkMode);
           } catch (e) {
             console.error(e);
           }

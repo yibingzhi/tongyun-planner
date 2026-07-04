@@ -247,6 +247,9 @@ const zhCN: Translations = {
     distDetail: "{completed}/{total} ({pct}%) • 分布 {distPct}%",
     taskBreakdown: "任务维度专注时间分布",
     taskBreakdownItem: "{count} 番茄 • {duration} 分钟",
+    monthlyTrendLabel: "{month}月趋势",
+    bestDay: "最佳日：{date} · {count} 个番茄",
+    tagItem: "{count} 次 · {duration} 分钟",
   },
 
   completed: {

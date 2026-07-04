@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
 import { load } from "@tauri-apps/plugin-store";
-import type { Task, AppTab } from "./types";
+import type { Task, AppTab, CustomizationConfig } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { Sidebar } from "./components/Sidebar";
 import { DashboardView } from "./components/DashboardView";
@@ -23,6 +23,7 @@ import { CountdownView } from "./components/CountdownView";
 import { FlowMode } from "./components/FlowMode";
 import { HabitsView } from "./components/HabitsView";
 import { MoodView } from "./components/MoodView";
+import { GanttView } from "./components/GanttView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -166,18 +167,20 @@ function AppInner() {
   // ============ Store Initialization ============
   // StrictMode guard：dev 模式下 effect 会跑两次，避免 initStore 重复执行导致数据回滚 (#13)
   const initStartedRef = useRef(false);
+  const windowLabelRef = useRef("main");
   useEffect(() => {
     if (initStartedRef.current) return;
     initStartedRef.current = true;
 
     // 提前启动 SQLite 初始化（initStore 内部 await 等待完成）
-    const initPromise = storage.init();
+    const initPromise = storage.init().catch((e) => console.error("SQLite 初始化失败", e));
 
     let label = "main";
     try {
       label = getCurrentWebviewWindow().label;
     } catch (e) {}
     setWindowLabel(label);
+    windowLabelRef.current = label;
     if (label !== "main") {
       document.documentElement.classList.add("transparent-window");
     }
@@ -188,7 +191,7 @@ function AppInner() {
 
     const savedCustomization = localStorage.getItem("aero_customization_config");
     if (savedCustomization) {
-      const parsed = safeJsonParse(savedCustomization, null as any);
+      const parsed = safeJsonParse<CustomizationConfig | null>(savedCustomization, null);
       if (parsed) {
         handlersRef.current.customizationHook.setCustomizationConfig(parsed);
         if (parsed.locale) handlersRef.current.setLocale(parsed.locale);
@@ -284,10 +287,12 @@ function AppInner() {
       }
     };
     initStore();
+  }, []);
 
-    // ============ 跨窗口 event listener（通过 ref 转发调用最新 hook）============
+  // ============ 跨窗口 event listener（独立 useEffect，避免 StrictMode 双挂载丢失监听器）============
+  useEffect(() => {
     const handleSyncPayload = (p: any) => {
-      if (p.source_window && p.source_window === label) return;
+      if (p.source_window && p.source_window === windowLabelRef.current) return;
       const { tasksHook: tH, pomodoroHook: pH, notesHook: nH, widgetHook: wH, customizationHook: cH } = handlersRef.current;
       switch (p.action) {
         case "complete":
@@ -303,7 +308,6 @@ function AppInner() {
           tH.handleSnooze(p.task_id, false);
           break;
         case "add": {
-          // add 事件的 title 必须有值；若发送方漏传（null）则安全兜底为占位符
           const newTask: Task = {
             id: p.task_id,
             title: p.title || "无题任务",
@@ -321,7 +325,6 @@ function AppInner() {
           break;
         }
         case "favorite_sync":
-          // p.title 是 "true"/"false"，null 时按 false 处理不影响正确性
           tH.setTasks((prev: Task[]) => {
             const updated = prev.map((t) => t.id === p.task_id ? { ...t, isFavorite: p.title === "true" } : t);
             tH.saveTasks(updated);
@@ -336,7 +339,6 @@ function AppInner() {
           });
           break;
         case "update":
-          // 字段级 diff：null/undefined = 未提供，"" = 显式清空；title/category 不允许清空
           tH.setTasks((prev: Task[]) => {
             const updated = prev.map((t) => {
               if (t.id !== p.task_id) return t;
@@ -370,7 +372,7 @@ function AppInner() {
           wH.setIsWidgetLocked(false);
           break;
         case "toggle_lock_from_tray":
-          if (label === "main") wH.handleToggleWidgetLock();
+          if (windowLabelRef.current === "main") wH.handleToggleWidgetLock();
           break;
         case "pomodoro_sync":
           try {
@@ -430,12 +432,11 @@ function AppInner() {
       }
     };
 
-    const unlistenPromise = listen("todo-sync-event", (event: any) => handleSyncPayload(event.payload));
-    // dev 模式下同源多标签广播降级 (#15)
+    const unlistenPromise = listen("todo-sync-event", (event: any) => handleSyncPayload(event.payload)).catch(() => undefined);
     const unsubDev = subscribeDevSync((event) => handleSyncPayload(event.payload));
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      unlistenPromise.then((unlisten) => { if (typeof unlisten === "function") unlisten(); }).catch(() => {});
       unsubDev();
     };
   }, []);
@@ -464,6 +465,10 @@ function AppInner() {
     locale,
     windowLabel,
     syncPomodoro: pomodoroHook.syncPomodoro,
+    focusTime: t.notification.focusTime,
+    focusTimeBody: t.notification.focusTimeBody,
+    pomodoroTime: t.notification.pomodoroTime,
+    pomodoroTimeBody: t.notification.pomodoroTimeBody,
   });
   useEffect(() => {
     pomodoroStateRef.current = {
@@ -476,6 +481,10 @@ function AppInner() {
       locale,
       windowLabel,
       syncPomodoro: pomodoroHook.syncPomodoro,
+      focusTime: t.notification.focusTime,
+      focusTimeBody: t.notification.focusTimeBody,
+      pomodoroTime: t.notification.pomodoroTime,
+      pomodoroTimeBody: t.notification.pomodoroTimeBody,
     };
   });
 
@@ -503,7 +512,7 @@ function AppInner() {
           pomodoroHook.setPomodoroIsActive(false);
           pomodoroHook.setPomodoroEndTime(null);
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification(t.notification.focusTime, { body: t.notification.focusTimeBody });
+            new Notification(s.focusTime, { body: s.focusTimeBody });
           }
           const nextTime = s.focusDuration * 60;
           pomodoroHook.setPomodoroTimeLeft(nextTime);
@@ -515,7 +524,7 @@ function AppInner() {
           pomodoroHook.setPomodoroIsActive(false);
           pomodoroHook.setPomodoroEndTime(null);
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification(t.notification.pomodoroTime, { body: t.notification.pomodoroTimeBody });
+            new Notification(s.pomodoroTime, { body: s.pomodoroTimeBody });
           }
           const nextSession = s.sessionCount + 1;
           pomodoroHook.setPomodoroSessionCount(nextSession);
@@ -531,9 +540,7 @@ function AppInner() {
           };
           pomodoroHook.setPomodoroLogs((prev: any[]) => [newLog, ...prev]);
 
-          setCelebrationMessage(
-            s.locale === "en" ? "Focus session done! Keep going 💪" : "专注一关完成！继续加油 💪"
-          );
+          setCelebrationMessage(s.locale === "en" ? "Focus session done! Keep going 💪" : "专注一关完成！继续加油 💪");
 
           pomodoroHook.setPomodoroTaskId(null);
           pomodoroHook.setPomodoroTaskTitle(null);
@@ -595,7 +602,7 @@ function AppInner() {
       const pool = [...fixedPool, ...aiPool];
       setCelebrationMessage(pool[Math.floor(Math.random() * pool.length)]);
     }
-  }, [tasksHook.tasks, originalHandleComplete, customizationHook.customizationConfig.enableCelebration]);
+  }, [originalHandleComplete, customizationHook.customizationConfig.enableCelebration]);
 
   // ============ 云端同步（统一走 syncEngine）============
   const applySyncDataToState = useCallback((data: SyncData) => {
@@ -648,7 +655,8 @@ function AppInner() {
   // 初始化 syncEngine 自动同步开关
   useEffect(() => {
     if (!isHydrated) return;
-    syncEngine.setAutoSync(customizationHook.customizationConfig.enableAutoBackup !== false);
+    const interval = (customizationHook.customizationConfig.syncInterval || 60) * 1000;
+    syncEngine.setAutoSync(customizationHook.customizationConfig.enableAutoBackup !== false, interval);
   }, [isHydrated, customizationHook.customizationConfig.enableAutoBackup]);
 
   useEffect(() => {
@@ -701,7 +709,7 @@ function AppInner() {
       const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
       const label = `note-${id}`;
       const noteWindow = new WebviewWindow(label, {
-        url: `index.html?noteId=${id}`,
+        url: `${window.location.origin}${window.location.pathname}?noteId=${id}`,
         title: `便签贴-${id}`,
         width: 240,
         height: 240,
@@ -779,6 +787,7 @@ function AppInner() {
           tasks={tasksHook.tasks}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
+          pomodoroLogs={pomodoroHook.pomodoroLogs}
         />
       ) : (
         <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
@@ -837,11 +846,12 @@ function AppInner() {
                       : activeTab === "calendar" ? t.header.calendar
                       : activeTab === "notes" ? t.header.notes
                       : activeTab === "analytics" ? t.header.analytics
-                      : activeTab === "settings" ? t.header.settings
+                      : activeTab === "completed" ? t.header.completed
                       : activeTab === "countdown" ? t.header.countdown
                       : activeTab === "news" ? t.header.news
                       : activeTab === "habits" ? (t.sidebar.habits || "习惯打卡")
                       : activeTab === "mood" ? (t.sidebar.mood || "心情日记")
+                      : activeTab === "gantt" ? "甘特图"
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -865,27 +875,7 @@ function AppInner() {
                   </button>
                 )}
               </header>
-              <div className="flex flex-wrap items-center gap-4 bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm z-10 relative backdrop-blur-md">
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                  <span>📅 {new Date().toLocaleDateString(customizationHook.customizationConfig.locale === "en" ? "en-US" : "zh-CN", { year: "numeric", month: "long", day: "numeric" })}</span>
-                  <span className="text-[#EFEBE4]">|</span>
-                  <span>{t.sidebar.progress}</span>
-                </div>
-                <div className="flex items-center gap-4 ml-auto text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B2C8DF]" />
-                    <span className="text-slate-500">{t.common.taskCount.replace("{count}", String(tasksHook.tasks.length))}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C4D7B2]" />
-                    <span className="text-slate-500">{t.common.completed.replace("{count}", String(tasksHook.completedTasks.length))}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E8A0BF]" />
-                    <span className="text-slate-500">{t.common.progress.replace("{pct}", String(tasksHook.progressPercentage))}</span>
-                  </div>
-                </div>
-              </div>
+              
             </>
           )}
 
@@ -958,7 +948,7 @@ function AppInner() {
           )}
 
           {activeTab === "home" && (
-            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} pomodoroLogs={pomodoroHook.pomodoroLogs} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
+            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
             <MatrixView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
@@ -986,6 +976,9 @@ function AppInner() {
           )}
           {activeTab === "habits" && (
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
+          )}
+          {activeTab === "gantt" && (
+            <GanttView tasks={tasksHook.tasks} onTaskClick={tasksHook.handleTaskClick} />
           )}
           {activeTab === "mood" && (
             <MoodView moods={moods} moodNotes={moodNotes} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} />
@@ -1015,7 +1008,7 @@ function AppInner() {
               }
             : tasksHook.handleEditTask;
           return (
-            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={editHandler} />
+            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={editHandler} allTasks={tasksHook.tasks} />
           );
         })()}
       </div>
@@ -1041,11 +1034,44 @@ function AppInner() {
 );
 }
 
+class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  state = { hasError: false, error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("AppErrorBoundary caught:", error.message, error.stack);
+    console.error("Component stack:", info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-screen bg-[#FAFAF8] flex items-center justify-center select-none">
+          <div className="text-center space-y-4 max-w-md px-6">
+            <span className="text-5xl block">🌿</span>
+            <h2 className="text-xl font-bold text-slate-500">出了点问题，请刷新页面</h2>
+            <p className="text-xs text-slate-400 font-mono bg-slate-100 rounded-lg p-3 text-left break-words max-h-32 overflow-y-auto">
+              {this.state.error?.message}
+            </p>
+            <button
+              onClick={() => { this.setState({ hasError: false }); window.location.reload(); }}
+              className="px-6 py-2.5 rounded-xl bg-[#4D7C5D] text-white text-sm font-bold hover:bg-[#3F684C] transition-all cursor-pointer"
+            >
+              刷新
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const savedLocale = localStorage.getItem("qiyun_locale") as "zh-CN" | "en" | null;
   return (
     <LanguageProvider initialLocale={savedLocale || "zh-CN"}>
-      <AppInner />
+      <AppErrorBoundary>
+        <AppInner />
+      </AppErrorBoundary>
     </LanguageProvider>
   );
 }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Compass, Rss, Plus, Trash2, ExternalLink, RefreshCw, Globe, Newspaper, TrendingUp, Code2, Loader2, ChevronRight, Settings2 } from "lucide-react";
-import { useTranslation } from "../i18n/LanguageContext";
 import { createId } from "../utils/id";
 
 interface Article {
@@ -67,9 +66,6 @@ async function fetchRSS(url: string, proxy: string): Promise<{ title: string; ar
 }
 
 export const ExploreView: React.FC = React.memo(() => {
-  const { t } = useTranslation();
-  const s = t.sidebar;
-
   const [feeds, setFeeds] = useState<Feed[]>(() => {
     try {
       const saved = localStorage.getItem(FEEDS_KEY);
@@ -132,7 +128,6 @@ export const ExploreView: React.FC = React.memo(() => {
   }, [feeds, addFeed]);
 
   const selectedFeed = feeds.find((f) => f.id === selectedFeedId);
-  const allArticles = feeds.flatMap((f) => f.articles).sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
   // Format date relative
   const fmtDate = (dateStr: string) => {
@@ -148,7 +143,9 @@ export const ExploreView: React.FC = React.memo(() => {
   };
 
   const openLink = (url: string) => {
-    if (url) window.open(url, "_blank");
+    if (url) {
+      import("../utils/openExternal").then((m) => m.openExternal(url));
+    }
   };
 
   return (

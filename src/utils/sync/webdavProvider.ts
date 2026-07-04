@@ -19,11 +19,15 @@ const REMOTE_DIR = "QiYunList/";
 const isTauri = () => typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
 function invokeWithTimeout<T>(cmd: string, args: Record<string, unknown>, ms = SYNC_TIMEOUT): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
   return Promise.race([
-    invoke<T>(cmd, args),
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error("WebDAV timeout (" + (ms / 1000) + "s)")), ms)
-    ),
+    invoke<T>(cmd, args).then((result) => {
+      clearTimeout(timeoutId);
+      return result;
+    }),
+    new Promise<T>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error("WebDAV timeout (" + (ms / 1000) + "s)")), ms);
+    }),
   ]);
 }
 

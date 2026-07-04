@@ -139,7 +139,15 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
 
   // Sync dark mode to widget window (separate webview)
   useEffect(() => {
-    const mode = customizationConfig?.darkMode || "light";
+    // Read from prop first, fall back to localStorage for resilience
+    let mode = customizationConfig?.darkMode;
+    if (!mode) {
+      try {
+        const raw = localStorage.getItem("aero_customization_config");
+        if (raw) mode = JSON.parse(raw).darkMode || "light";
+      } catch {}
+    }
+    mode = mode || "light";
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const update = () => {
       if (mode === "dark" || (mode === "auto" && mediaQuery.matches)) {

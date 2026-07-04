@@ -5,6 +5,13 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 // 检测是否处于 Tauri 环境
 const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
+// 浏览器 dev 模式下用会话 UUID 防止自收同步事件
+const SESSION_ID: string = (() => {
+  if (isTauri) return "";
+  try { return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+  catch { return `session-${Date.now()}`; }
+})();
+
 // 在浏览器 dev 模式下用 BroadcastChannel 做同源多标签广播降级
 // 让开发环境行为与 Tauri 生产一致（否则 listen("todo-sync-event") 拿不到任何事件）
 let devChannel: BroadcastChannel | null = null;
@@ -51,7 +58,7 @@ export function useSync() {
     dueDate?: string,
     dueTime?: string
   ) => {
-    let sourceWindow = "browser";
+    let sourceWindow = SESSION_ID;
     try {
       sourceWindow = getCurrentWebviewWindow().label;
     } catch {

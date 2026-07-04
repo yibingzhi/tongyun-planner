@@ -18,70 +18,83 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
     // 1. 汇总每天的番茄数
     const perDay = new Map<string, number>();
     for (const log of pomodoroLogs) {
-      if (log.taskId?.startsWith("break")) continue; // 排除休息记录
       const dateStr = getLocalDateString(new Date(log.timestamp));
       perDay.set(dateStr, (perDay.get(dateStr) || 0) + 1);
     }
 
-    // 2. 从今天回退,找到最近周日作为右下角
-    // 让每一列是一周,列头是周一,列尾是周日
+    // 2. 以今天为基准，构建网格
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    // 找到今天所在周的周日(周日 = 0)
     const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
-    const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    const currentSunday = new Date(today);
-    currentSunday.setDate(currentSunday.getDate() + daysToSunday);
 
-    // 3. 生成 weeks 列 × 7 行的网格
-    // grid[col][row]:col 是从最早到最近的第几周,row 0=周一 ... 6=周日
-    const grid: { date: string; count: number; isFuture: boolean }[][] = [];
-    const monthLabelSet = new Map<number, string>(); // colIndex -> "1月"
+    // 最近一个已完成的周日
+    const lastSunday = new Date(today);
+    lastSunday.setDate(lastSunday.getDate() - (dayOfWeek === 0 ? 0 : dayOfWeek));
 
+    // grid[col][row]: col 0 = 最早, 最后 = 最新; row 0=周一 ... 6=周日
+    const grid: { date: string; count: number }[][] = [];
+    const monthLabelSet = new Map<number, string>();
+
+    let colIndex = 0;
+
+    // 3. 生成 weeks 个完整的周列 (Mon-Sun, 全部是已过去日期)
     for (let col = weeks - 1; col >= 0; col--) {
-      // 该列的周日
-      const colSunday = new Date(currentSunday);
+      const colSunday = new Date(lastSunday);
       colSunday.setDate(colSunday.getDate() - col * 7);
-      // 该列的周一 = 周日 - 6
       const colMonday = new Date(colSunday);
       colMonday.setDate(colMonday.getDate() - 6);
 
-      const colIndex = weeks - 1 - col;
-
-      const colData: { date: string; count: number; isFuture: boolean }[] = [];
+      const colData: { date: string; count: number }[] = [];
       for (let row = 0; row < 7; row++) {
         const cellDate = new Date(colMonday);
         cellDate.setDate(cellDate.getDate() + row);
         cellDate.setHours(0, 0, 0, 0);
         const dateStr = getLocalDateString(cellDate);
         const count = perDay.get(dateStr) || 0;
-        const isFuture = cellDate.getTime() > today.getTime();
-        colData.push({ date: dateStr, count, isFuture });
+        colData.push({ date: dateStr, count });
 
-        // 记录列的首行(周一)所在月份,用于列头标注
         if (row === 0) {
           const month = cellDate.getMonth() + 1;
-          // 只在月份变化时记一次
           const prev = colIndex > 0 ? monthLabelSet.get(colIndex - 1) : null;
           const label = `${month}月`;
-          if (label !== prev) {
-            monthLabelSet.set(colIndex, label);
-          }
+          if (label !== prev) monthLabelSet.set(colIndex, label);
         }
       }
       grid.push(colData);
+      colIndex++;
     }
 
-    // 4. 统计
+    // 4. 追加当前（未完成）周：从本周一到今天
+    if (dayOfWeek !== 0) {
+      const thisMonday = new Date(today);
+      thisMonday.setDate(thisMonday.getDate() - (dayOfWeek - 1));
+
+      const partialCol: { date: string; count: number }[] = [];
+      for (let row = 0; row < dayOfWeek; row++) {
+        const cellDate = new Date(thisMonday);
+        cellDate.setDate(cellDate.getDate() + row);
+        cellDate.setHours(0, 0, 0, 0);
+        const dateStr = getLocalDateString(cellDate);
+        const count = perDay.get(dateStr) || 0;
+        partialCol.push({ date: dateStr, count });
+
+        if (row === 0) {
+          const month = cellDate.getMonth() + 1;
+          const prev = colIndex > 0 ? monthLabelSet.get(colIndex - 1) : null;
+          const label = `${month}月`;
+          if (label !== prev) monthLabelSet.set(colIndex, label);
+        }
+      }
+      grid.push(partialCol);
+    }
+
+    // 5. 统计
     let total = 0;
     let activeDays = 0;
-    let maxDay = 0;
     for (const col of grid) {
       for (const cell of col) {
-        if (cell.isFuture) continue;
         total += cell.count;
         if (cell.count > 0) activeDays++;
-        if (cell.count > maxDay) maxDay = cell.count;
       }
     }
 
@@ -100,14 +113,12 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
 
     return {
       grid,
-      stats: { total, activeDays, maxDay, streak },
+      stats: { total, activeDays, streak },
       monthLabels: monthLabelSet,
     };
   }, [pomodoroLogs, weeks]);
 
-  // 颜色分级:0 / 1-2 / 3-4 / 5-6 / 7+
-  const getCellClass = (count: number, isFuture: boolean): string => {
-    if (isFuture) return "bg-transparent";
+  const getCellClass = (count: number): string => {
     if (count === 0) return "bg-[#F3EEE8]";
     if (count <= 2) return "bg-[#DEEAE2]";
     if (count <= 4) return "bg-[#B8D4C1]";
@@ -117,9 +128,8 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
 
   const dayLabels = ["一", "二", "三", "四", "五", "六", "日"];
 
-  // 每周番茄总数（用于右侧折线图）
   const weeklyTotals = useMemo(() => {
-    return grid.map((col) => col.reduce((sum, cell) => sum + (cell.isFuture ? 0 : cell.count), 0));
+    return grid.map((col) => col.reduce((sum, cell) => sum + cell.count, 0));
   }, [grid]);
 
   // 右侧迷你折线图
@@ -212,7 +222,7 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
         <div className="shrink-0">
           <div className="flex gap-1.5">
             {/* 星期标签 */}
-            <div className="flex flex-col gap-[3px]" style={{ paddingTop: '1.25rem' }}>
+            <div className="flex flex-col gap-[3px]" style={{ paddingTop: '10px' }}>
               {dayLabels.map((label, idx) => (
                 <span
                   key={idx}
@@ -238,14 +248,18 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
               {/* 单元格 */}
               <div className="flex gap-[3px]">
                 {grid.map((col, colIdx) => (
-                  <div key={colIdx} className="flex flex-col gap-[3px]">
+                  <div key={colIdx} className="flex flex-col" style={{ gap: '3px' }}>
                     {col.map((cell, rowIdx) => (
                       <div
                         key={rowIdx}
-                        className={`w-[14px] h-[14px] rounded-[2px] ${getCellClass(cell.count, cell.isFuture)} transition-all hover:ring-1 hover:ring-[#4D7C5D] cursor-help`}
-                        title={cell.isFuture ? cell.date : `${cell.date} · ${cell.count} 个番茄`}
+                        className={`w-[14px] h-[14px] rounded-[2px] ${getCellClass(cell.count)} transition-all hover:ring-1 hover:ring-[#4D7C5D] cursor-help`}
+                        title={`${cell.date} · ${cell.count} 个番茄`}
                       />
                     ))}
+                    {/* 补齐当前不完整周的空格，保持对齐 */}
+                    {colIdx === grid.length - 1 && col.length < 7 && (
+                      <div style={{ height: `${(7 - col.length) * 17 - 3}px` }} />
+                    )}
                   </div>
                 ))}
               </div>

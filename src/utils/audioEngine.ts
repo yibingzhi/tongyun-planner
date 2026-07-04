@@ -315,13 +315,12 @@ export class AudioEngine {
         } catch (e) {
           // Ignored
         }
-        
+
+        this.source = null;
+        this.lfo = null;
+        this.gain = null;
         this.fadeTimeoutId = null;
       }, 450);
-
-      this.source = null;
-      this.lfo = null;
-      this.gain = null;
     } else {
       this.stopNoiseImmediate();
     }

@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Calendar, Coffee, Smile } from "lucide-react";
-import type { Task } from "../types";
+import { Calendar, Coffee, Smile, Plus, Trash2 } from "lucide-react";
+import type { Task, TimeBlock } from "../types";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
 import LunarLib from "lunar-javascript";
 import { getLocalDateString } from "../utils/date";
 import { safeJsonParse } from "../utils/json";
+import { createId } from "../utils/id";
 
 const MOOD_OPTIONS = ["😊", "😌", "😤", "😢", "🥱", "🤩", "😰", "😶", "🥰", "😎", "🤗", "☀️", "🌧️", "❄️", "💪", "🌸", "🔥", "☕"];
 
@@ -90,16 +91,50 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
       .catch(() => {});
   }, [calendarYear]);
 
-  // 心情便签
+  // 心情便签 (使用独立 key，避免与 MoodView 的数值心情冲突)
   const [moods, setMoods] = useState<Record<string, string>>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_moods") || "{}", {})
+    safeJsonParse(localStorage.getItem("qiyun_calendar_emojis") || "{}", {})
   );
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const setMoodForDate = (date: string, emoji: string) => {
     const updated = { ...moods, [date]: emoji };
     setMoods(updated);
-    localStorage.setItem("qiyun_moods", JSON.stringify(updated));
+    localStorage.setItem("qiyun_calendar_emojis", JSON.stringify(updated));
     setShowMoodPicker(false);
+  };
+
+  // 时间块规划
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(() =>
+    safeJsonParse(localStorage.getItem("qiyun_timeblocks") || "[]", [])
+  );
+  const [showTimeBlockInput, setShowTimeBlockInput] = useState(false);
+  const [newBlockTitle, setNewBlockTitle] = useState("");
+  const [newBlockStart, setNewBlockStart] = useState("09:00");
+  const [newBlockEnd, setNewBlockEnd] = useState("10:00");
+
+  useEffect(() => {
+    localStorage.setItem("qiyun_timeblocks", JSON.stringify(timeBlocks));
+  }, [timeBlocks]);
+
+  const selectedDateBlocks = timeBlocks.filter(b => b.date === selectedCalendarDate).sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const addTimeBlock = () => {
+    if (!newBlockTitle.trim()) return;
+    const block: TimeBlock = {
+      id: createId("tb"),
+      date: selectedCalendarDate,
+      startTime: newBlockStart,
+      endTime: newBlockEnd,
+      title: newBlockTitle.trim(),
+      color: "#C4D7B2",
+    };
+    setTimeBlocks(prev => [...prev, block]);
+    setNewBlockTitle("");
+    setShowTimeBlockInput(false);
+  };
+
+  const deleteTimeBlock = (id: string) => {
+    setTimeBlocks(prev => prev.filter(b => b.id !== id));
   };
 
   const getDayMeta = (dateStr: string) => {
@@ -328,7 +363,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
           {/* 上: 当日信息 */}
           <div className="p-5 pb-0">
             <div className="bg-[#FAF8F5] rounded-xl p-4">
-              <div className="flex items-start justify-between">
+              <div className="relative flex items-start justify-between">
                 <div>
                   <h4 className="text-[11px] font-extrabold text-[#2D323A]">
                     {new Date(selectedCalendarDate).toLocaleDateString("zh-CN", {
@@ -349,7 +384,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                   })()}
                 </div>
                 {/* 心情便签 */}
-                <div className="relative mt-2 flex items-center gap-1.5">
+                <div className="mt-2 flex items-center gap-1.5">
                   <button
                     onClick={() => setShowMoodPicker(!showMoodPicker)}
                     className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer transition-colors"
@@ -363,7 +398,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                     )}
                   </button>
                   {showMoodPicker && (
-                    <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 animate-fade-in-up">
+                    <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 min-w-fit animate-fade-in-up">
                       {MOOD_OPTIONS.map((emoji) => (
                         <button
                           key={emoji}
@@ -420,6 +455,24 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
               </h3>
             </div>
 
+            {/* 时间块 */}
+            {selectedDateBlocks.length > 0 && (
+              <div className="mb-2 space-y-1">
+                {selectedDateBlocks.map(block => (
+                  <div key={block.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#F0F5F1]/60 border border-[#DEEAE2] group">
+                    <div className="w-1 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: block.color }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-[#2D323A] truncate">{block.title}</p>
+                      <p className="text-[8px] text-slate-400 font-medium">{block.startTime} - {block.endTime}</p>
+                    </div>
+                    <button onClick={() => deleteTimeBlock(block.id)} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* 单日列表循环 */}
             <div className="flex-grow overflow-y-auto space-y-2 pr-0.5 custom-scrollbar">
               {selectedDayTasks.length > 0 ? (
@@ -455,6 +508,26 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                 </div>
               )}
             </div>
+
+            {/* 添加时间块 */}
+            {showTimeBlockInput ? (
+              <div className="mt-2 p-2 rounded-xl bg-[#FAF8F5] border border-[#EFEBE4] space-y-1.5 animate-fade-in-up">
+                <input type="text" value={newBlockTitle} onChange={(e) => setNewBlockTitle(e.target.value)} placeholder="时间块名称" className="w-full bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2] font-medium" />
+                <div className="flex items-center gap-2">
+                  <input type="time" value={newBlockStart} onChange={(e) => setNewBlockStart(e.target.value)} className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2] w-20" />
+                  <span className="text-[9px] text-slate-400">至</span>
+                  <input type="time" value={newBlockEnd} onChange={(e) => setNewBlockEnd(e.target.value)} className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2] w-20" />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowTimeBlockInput(false)} className="text-[9px] px-2 py-1 rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] transition-colors cursor-pointer font-bold">取消</button>
+                  <button onClick={addTimeBlock} className="text-[9px] px-2 py-1 rounded-lg bg-[#4D7C5D] text-white font-bold hover:bg-[#3F684C] transition-colors cursor-pointer">添加</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setShowTimeBlockInput(true)} className="mt-2 flex items-center gap-1 text-[9px] text-slate-400 hover:text-[#4D7C5D] transition-colors cursor-pointer font-medium">
+                <Plus className="w-3 h-3" /> 添加时间块
+              </button>
+            )}
 
             {/* 极速行内添加栏 */}
             <div className="mt-2.5">

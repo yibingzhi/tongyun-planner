@@ -110,7 +110,7 @@ export const MoodView: React.FC<MoodViewProps> = ({ moods, moodNotes, onSetMood,
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex items-center justify-center gap-3 mb-4 flex-wrap">
           {MOOD_EMOJIS.map((m) => (
             <button
               key={m.value}

@@ -412,3 +412,15 @@ export async function extractTasksFromNote(
     throw new Error("JSON_PARSE_FAILED");
   }
 }
+
+export async function generateReport(
+  config: CustomizationConfig,
+  type: "daily" | "weekly",
+  data: { completedTasks: number; pomodoroCount: number; pomodoroMinutes: number; avgMood?: number; taskCategories: Record<string, number> }
+): Promise<string> {
+  const dateRange = type === "daily" ? "今天" : "过去一周";
+  const systemPrompt = `你是一个效率助手。请根据以下数据生成一份简洁温暖的${type === "daily" ? "日" : "周"}报总结。`;
+  const userPrompt = `请为以下数据生成一份${dateRange}的效率报告（100字以内，Markdown格式）：\n完成待办: ${data.completedTasks}项\n番茄专注: ${data.pomodoroCount}次 (${data.pomodoroMinutes}分钟)\n平均心情: ${data.avgMood ? data.avgMood.toFixed(1) : "未记录"}\n任务分类: ${JSON.stringify(data.taskCategories)}`;
+
+  return await callAI(config, systemPrompt, userPrompt);
+}

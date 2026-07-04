@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Calendar, Flag, Repeat } from "lucide-react";
-import type { Task, RepeatType } from "../types";
+import { Plus, Calendar, Flag, Repeat, Zap } from "lucide-react";
+import type { Task, RepeatType, TimeBlock } from "../types";
 import { PRIORITY_OPTIONS } from "../constants";
 import { CustomSelect } from "./CustomSelect";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getLocalDateString } from "../utils/date";
+import { parseNaturalDate, formatNaturalPreview } from "../utils/dateParser";
+import { buildRRule, rruleToLabel } from "../utils/rrule";
 
 interface QuickAddTaskProps {
   handleAddTask: (taskData: {
@@ -17,6 +19,8 @@ interface QuickAddTaskProps {
     repeat?: RepeatType;
     tags?: string[];
   }) => void;
+  timeBlocks?: TimeBlock[];
+  onAddTimeBlock?: (block: TimeBlock) => void;
   defaultDueDate?: string;
   defaultCategory?: Task["category"];
   placeholder?: string;
@@ -40,6 +44,11 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   const [dueTime, setDueTime] = useState("");
   const [category, setCategory] = useState<Task["category"]>(defaultCategory);
   const [repeat, setRepeat] = useState<RepeatType>("none");
+  const [showRepeatModal, setShowRepeatModal] = useState(false);
+  const [repeatFreq, setRepeatFreq] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('WEEKLY');
+  const [repeatInterval, setRepeatInterval] = useState(1);
+  const [repeatByDay, setRepeatByDay] = useState<number[]>([]);
+  const [repeatBySetPos, setRepeatBySetPos] = useState<number | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   
@@ -98,6 +107,72 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
     setIsFocused(false);
   };
 
+  // Custom repeat modal
+  const RepeatModal = () => {
+    const DAYS = ['日', '一', '二', '三', '四', '五', '六'];
+    const freqLabel = repeatFreq === 'DAILY' ? '天' : repeatFreq === 'WEEKLY' ? '周' : '月';
+    const handleConfirm = () => {
+      const rrule = buildRRule(repeatFreq, {
+        interval: repeatInterval,
+        byDay: repeatFreq === 'WEEKLY' && repeatByDay.length > 0 ? repeatByDay : undefined,
+        bySetPos: repeatFreq === 'MONTHLY' ? repeatBySetPos : undefined,
+      });
+      setRepeat(rrule);
+      setShowRepeatModal(false);
+    };
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setShowRepeatModal(false)}>
+        <div className="bg-white dark:bg-[#2D323A] rounded-2xl shadow-xl border border-[#EFEBE4] dark:border-[#3D424A] p-5 w-72 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-4">自定义重复</h3>
+          {/* Frequency */}
+          <div className="flex gap-2 mb-3">
+            {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map(f => (
+              <button key={f} onClick={() => setRepeatFreq(f)} className={`flex-1 text-[10px] font-bold py-2 rounded-xl border transition-all cursor-pointer ${repeatFreq === f ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] dark:bg-[#3D424A] text-slate-600 dark:text-slate-300 border-[#EFEBE4] dark:border-[#4D525A] hover:border-[#C4D7B2]'}`}>
+                {f === 'DAILY' ? '每天' : f === 'WEEKLY' ? '每周' : '每月'}
+              </button>
+            ))}
+          </div>
+          {/* Interval */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] text-slate-500 font-medium">每</span>
+            <input type="number" min={1} max={99} value={repeatInterval} onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value) || 1))} className="w-14 bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold text-center focus:outline-none focus:border-[#C4D7B2]" />
+            <span className="text-[10px] text-slate-500 font-medium">{freqLabel}</span>
+          </div>
+          {/* Weekly day picker */}
+          {repeatFreq === 'WEEKLY' && (
+            <div className="flex gap-1 mb-3">
+              {DAYS.map((d, i) => (
+                <button key={d} onClick={() => setRepeatByDay(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])} className={`w-8 h-8 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${repeatByDay.includes(i) ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] dark:bg-[#3D424A] text-slate-500 dark:text-slate-300 border-[#EFEBE4] dark:border-[#4D525A] hover:border-[#C4D7B2]'}`}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Monthly position */}
+          {repeatFreq === 'MONTHLY' && (
+            <div className="flex items-center gap-2 mb-3">
+              <select value={repeatBySetPos ?? 1} onChange={(e) => setRepeatBySetPos(parseInt(e.target.value))} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+                <option value={1}>第一个</option>
+                <option value={2}>第二个</option>
+                <option value={3}>第三个</option>
+                <option value={4}>第四个</option>
+                <option value={-1}>最后一个</option>
+              </select>
+              <span className="text-[10px] text-slate-500 font-medium">周</span>
+              <select value={repeatByDay?.[0] ?? 1} onChange={(e) => setRepeatByDay([parseInt(e.target.value)])} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+                {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="flex gap-2 justify-end pt-2 border-t border-[#EFEBE4] dark:border-[#3D424A]">
+            <button onClick={() => setShowRepeatModal(false)} className="text-[10px] px-3 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A] text-slate-500 dark:text-slate-300 hover:bg-[#FAF8F5] dark:hover:bg-[#3D424A] transition-colors cursor-pointer font-bold">取消</button>
+            <button onClick={handleConfirm} className="text-[10px] px-3 py-1.5 rounded-lg bg-[#4D7C5D] text-white font-bold hover:bg-[#3F684C] transition-colors cursor-pointer">确定</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (compact) {
     // Super-compact inline addition bar (ideal for MatrixView quadrants)
     return (
@@ -119,6 +194,69 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
       </form>
     );
   }
+
+// Natural language date input component
+const NLPDateInput: React.FC<{ onParse: (date?: string, time?: string) => void }> = ({ onParse }) => {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const handleConfirm = () => {
+    const parsed = parseNaturalDate(text);
+    if (parsed) {
+      onParse(parsed.dueDate, parsed.dueTime);
+      setText("");
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+        title="自然语言解析日期"
+      >
+        <Zap className="w-3 h-3" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-30 bg-white dark:bg-[#2D323A] border border-[#EFEBE4] dark:border-[#3D424A] rounded-xl shadow-lg p-2 animate-fade-in-up min-w-[200px]">
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={inputRef}
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); if (e.key === "Escape") setOpen(false); }}
+              placeholder="明天下午3点 / 下周五"
+              className="flex-grow bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2]"
+            />
+            <button
+              type="button"
+              onClick={handleConfirm}
+              className="text-[10px] px-2 py-1 rounded-lg bg-[#4D7C5D] text-white font-bold hover:bg-[#3F684C] transition-colors cursor-pointer"
+            >
+              确定
+            </button>
+          </div>
+          {text && (() => {
+            const preview = parseNaturalDate(text);
+            return preview ? (
+              <p className="text-[9px] text-slate-400 mt-1.5 px-1">
+                → {formatNaturalPreview(preview)}
+              </p>
+            ) : null;
+          })()}
+        </div>
+      )}
+    </div>
+  );
+};
 
   // Standard inline quick add bar with inline expandable options
   return (
@@ -219,6 +357,8 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                     onChange={(e) => setDueTime(e.target.value)}
                     className="bg-transparent border-none text-[10px] text-slate-700 font-bold focus:outline-none cursor-pointer w-16"
                   />
+                  {/* Natural Date Parser */}
+                  <NLPDateInput onParse={(d, t) => { if (d) setDueDate(d); if (t) setDueTime(t); }} />
                 </div>
                 
                 {/* Category Selector */}
@@ -236,17 +376,26 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                 <div className="flex items-center gap-1.5">
                   <Repeat className="w-3.5 h-3.5 text-slate-400" />
                   <CustomSelect
-                    value={repeat}
-                    onChange={(v) => setRepeat(v as RepeatType)}
+                    value={repeat === "none" || repeat === "daily" || repeat === "weekly" || repeat === "monthly" ? repeat : "custom"}
+                    onChange={(v) => {
+                      if (v === "custom") { setShowRepeatModal(true); return; }
+                      setRepeat(v as RepeatType);
+                    }}
                     options={[
                       { value: "none", label: tc.repeatNone },
                       { value: "daily", label: tc.repeatDaily },
                       { value: "weekly", label: tc.repeatWeekly },
                       { value: "monthly", label: tc.repeatMonthly },
+                      { value: "custom", label: "自定义..." },
                     ]}
                     className="w-28 text-[10px]"
                     dropdownAlign="top"
                   />
+                  {repeat !== "none" && repeat !== "daily" && repeat !== "weekly" && repeat !== "monthly" && (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-[#F0F5F1] text-[#4D7C5D] font-bold truncate max-w-[80px]">
+                      {rruleToLabel(repeat)}
+                    </span>
+                  )}
                 </div>
               </div>
               
@@ -269,6 +418,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
           </div>
         )}
       </form>
+      {showRepeatModal && <RepeatModal />}
     </div>
   );
 });

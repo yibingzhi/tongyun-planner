@@ -1,172 +1,492 @@
-# QiYun List
+<div align="center">
+  <img src="src-tauri/icons/icon.png" alt="QiYun List Logo" width="120" height="120" style="border-radius: 24px;" />
 
-一款基于 Tauri + React + TypeScript 构建的现代化待办事项管理应用，采用艾森豪威尔四象限法则进行任务管理。
+  <h1 align="center">🍃 QiYun List · 绮云列表</h1>
 
-## 功能特性
+  <p align="center">
+    <strong>一款基于 Tauri + React + TypeScript 构建的现代化待办事项管理应用</strong>
+    <br />
+    融合艾森豪威尔四象限法则 · 手账风美学设计 · AI 智能辅助
+  </p>
 
-### 核心功能
-- **四象限任务管理**：基于重要/紧急维度将任务分为四个象限
-  - 重要且紧急（立即处理）
-  - 重要不紧急（计划安排）
-  - 紧急不重要（委托他人）
-  - 不重要不紧急（尽量不做）
-- **多视图切换**：矩阵视图、列表视图、日历视图
-- **任务详情**：支持标题、描述、备注、截止日期、收藏、置顶
-- **快速添加**：智能任务添加，支持 AI 自动分类
-- **番茄钟计时**：内置番茄工作法计时器
-- **便签功能**：浮动便签窗口，支持多种颜色
-- **数据分析**：任务完成统计和可视化
-- **桌面小组件**：独立的小组件窗口，支持卡片、列表、添加、计时、便签等多种视图
+  <p align="center">
+    <a href="#-功能特性">功能特性</a> ·
+    <a href="#-界面展示">界面展示</a> ·
+    <a href="#%EF%B8%8F-技术栈">技术栈</a> ·
+    <a href="#-开始使用">开始使用</a> ·
+    <a href="#-项目结构">项目结构</a>
+  </p>
 
-### 个性化定制
-- **主题颜色**：蜜桃粉、抹茶绿、天空蓝、香芋紫、珊瑚橙、甘菊黄
-- **卡片背景**：纯色、网格、横线、水彩、涂鸦
-- **图钉样式**：图钉、胶带、回形针、爱心、笑脸
-- **字体选择**：无衬线、圆体、衬线
-- **界面风格**：透明、磨砂、实体
-- **日落模式**：自动夜间模式，支持自定义时间和色温
+  <p align="center">
+    <img src="https://img.shields.io/badge/版本-0.1.0-4D7C5D?style=for-the-badge&labelColor=2D323A" alt="版本" />
+    <img src="https://img.shields.io/badge/Tauri-2.0-FFC131?style=for-the-badge&logo=tauri&labelColor=2D323A" alt="Tauri" />
+    <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&labelColor=2D323A" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&labelColor=2D323A" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&labelColor=2D323A" alt="Vite" />
+    <img src="https://img.shields.io/badge/Rust-1.85-000000?style=for-the-badge&logo=rust&labelColor=2D323A" alt="Rust" />
+    <br />
+    <img src="https://img.shields.io/github/license/your-username/qiyun-list?style=flat-square&color=4D7C5D" alt="License" />
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8B6E3C?style=flat-square" alt="Platform" />
+    <img src="https://img.shields.io/badge/i18n-中文%20%7C%20English-5B99B0?style=flat-square" alt="i18n" />
+  </p>
+</div>
 
-### AI 集成
-- **智能分类**：支持 OpenAI、Anthropic 等 AI 服务
-- **自动归类**：根据任务内容自动推荐象限分类
-- **自定义提示词**：可自定义 AI 分类的系统提示词
+---
 
-### 数据同步
-- **WebDAV 同步**：支持 WebDAV 协议进行数据备份和同步
-- **本地存储**：使用 Tauri Store 插件进行本地数据持久化
+**QiYun List（绮云列表）** 不仅是一个待办事项应用，更是你的**个人效能中心**。它融合了经典的艾森豪威尔四象限法则与精致的手账风美学设计，并借助 AI 力量重塑任务管理体验。
 
-## 界面展示
+从四象限矩阵到番茄钟专注，从桌面小组件到心流模式，从 AI 智能分类到全平台数据同步——每一处细节都经过精心打磨，帮助你**更聪明地工作，更优雅地生活**。
 
-> 💡 将您的应用截图放在 `screenshots/ 目录中，并更新以下路径`
+---
 
-| 矩阵视图 | 列表视图 | 日历视图 |
+## ✨ 功能特性
+
+### 📋 四象限任务管理
+
+基于**艾森豪威尔矩阵**（重要/紧急四象限）科学组织任务：
+
+| 象限 | 分类 | 策略 |
+|:---:|:---|:---:|
+| **I** | 🔴 重要且紧急 | 立即处理 |
+| **II** | 🟢 重要不紧急 | 计划安排 |
+| **III** | 🔵 紧急不重要 | 委托他人 |
+| **IV** | 🟡 不重要不紧急 | 尽量不做 |
+
+- **矩阵视图** — 拖拽式四象限面板，一目了然
+- **列表视图** — 带搜索/筛选/标签过滤的扁平列表
+- **日历视图** — 月历 + 农历 + 节日标注 + 每日任务
+- **甘特图视图** — 任务时间线可视化，掌握长期规划
+
+### 🤖 AI 智能引擎
+
+- **AI 智能收件箱** — 粘贴自然语言，AI 自动提取结构化任务（含日期、时间、象限分类）
+- **自动归类** — 添加任务时 AI 自动推荐所属象限
+- **任务分解** — 大任务一键拆解为 3-5 个可执行的子任务
+- **标题润色** — AI 优化任务标题，更清晰准确
+- **笔记格式化** — 杂乱的笔记一键整理
+- **创意发散** — 基于笔记内容 AI 生成灵感建议
+- **每日建议** — 根据今日任务 AI 生成优先级推荐
+- **AI 散文** — 根据当前日期/季节自动生成治愈系散文
+- **完成庆祝** — 任务完成时 AI 生成个性化的祝贺语
+- **支持多模型** — OpenAI / DeepSeek / Anthropic Claude
+
+### 🍅 番茄工作法
+
+- **专注/休息** — 25/5 分钟默认周期（完全可自定义）
+- **任务关联** — 为特定任务启动番茄钟
+- **会话追踪** — 每次专注时长自动记录，关联任务
+- **通知提醒** — 专注结束桌面推送通知
+- **多窗口同步** — 主窗口与小组件番茄钟状态实时同步
+- **自动切换** — 专注与休息模式自动流转
+
+### 🌊 白噪音
+
+- **8 种音效** — 布朗尼、粉红、海浪、雨声、白噪音、篝火、溪流、微风
+- **音量调节** — 可自由调节
+- **零资源占用** — 基于 Web Audio API 程序化生成，无需音频文件
+
+### 🪟 桌面小组件
+
+- **独立窗口** — 300×400，置顶显示，毛玻璃透明背景
+- **5 种显示模式** — 卡片视图 / 列表视图 / 快速添加 / 番茄钟 / 便签
+- **锁定/穿透模式** — 鼠标点击可穿透，不影响桌面操作
+- **任务管理** — 完成、稍后提醒、收藏、添加任务
+- **实时同步** — 与主应用状态实时同步
+
+### 📌 便签功能
+
+- **多种颜色** — 茶色、玫瑰、薄荷、薰衣草、天空蓝
+- **随机旋转** — 模拟真实便签的自然摆放
+- **装饰图钉** — 图钉 / 胶带 / 回形针 / 爱心 / 笑脸 五种样式
+- **AI 强化** — AI 格式化 / AI 创意发散
+- **浮动窗口** — 固定便签到桌面成为独立置顶窗口
+- **搜索** — 快速查找便签内容
+
+### 📊 专注分析看板
+
+- **核心指标** — 总专注时长、总会话数、日均专注、连续天数
+- **热力图** — 18 周专注热力图，直观展示专注模式
+- **任务分布** — 各象限完成任务的饼图统计
+- **任务专注拆解** — 每项任务的番茄钟投入统计
+- **月度趋势** — 逐月对比分析
+- **AI 报告** — 自动生成本周/本日专注报告与建议
+
+### 🏠 智能仪表盘
+
+- **时段问候** — 根据早/午/晚自动切换渐变问候语
+- **今日任务** — 今日待办一目了然
+- **城市天气** — 可配置城市实时天气
+- **AI 散文** — 每日一篇 AI 生成的治愈系散文
+- **今日历史** — 历史上的今天
+- **每日一言** — 随机名言警句
+
+### 🎯 心流模式
+
+- **全屏沉浸** — 隐藏侧边栏，一次专注一项任务
+- **自动流转** — 完成 → 下一项 → 全部完成
+- **进度跟踪** — 剩余任务数实时显示
+
+### 📰 RSS 阅读器（朝花夕拾）
+
+- **RSS/Atom** — 内置 RSS 订阅源解析
+- **Rust 后端代理** — 绕过 CORS 限制
+- **报纸风格 UI** — 复古报纸美学排版
+
+### ⏳ 更多工具
+
+- **习惯打卡** — 每日习惯追踪打卡
+- **心情日记** — 每日心情评分（1-5）+ 随笔
+- **倒数日** — 重要日期倒计时 / 已过天数
+- **已完成归档** — 已完成任务历史 + 撤销完成
+
+### 🎨 个性化定制
+
+- **6 种主题色** — 蜜桃粉 · 抹茶绿 · 天空蓝 · 香芋紫 · 珊瑚橙 · 甘菊黄
+- **5 种卡片背景** — 纯白 · 网格 · 横线 · 水彩 · 涂鸦
+- **5 种图钉样式** — 图钉 · 胶带 · 回形针 · 爱心 · 笑脸
+- **3 种字体** — 无衬线 · 圆体 · 衬线
+- **3 种玻璃质感** — 透明 · 磨砂 · 实体
+- **4 种水彩背景** — 绿洲 · 极光 · 晴日 · 无
+- **日落模式** — 夜间自动暖色调护眼
+- **深色模式** — 浅色 / 深色 / 跟随系统
+- **完成庆祝** — 完成任务时五彩纸屑 + 祝贺动画
+
+### ☁️ 数据同步
+
+- **WebDAV** — 多文件增量同步（支持坚果云、Nextcloud 等）
+- **Supabase** — 云端数据库同步
+- **自动备份** — 15 秒~60 分钟可配置自动同步
+- **版本冲突** — 基于时间戳的智能冲突解决
+- **快照导入/导出** — 完整数据 JSON 导出与恢复
+- **多窗口实时同步** — 主窗口 / 小组件 / 浮动便签 三者实时状态同步
+
+### 🌐 国际化
+
+- **简体中文 / English** 双语言完整支持
+- 可扩展翻译框架
+
+### ⌨️ 效率工具
+
+- **Cmd/Ctrl+K 命令面板** — 快速导航与操作
+- **系统托盘** — 最小化到托盘，后台运行
+- **快捷操作** — 拖拽分类、快速添加、一键专注
+
+---
+
+## 📸 界面展示
+
+> **截图指南：** 以下截图需要你运行应用后自行截取。具体的截图位置和建议如下：
+
+### 1. 智能仪表盘
+截取 `DashboardView` 组件渲染的主页，展示：
+- 左上方的时段问候（渐变色文字）和日期
+- 右上方的实时天气组件
+- 四张统计小卡片（待办任务/已完成/今日进度/年度进度）
+- 每日一言和"历史上的今天"
+- AI 每日建议和 AI 散文区块
+- 今日任务列表
+
+> **截图位置：** 启动应用后默认显示的首页（`activeTab === "home"`）  
+> **建议文件名：** `screenshots/dashboard.png`
+
+### 2. 四象限矩阵视图
+截取 `MatrixView` 组件，展示：
+- 四个象限的完整布局，每个象限包含多个任务卡片
+- 每个任务卡片的优先级别标识、截止日期、收藏/图钉图标
+- 顶部的搜索栏
+
+> **截图位置：** 点击侧边栏"任务"→"四象限"  
+> **建议文件名：** `screenshots/matrix-view.png`
+
+### 3. 日历视图
+截取 `CalendarView` 组件，展示：
+- 完整月历网格（农历日期标注）  
+- 每日下方的任务圆点标记
+- 选中某日后右侧/下方列出的当日任务列表
+- 底部的快捷添加任务区域
+
+> **截图位置：** 点击侧边栏"任务"→"日历"  
+> **建议文件名：** `screenshots/calendar-view.png`
+
+### 4. 专注分析看板
+截取 `AnalyticsView` 组件，展示：
+- 顶部统计卡片（总专注时长、会话数、日均专注、连续天数）
+- 专注热力图
+- 任务分布饼图 / 象限完成统计
+- AI 专注报告区域
+
+> **截图位置：** 点击侧边栏"专注"→"统计"  
+> **建议文件名：** `screenshots/analytics.png`
+
+### 5. 便签墙
+截取 `StickyNotesView` 组件，展示：
+- 多个不同颜色的便签卡片
+- 每张便签的装饰图钉/胶带样式
+- 便签的随机旋转效果
+
+> **截图位置：** 点击侧边栏"便签"  
+> **建议文件名：** `screenshots/sticky-notes.png`
+
+### 6. 桌面小组件
+截取 `WidgetWindow` 组件（独立窗口），展示：
+- 小尺寸置顶窗口的外观
+- 切换不同标签（卡片/列表/添加/番茄钟/便签）
+- 推荐截取"卡片视图"或"番茄钟"模式
+
+> **截图位置：** 点击侧边栏底部"小组件"按钮打开的独立窗口  
+> **建议文件名：** `screenshots/widget.png`
+
+### 7. 番茄钟 + 白噪音
+截取 `Sidebar` 组件中番茄钟和白噪音区域，展示：
+- 番茄钟计时器（显示时间、专注/休息状态、进度条）
+- 白噪音选择网格（8 种音效按钮）
+- 音量调节滑块和提醒声音选择
+
+> **截图位置：** 侧边栏展开状态，找到番茄钟区域和白噪音区域  
+> **建议文件名：** `screenshots/pomodoro.png`
+
+### 8. 个性化设置
+截取 `SettingsView` 组件，展示：
+- 主题色选择（6 种预设色块）
+- 主题预设卡片
+- AI 配置区域（API Key、模型选择）
+- WebDAV 同步设置
+- 快照导入/导出功能
+
+> **截图位置：** 点击侧边栏底部"设置"  
+> **建议文件名：** `screenshots/settings.png`
+
+### 9. 心流模式
+截取 `FlowMode` 组件，展示：
+- 全屏沉浸式专注界面
+- 居中显示当前任务
+- 底部任务进度条
+- 专注热力图浮层（可选）
+
+> **截图位置：** 点击侧边栏"心流模式"按钮  
+> **建议文件名：** `screenshots/flow-mode.png`
+
+### 10. 列表视图
+截取 `ListView` 组件，展示：
+- 扁平的任- 搜索栏和分类/标签筛选下拉框
+- 每行任务卡片带优先级别标记、截止日期、收藏/编辑操作
+
+> **截图位置：** 点击侧边栏"任务"→"列表"  
+> **建议文件名：** `screenshots/list-view.png`
+
+### 相册布局
+
+将截图放入 `screenshots/` 目录后，可以这样组织展示（可根据实际截图选 6-8 张核心的）：
+
+```markdown
+| 仪表盘 | 四象限矩阵 | 日历视图 |
 |:---:|:---:|:---:|
-| ![矩阵视图](screenshots/matrix-view.png) | ![列表视图](screenshots/list-view.png) | ![日历视图](screenshots/calendar-view.png) |
-| **桌面小组件** | **番茄钟** | **设置页面** |
-| ![桌面小组件](screenshots/widget.png) | ![番茄钟](screenshots/pomodoro.png) | ![设置页面](screenshots/settings.png) |
+| ![仪表盘](screenshots/dashboard.png) | ![四象限](screenshots/matrix-view.png) | ![日历](screenshots/calendar-view.png) |
+| **专注分析** | **桌面小组件** | **便签墙** |
+| ![专注分析](screenshots/analytics.png) | ![小组件](screenshots/widget.png) | ![便签](screenshots/sticky-notes.png) |
+| **番茄专注** | **个性化设置** | **心流模式** |
+| ![番茄钟](screenshots/pomodoro.png) | ![设置](screenshots/settings.png) | ![心流](screenshots/flow-mode.png) |
+```
 
-## 技术栈
+---
 
-### 前端
-- **框架**：React 19 + TypeScript
-- **构建工具**：Vite 7
-- **样式**：Tailwind CSS 4
-- **动画**：Framer Motion
-- **图标**：Lucide React
-- **状态管理**：React Hooks
+## 🛠️ 技术栈
 
-### 后端
-- **桌面框架**：Tauri 2
-- **语言**：Rust
-- **数据存储**：Tauri Store 插件
+| 层级 | 技术 | 用途 |
+|:---|:---|:---|
+| **前端框架** | React 19 + TypeScript 5.8 | 现代化 UI 开发 |
+| **构建工具** | Vite 7 | 极速 HMR 热更新 |
+| **样式方案** | Tailwind CSS 4 | 原子化 CSS，响应式设计 |
+| **动画引擎** | Framer Motion 12 | 流畅的交互动画 |
+| **图标库** | Lucide React | 一致的高质量图标 |
+| **桌面框架** | Tauri 2 | 跨平台桌面应用（Rust 后端） |
+| **原生语言** | Rust 1.85 | 高性能系统级操作 |
+| **数据持久化** | Tauri Store + SQLite | 双层持久化存储 |
+| **云同步** | WebDAV / Supabase | 双引擎数据同步 |
+| **AI 集成** | OpenAI / DeepSeek / Anthropic | 智能任务处理 |
+| **音频引擎** | Web Audio API | 程序化白噪音 + 音效 |
+| **农历支持** | lunar-javascript | 中国农历/节气计算 |
+| **国际化** | 自研 Context 框架 | 中/英双语 |
+| **状态管理** | React Hooks + Context | 轻量级状态管理 |
 
-### 开发工具
-- **包管理**：npm
-- **代码检查**：TypeScript 类型检查
-- **格式化**：Prettier（可选）
+---
 
-## 项目架构
+## 🚀 开始使用
 
-详细的架构说明请查看 [ARCHITECTURE.md](ARCHITECTURE.md) 文件。
+### 环境要求
 
-## 常见问题
+| 依赖 | 最低版本 | 说明 |
+|:---|:---:|:---|
+| Node.js | 18.0+ | JavaScript 运行时 |
+| npm | 9.0+ | 包管理器 |
+| Rust | 1.70+ | Tauri 后端编译 |
+| Cargo | 1.70+ | Rust 包管理器 |
 
-常见问题解答请查看 [FAQ.md](FAQ.md) 文件。
+**系统额外依赖：**
 
-## 项目路线图
+- **Windows** — Microsoft Visual Studio C++ Build Tools
+- **macOS** — Xcode Command Line Tools
+- **Linux** — `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev`
 
-未来规划请查看 [ROADMAP.md](ROADMAP.md) 文件。
+### 安装与运行
 
-## 安装要求
-
-### 开发环境
-- **Node.js**：18.0 或更高版本
-- **npm**：9.0 或更高版本
-- **Rust**：1.70 或更高版本
-- **系统依赖**：
-  - Windows：Microsoft Visual Studio C++ Build Tools
-  - macOS：Xcode Command Line Tools
-  - Linux：`sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev`
-
-### 运行环境
-- Windows 10/11、macOS 12+、Linux（主流发行版）
-
-## 开发指南
-
-### 1. 克隆项目
 ```bash
+# 1. 克隆项目
 git clone https://gitee.com/your-username/qiyun-list.git
 cd qiyun-list
-```
 
-### 2. 安装依赖
-```bash
+# 2. 安装前端依赖
 npm install
-```
 
-### 3. 启动开发服务器
-```bash
+# 3. 启动开发模式（热更新 + Tauri 桌面窗口）
 npm run tauri dev
-```
 
-### 4. 构建生产版本
-```bash
+# 4. 构建生产版本
 npm run tauri build
 ```
 
 ### 可用脚本
-- `npm run dev` - 启动前端开发服务器
-- `npm run build` - 构建前端
-- `npm run tauri dev` - 启动 Tauri 开发模式
-- `npm run tauri build` - 构建生产版本
-- `npm run typecheck` - TypeScript 类型检查
-- `npm run check:rust` - Rust 代码检查
-- `npm run check` - 完整检查（前端 + 后端）
 
-## 项目结构
+| 命令 | 说明 |
+|:---|:---|
+| `npm run dev` | 启动前端开发服务器（浏览器） |
+| `npm run build` | 构建前端静态资源 |
+| `npm run tauri dev` | 启动 Tauri 桌面开发模式 |
+| `npm run tauri build` | 构建桌面应用安装包 |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run check:rust` | Rust 代码检查（cargo check） |
+| `npm run check` | 完整检查（前端 + 后端） |
+
+---
+
+## 📁 项目结构
 
 ```
 qiyun-list/
-├── src/                    # 前端源码
-│   ├── components/         # React 组件
-│   │   ├── MatrixView.tsx  # 四象限矩阵视图
-│   │   ├── ListView.tsx    # 列表视图
-│   │   ├── CalendarView.tsx# 日历视图
-│   │   ├── Sidebar.tsx     # 侧边栏
-│   │   ├── SettingsView.tsx# 设置页面
-│   │   └── ...             # 其他组件
-│   ├── App.tsx             # 主应用组件
-│   ├── types.ts            # TypeScript 类型定义
-│   ├── constants.ts        # 常量和配置
-│   └── index.css           # 全局样式
-├── src-tauri/              # Tauri 后端
-│   ├── src/                # Rust 源码
-│   ├── icons/              # 应用图标
-│   ├── capabilities/       # 权限配置
-│   └── tauri.conf.json     # Tauri 配置
-├── public/                 # 静态资源
-├── package.json            # 前端依赖
-└── vite.config.ts          # Vite 配置
+├── src/                          # 前端源码
+│   ├── main.tsx                  # React 入口
+│   ├── App.tsx                   # 主应用组件（状态聚合中枢）
+│   ├── types.ts                  # 全部 TypeScript 类型定义
+│   ├── constants.ts              # 全局常量 & AI 提示词
+│   ├── index.css                 # 全局样式（1400+ 行，含暗色模式）
+│   │
+│   ├── components/               # 27 个 React 组件
+│   │   ├── DashboardView.tsx     # 🏠 智能仪表盘
+│   │   ├── MatrixView.tsx        # 📊 四象限矩阵
+│   │   ├── ListView.tsx          # 📋 列表视图
+│   │   ├── CalendarView.tsx      # 📅 日历（含农历）
+│   │   ├── GanttView.tsx         # 📈 甘特图
+│   │   ├── TaskDetailModal.tsx   # 📝 任务详情模态框
+│   │   ├── QuickAddTask.tsx      # ⚡ 快速添加
+│   │   ├── Sidebar.tsx           # 📌 侧边栏（含番茄钟 + 白噪音）
+│   │   ├── AnalyticsView.tsx     # 📊 专注分析看板
+│   │   ├── FlowMode.tsx          # 🎯 心流模式
+│   │   ├── StickyNotesView.tsx   # 📌 便签墙
+│   │   ├── WidgetWindow.tsx      # 🪟 桌面小组件
+│   │   ├── FloatingNoteWindow.tsx# 🪟 浮动便签窗口
+│   │   ├── HabitsView.tsx        # ✅ 习惯打卡
+│   │   ├── MoodView.tsx          # 😊 心情日记
+│   │   ├── CountdownView.tsx     # ⏳ 倒数日
+│   │   ├── NewsView.tsx          # 📰 RSS 阅读器
+│   │   ├── SettingsView.tsx      # ⚙️ 设置中心
+│   │   ├── CompletedView.tsx     # 🏁 已完成归档
+│   │   ├── CommandPalette.tsx    # ⌨️ 命令面板
+│   │   ├── CelebrationOverlay.tsx# 🎉 庆祝动画
+│   │   ├── SwipeCard.tsx         # 👆 滑动手势卡片
+│   │   ├── FocusHeatmap.tsx      # 🔥 专注热力图
+│   │   ├── StickyPin.tsx         # 📍 装饰图钉
+│   │   ├── TitleBar.tsx          # 🪟 自定义标题栏
+│   │   ├── CustomSelect.tsx      # 🔽 自定义下拉框
+│   │   └── ExploreView.tsx       # 🔍 探索视图
+│   │
+│   ├── hooks/                    # 8 个自定义 Hook
+│   │   ├── useTasks.ts           # 任务 CRUD + 存储
+│   │   ├── usePomodoro.ts        # 番茄钟状态机
+│   │   ├── useAI.ts              # AI 输入/提取/分类
+│   │   ├── useCustomization.ts   # 主题/配色/模式管理
+│   │   ├── useStickyNotes.ts     # 便签增删改
+│   │   ├── useCountdown.ts       # 倒数日管理
+│   │   ├── useSync.ts            # 跨窗口同步
+│   │   └── useWidget.ts          # 小组件窗口管理
+│   │
+│   ├── utils/                    # 工具模块
+│   │   ├── aiEngine.ts           # AI 引擎（OpenAI/Anthropic）
+│   │   ├── audioEngine.ts        # Web Audio 白噪音引擎
+│   │   ├── storage.ts            # 存储层（localStorage + SQLite）
+│   │   ├── webdav.ts             # WebDAV 客户端
+│   │   ├── date.ts / dateParser.ts # 日期处理 & 自然语言解析
+│   │   ├── rrule.ts              # 循环规则解析
+│   │   ├── id.ts / json.ts       # 工具函数
+│   │   └── sync/                 # 同步引擎
+│   │       ├── types.ts          #  同步数据结构
+│   │       ├── engine.ts         #  同步编排器
+│   │       ├── webdavProvider.ts #  WebDAV 提供者
+│   │       └── supabaseProvider.ts # Supabase 提供者
+│   │
+│   └── i18n/                     # 国际化
+│       ├── zh-CN.ts              #   中文
+│       ├── en.ts                 #   英文
+│       └── LanguageContext.tsx    #   语言上下文
+│
+├── src-tauri/                    # Tauri Rust 后端
+│   ├── src/
+│   │   ├── main.rs               #  Rust 入口
+│   │   └── lib.rs                #  核心命令（WebDAV、RSS 代理等）
+│   ├── icons/                    #   应用图标
+│   ├── capabilities/             #   权限配置
+│   └── tauri.conf.json           #   Tauri 配置
+│
+├── screenshots/                  # 应用截图（空，需自行添加）
+├── public/                       # 静态资源
+├── package.json                  # 依赖配置
+├── vite.config.ts                # Vite 配置
+├── tsconfig.json                 # TypeScript 配置
+├── tailwind.config.js            # Tailwind CSS 配置
+│
+├── README.md                     # 本文件
+├── ARCHITECTURE.md               # 架构说明
+├── CHANGELOG.md                  # 更新日志
+├── ROADMAP.md                    # 开发路线图
+├── FAQ.md                        # 常见问题
+├── CONTRIBUTING.md               # 贡献指南
+├── CODE_OF_CONDUCT.md            # 行为准则
+├── SECURITY.md                   # 安全策略
+├── SUPPORT.md                    # 支持渠道
+└── LICENSE                       # MIT 许可证
 ```
 
-## 配置说明
+---
 
-### Tauri 配置 (`src-tauri/tauri.conf.json`)
-- 应用标识：`com.qiyunlist.app`
-- 主窗口：1020×720，无边框设计
-- 小组件窗口：300×400，置顶、透明、无任务栏
+## ⚙️ 配置说明
 
 ### 应用设置
-在应用内设置页面可以配置：
-- 主题颜色和样式
-- AI 服务提供商和 API 密钥
-- WebDAV 同步参数
-- 日落模式时间
-- 提醒声音类型
 
-## 贡献指南
+在应用内 **设置页面** 可配置：
 
-详细的贡献指南请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 文件。
+| 配置项 | 说明 |
+|:---|:---|
+| 🎨 **主题与样式** | 主题色、卡片背景、字体、玻璃质感、水彩背景 |
+| 🌙 **日落模式** | 开启/关闭，自定义起止时间和暖色强度 |
+| 🌓 **深色模式** | 浅色 / 深色 / 跟随系统 |
+| 🤖 **AI 服务** | 选择提供商（OpenAI / DeepSeek / Claude），配置 API Key |
+| ☁️ **WebDAV 同步** | 配置服务器地址、用户名、密码 |
+| 📦 **Supabase 同步** | 配置 URL 和 Anon Key |
+| 🔔 **提醒声音** | Beep / Cuckoo / Meow |
+| 🗣️ **语言** | 中文 / English |
+| 📤 **快照导入/导出** | 完整数据备份与恢复 |
+| 🗑️ **恢复出厂** | 清除所有本地数据 |
+
+### Tauri 配置 (`src-tauri/tauri.conf.json`)
+
+- 应用标识：`com.qiyunlist.app`
+- 主窗口尺寸：1020 × 720，无边框设计
+- 小组件窗口：300 × 400，置顶、透明、无任务栏
+
+---
+
+## 🤝 贡献指南
+
+欢迎任何形式的贡献！详细指南请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 1. Fork 本仓库
 2. 新建功能分支：`git checkout -b feature/your-feature`
@@ -175,34 +495,37 @@ qiyun-list/
 5. 新建 Pull Request
 
 ### 代码规范
-- 前端：遵循 TypeScript 严格模式，使用 `npm run typecheck` 做类型检查
-- 后端：遵循 Rust 官方风格指南
-- 提交信息：使用中文或英文，清晰描述变更内容
 
-### 行为准则
-请遵守本项目的行为准则，详情请查看 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 文件。
+- **前端** — TypeScript 严格模式，`npm run typecheck` 类型检查
+- **后端** — Rust 官方风格指南，`cargo fmt` + `cargo clippy`
+- **提交信息** — 清晰描述变更内容
 
-## 许可证
+---
 
-本项目基于 MIT 许可证开源。详情请参阅 [LICENSE](LICENSE) 文件。
+## 🗺️ 路线图
 
-## 安全策略
+- 详细路线图请查看 [ROADMAP.md](ROADMAP.md)
+- 当前版本：v0.1.0
+- 目标版本：v1.0.0（预计 2027 年底）
 
-安全策略请查看 [SECURITY.md](SECURITY.md) 文件。
+---
 
-## 支持渠道
+## 📄 许可证
 
-支持渠道请查看 [SUPPORT.md](SUPPORT.md) 文件。
+本项目基于 [MIT License](LICENSE) 开源。
 
-## 更新日志
+---
 
-详细的更新日志请查看 [CHANGELOG.md](CHANGELOG.md) 文件。
+## 💬 帮助与支持
 
-### v0.1.0 (2026-06-27)
-- 初始版本发布
-- 实现四象限任务管理
-- 支持多种视图切换
-- 集成番茄钟计时器
-- 添加桌面小组件
-- 支持 AI 智能分类
-- 实现 WebDAV 数据同步
+- 常见问题：[FAQ.md](FAQ.md)
+- 安全报告：[SECURITY.md](SECURITY.md)
+- 支持渠道：[SUPPORT.md](SUPPORT.md)
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ using Tauri · React · Rust · TypeScript</sub>
+  <br />
+  <sub>© 2026 QiYun List. All rights reserved.</sub>
+</div>

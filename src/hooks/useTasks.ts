@@ -4,43 +4,26 @@ import type { Task, SubTask, RepeatType } from "../types";
 import { useSync } from "./useSync";
 import { createId } from "../utils/id";
 import { addLocalDays, addLocalMonths, getLocalDateString } from "../utils/date";
+import { getNextRRuleDate } from "../utils/rrule";
 
-const INITIAL_TASKS: Task[] = [
-  {
-    id: "1",
-    title: "设计待办清单配色与主题风格",
-    description: "选用暖色奶茶背景、抹茶绿和蜜桃红,构建温馨清爽的日程规划风格。",
-    category: "urgent-important",
-    dueDate: getLocalDateString(),
-  },
-  {
-    id: "2",
-    title: "体验白噪音与番茄工作法",
-    description: "在侧边栏开启白噪音,配合25分钟番茄时钟,体验极致专注手感。",
-    category: "urgent-important",
-    dueDate: getLocalDateString(),
-  },
-  {
-    id: "3",
-    title: "整理桌面与给绿植浇水",
-    description: "整理房间和摆件,让生活空间与心情一起回归清爽自然。",
-    category: "important-not-urgent",
-    dueDate: getLocalDateString(),
-  },
-  {
-    id: "4",
-    title: "购买并补给浅烘咖啡豆",
-    description: "生活日常补给,准备片刻的手冲咖啡度过下午。",
-    category: "urgent-not-important",
-    dueDate: getLocalDateString(),
-  },
-];
+function createInitialTasks(): Task[] {
+  const today = getLocalDateString();
+  return [
+    { id: "1", title: "设计待办清单配色与主题风格", description: "选用暖色奶茶背景、抹茶绿和蜜桃红,构建温馨清爽的日程规划风格。", category: "urgent-important", dueDate: today },
+    { id: "2", title: "体验白噪音与番茄工作法", description: "在侧边栏开启白噪音,配合25分钟番茄时钟,体验极致专注手感。", category: "urgent-important", dueDate: today },
+    { id: "3", title: "整理桌面与给绿植浇水", description: "整理房间和摆件,让生活空间与心情一起回归清爽自然。", category: "important-not-urgent", dueDate: today },
+    { id: "4", title: "购买并补给浅烘咖啡豆", description: "生活日常补给,准备片刻的手冲咖啡度过下午。", category: "urgent-not-important", dueDate: today },
+  ];
+}
+
+const INITIAL_TASKS = createInitialTasks();
 
 function getNextDueDate(currentDue: string | undefined, repeat: RepeatType): string | undefined {
+  if (!repeat || repeat === "none") return undefined;
   if (repeat === "daily") return addLocalDays(currentDue, 1);
   if (repeat === "weekly") return addLocalDays(currentDue, 7);
   if (repeat === "monthly") return addLocalMonths(currentDue, 1);
-  return undefined;
+  return getNextRRuleDate(currentDue!, repeat);
 }
 
 export function useTasks() {
@@ -123,49 +106,69 @@ export function useTasks() {
   const progressPercentage = totalCount === 0 ? 0 : Math.round((completedTasks.length / totalCount) * 100);
 
   const handleComplete = useCallback((id: string, shouldSync: boolean = true) => {
+    let completedItem: Task | undefined;
+    let hasPendingDeps = false;
     setTasks((prev) => {
-      const completedItem = prev.find((t) => t.id === id);
+      completedItem = prev.find((t) => t.id === id);
+      if (!completedItem) return prev;
+
+      // Check dependencies
+      if (completedItem.dependsOn && completedItem.dependsOn.length > 0) {
+        const allCompleted = completedItem.dependsOn.every(depId =>
+          !prev.find(t => t.id === depId) // If not in active tasks, it's completed or deleted
+        );
+        if (!allCompleted) {
+          hasPendingDeps = true;
+          return prev;
+        }
+      }
+
       let updated = prev.filter((t) => t.id !== id);
 
-      if (completedItem) {
-        if (completedItem.repeat && completedItem.repeat !== "none") {
-          const nextDue = getNextDueDate(completedItem.dueDate, completedItem.repeat);
-          const recurringTask: Task = {
-            ...completedItem,
-            id: createId("task"),
-            dueDate: nextDue,
-          };
-          updated = [recurringTask, ...updated];
-        }
-
-        setCompletedTasks((cPrev) => {
-          const cUpdated = [completedItem, ...cPrev.filter((t) => t.id !== id)];
-          saveCompleted(cUpdated);
-          return cUpdated;
-        });
+      if (completedItem.repeat && completedItem.repeat !== "none") {
+        const nextDue = getNextDueDate(completedItem.dueDate, completedItem.repeat);
+        const recurringTask: Task = {
+          ...completedItem,
+          id: createId("task"),
+          dueDate: nextDue,
+        };
+        updated = [recurringTask, ...updated];
       }
 
       saveTasks(updated);
       return updated;
     });
+
+    if (hasPendingDeps) return; // Don't complete - dependencies not met
+
+    if (completedItem) {
+      setCompletedTasks((cPrev) => {
+        const cUpdated = [completedItem!, ...cPrev.filter((t) => t.id !== id)];
+        saveCompleted(cUpdated);
+        return cUpdated;
+      });
+    }
+
     if (shouldSync) syncState(id, "complete");
   }, [saveTasks, saveCompleted, syncState]);
 
   const handleUndoComplete = useCallback((id: string, shouldSync: boolean = true) => {
+    let restoredItem: Task | undefined;
     setCompletedTasks((cPrev) => {
-      const restoredItem = cPrev.find((t) => t.id === id);
+      restoredItem = cPrev.find((t) => t.id === id);
       const cUpdated = cPrev.filter((t) => t.id !== id);
       saveCompleted(cUpdated);
-
-      if (restoredItem) {
-        setTasks((prev) => {
-          const updated = [restoredItem, ...prev];
-          saveTasks(updated);
-          return updated;
-        });
-      }
       return cUpdated;
     });
+
+    if (restoredItem) {
+      setTasks((prev) => {
+        const updated = [restoredItem!, ...prev];
+        saveTasks(updated);
+        return updated;
+      });
+    }
+
     if (shouldSync) syncState(id, "undo_complete");
   }, [saveTasks, saveCompleted, syncState]);
 
@@ -344,9 +347,10 @@ export function useTasks() {
   }, [handleEditTask]);
 
   const resetTasks = useCallback(() => {
-    setTasks(INITIAL_TASKS);
+    const freshTasks = createInitialTasks();
+    setTasks(freshTasks);
     setCompletedTasks([]);
-    saveTasks(INITIAL_TASKS);
+    saveTasks(freshTasks);
     saveCompleted([]);
     syncState("reset", "reset");
   }, [saveTasks, saveCompleted, syncState]);

@@ -3,7 +3,7 @@ import { Clock, CheckCircle2, Heart, Coffee, BarChart3, Sun, Moon, Sunrise, Tren
 import type { Task, PomodoroLog, CustomizationConfig } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getLocalDateString } from "../utils/date";
-import { callAI } from "../utils/aiEngine";
+import { callAI, generateReport } from "../utils/aiEngine";
 
 interface AnalyticsViewProps {
   pomodoroLogs: PomodoroLog[];
@@ -28,6 +28,48 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   useEffect(() => {
     localStorage.setItem("qiyun_daily_goal", String(dailyGoal));
   }, [dailyGoal]);
+
+  // AI 报告生成
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportContent, setReportContent] = useState<string | null>(() => {
+    const cached = localStorage.getItem("qiyun_analytics_report");
+    if (cached) {
+      try { const parsed = JSON.parse(cached); if (parsed.date === getLocalDateString()) return parsed.content; } catch {}
+    }
+    return null;
+  });
+  const [reportType, setReportType] = useState<"daily" | "weekly">("daily");
+
+  const handleGenerateReport = async () => {
+    if (!customizationConfig?.aiApiKey) return;
+    setReportLoading(true);
+    try {
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - (reportType === "weekly" ? 7 : 1) * 86400000);
+      const recentCompleted = completedTasks.filter(t => {
+        if (!t.dueDate) return false;
+        const d = new Date(t.dueDate);
+        return d >= weekAgo && d <= now;
+      });
+      const recentPomodoros = pomodoroLogs.filter(log => log.timestamp >= weekAgo.getTime() && log.timestamp <= now.getTime());
+      const totalPomoMin = recentPomodoros.reduce((s, l) => s + l.duration, 0);
+      const cats: Record<string, number> = {};
+      recentCompleted.forEach(t => { cats[t.category] = (cats[t.category] || 0) + 1; });
+
+      const content = await generateReport(customizationConfig!, reportType, {
+        completedTasks: recentCompleted.length,
+        pomodoroCount: recentPomodoros.length,
+        pomodoroMinutes: totalPomoMin,
+        taskCategories: cats,
+      });
+      setReportContent(content);
+      localStorage.setItem("qiyun_analytics_report", JSON.stringify({ date: getLocalDateString(), content }));
+    } catch (e) {
+      console.error("生成报告失败", e);
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   const { totalHours, totalMinutes, todayPomodoros, avgDuration } = useMemo(() => {
     const totalDur = pomodoroLogs.reduce((acc, curr) => acc + curr.duration, 0);
@@ -373,6 +415,37 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-4 flex-grow z-10 relative select-none">
+      {/* AI Report Card */}
+      {customizationConfig?.aiApiKey && (
+        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#8B6E3C]" />
+              <span className="text-[10px] font-bold text-[#8B6E3C] tracking-wide uppercase">AI 效率报告</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <select value={reportType} onChange={(e) => setReportType(e.target.value as "daily" | "weekly")} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[9px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+                <option value="daily">日报</option>
+                <option value="weekly">周报</option>
+              </select>
+              <button onClick={handleGenerateReport} disabled={reportLoading} className={`text-[9px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${reportLoading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-[#4D7C5D]/10 text-[#4D7C5D] hover:bg-[#4D7C5D]/20'}`}>
+                {reportLoading ? '生成中...' : '生成报告'}
+              </button>
+            </div>
+          </div>
+          {reportContent ? (
+            <div className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed prose-body [&>p]:mb-1 [&>h3]:text-xs [&>h3]:font-bold [&>h3]:text-[#4D7C5D] [&>h3]:mb-1 [&>ul]:text-[10px] [&>ul]:pl-4 [&>ul]:list-disc">
+              {reportContent.split('\n').map((line, i) => {
+                if (!line.trim()) return null;
+                return <p key={i}>{line.replace(/^[#*_]+/g, '')}</p>;
+              })}
+            </div>
+          ) : (
+            <p className="text-[10px] text-slate-400 font-medium">点击生成 AI 效率报告，了解完成情况与建议</p>
+          )}
+        </div>
+      )}
+
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-[#FCF2F0]/80 border border-[#F5DFDB] shadow-sm flex items-center gap-3.5">
