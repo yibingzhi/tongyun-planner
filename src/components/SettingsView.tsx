@@ -303,7 +303,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <button
                 key={tabItem.id}
                 onClick={() => setSubTab(tabItem.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer hover:scale-103 active:scale-97 ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 ${
                   isSelected
                     ? "bg-[#FCF2F0] text-[#A34E36] border border-[#F5DFDB] shadow-xs font-black"
                     : "bg-transparent text-slate-500 border border-transparent hover:bg-white hover:text-slate-800"
@@ -347,7 +347,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={mode.id}
                       onClick={() => handleStyleChange("darkMode", mode.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                           : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -381,7 +381,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                           qColors: preset.qColors,
                         });
                       }}
-                      className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer text-left flex flex-col justify-between gap-1.5 hover:scale-103 active:scale-97 ${
+                      className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer text-left flex flex-col justify-between gap-1.5 hover:scale-105 active:scale-95 ${
                         isMatch
                           ? "border-[#4D7C5D] bg-[#F0F5F1]/30 ring-1 ring-[#4D7C5D]/20 shadow-xs"
                           : "bg-white border-[#EFEBE4] hover:border-slate-300"
@@ -438,7 +438,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                             <button
                               key={colorKey}
                               onClick={() => handleColorChange(quad.id, colorKey)}
-                              className={`w-5.5 h-5.5 rounded-full ${colorConfig.dot} border border-slate-200 transition-all hover:scale-120 cursor-pointer relative ${
+                              className={`w-5.5 h-5.5 rounded-full ${colorConfig.dot} border border-slate-200 transition-all hover:scale-110 cursor-pointer relative ${
                                 isSelected ? "ring-2 ring-slate-400 ring-offset-2 scale-110 shadow-xs" : "opacity-80 hover:opacity-100"
                               }`}
                               title={colorConfig.name}
@@ -476,7 +476,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={pattern.id}
                       onClick={() => handleStyleChange("cardBackground", pattern.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                           : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -507,7 +507,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={pin.id}
                       onClick={() => handleStyleChange("pinType", pin.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                           : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -537,7 +537,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       <button
                         key={glass.id}
                         onClick={() => handleStyleChange("interfaceGlass", glass.id as any)}
-                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                           isSelected
                             ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                             : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -564,7 +564,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       <button
                         key={font.id}
                         onClick={() => handleStyleChange("fontFamily", font.id as any)}
-                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                        className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                           isSelected
                             ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                             : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -595,7 +595,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <button
                       key={wc.id}
                       onClick={() => handleStyleChange("watercolorStyle", wc.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-103 active:scale-97 ${
+                      className={`py-2 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
                         isSelected
                           ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
                           : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
@@ -808,7 +808,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               <button
                 type="button"
                 onClick={handleSaveAiConfig}
-                className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
               >
                 <Save className="w-3.5 h-3.5" />
                  {s.aiSave}
@@ -817,7 +817,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                 type="button"
                 onClick={handleTestAiConnection}
                 disabled={isAiTesting}
-                className="flex-1 bg-[#8B6E3C] hover:bg-[#725A31] disabled:bg-slate-300 text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                className="flex-1 bg-[#8B6E3C] hover:bg-[#725A31] disabled:bg-slate-300 text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
               >
                 {isAiTesting ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1105,14 +1105,14 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     URL.revokeObjectURL(url);
                     triggerToast(s.snapshotExported || "导出成功 ✅", "success");
                   }}
-                  className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                  className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
                   {s.snapshotExport || "导出快照"}
                 </button>
                 <button
                   onClick={() => document.getElementById("snapshot-file-input")?.click()}
-                  className="flex-1 bg-[#B2C8DF] hover:bg-[#9BB5CF] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 transition-all shadow-xs"
+                  className="flex-1 bg-[#B2C8DF] hover:bg-[#9BB5CF] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   {s.snapshotImport || "导入快照"}
@@ -1198,7 +1198,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     triggerToast(s.factoryResetDone, "success");
                   }
                 }}
-                className="bg-red-50 hover:bg-red-100 text-[#A34E36] border border-[#F5DFDB] px-4 py-2.5 rounded-xl text-[10px] font-extrabold hover:scale-102 transition-all shadow-xs cursor-pointer block"
+                className="bg-red-50 hover:bg-red-100 text-[#A34E36] border border-[#F5DFDB] px-4 py-2.5 rounded-xl text-[10px] font-extrabold hover:scale-105 transition-all shadow-xs cursor-pointer block"
               >
                 {s.factoryReset}
               </button>

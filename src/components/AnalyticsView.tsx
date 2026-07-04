@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { Clock, CheckCircle2, Heart, Coffee, BarChart3, Sun, Moon, Sunrise, TrendingUp, Target, Sparkles, Tags, BrainCircuit } from "lucide-react";
+import { Clock, CheckCircle2, Heart, Coffee, BarChart3, Sun, Moon, Sunrise, Target, Sparkles, Tags, BrainCircuit } from "lucide-react";
 import type { Task, PomodoroLog, CustomizationConfig } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getLocalDateString } from "../utils/date";
@@ -125,30 +125,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
 
   const maxSlot = Math.max(...timeSlots.map((s) => s.count), 1);
 
-  const dayStats = useMemo(() => {
-    const labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-    const counts = [0, 0, 0, 0, 0, 0, 0];
-    pomodoroLogs.forEach((log) => {
-      const day = new Date(log.timestamp).getDay();
-      const idx = day === 0 ? 6 : day - 1;
-      counts[idx]++;
-    });
-    return labels.map((label, i) => ({ label, count: counts[i] }));
-  }, [pomodoroLogs]);
 
-  const maxDay = Math.max(...dayStats.map((d) => d.count), 1);
-
-  const monthlyTrend = useMemo(() => {
-    const map = new Map<string, number>();
-    pomodoroLogs.forEach((log) => {
-      const d = new Date(log.timestamp);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      map.set(key, (map.get(key) || 0) + 1);
-    });
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).slice(-12);
-  }, [pomodoroLogs]);
-
-  const maxMonth = Math.max(...monthlyTrend.map(([, v]) => v), 1);
 
   const goalStats = useMemo(() => {
     const perDay = new Map<string, number>();
@@ -245,164 +222,107 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
     }
   }, [customizationConfig, pomodoroLogs, a]);
 
-  const heatmapColors = [
-    "bg-white/50 border border-[#EFEBE4]/60",
-    "bg-[#C4D7B2]/40 border border-[#C4D7B2]/20",
-    "bg-[#C4D7B2]/70 border border-[#C4D7B2]/40",
-    "bg-[#4D7C5D]/70",
-    "bg-[#3F684C]",
-  ];
-
   const renderHeatmap = () => {
-    const today = new Date();
-    const currentDayOfWeek = today.getDay();
-    const startOfGrid = new Date();
-    startOfGrid.setDate(today.getDate() - currentDayOfWeek - 17 * 7);
-    const weeks = [];
-    const monthLabelSet = new Map<number, string>();
-    for (let w = 0; w < 18; w++) {
-      const days = [];
-      for (let d = 0; d < 7; d++) {
-        const cellDate = new Date(startOfGrid.getTime());
-        cellDate.setDate(startOfGrid.getDate() + (w * 7 + d));
-        const dateStr = getLocalDateString(cellDate);
-        const count = pomodoroCountsByDate[dateStr] || 0;
-        let colorClass = heatmapColors[0];
-        if (count === 1) colorClass = heatmapColors[1];
-        else if (count === 2) colorClass = heatmapColors[2];
-        else if (count === 3) colorClass = heatmapColors[3];
-        else if (count >= 4) colorClass = heatmapColors[4];
-        const isFuture = cellDate.getTime() > today.getTime();
-        if (isFuture) colorClass = "bg-[#FAF8F5]/20 border border-dashed border-slate-200/40 opacity-40 cursor-not-allowed";
-        days.push({ dateStr, count, colorClass, isToday: dateStr === getLocalDateString(today), isFuture });
-        if (d === 0) {
-          const month = cellDate.getMonth() + 1;
-          const label = `${month}月`;
-          const prev = w > 0 ? monthLabelSet.get(w - 1) : null;
-          if (label !== prev) monthLabelSet.set(w, label);
-        }
+    const CELL = 12, GAP = 2, STEP = CELL + GAP;
+    const MONTH_H = 14, LABEL_W = 18;
+    const LEVELS = [
+      "fill-[#ebedf0]",
+      "fill-[#9be9a8]",
+      "fill-[#40c463]",
+      "fill-[#30a14e]",
+      "fill-[#216e39]",
+    ];
+    const level = (c: number) => c === 0 ? 0 : c <= 2 ? 1 : c <= 4 ? 2 : c <= 6 ? 3 : 4;
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const dow = today.getDay();
+    const lastSunday = new Date(today);
+    lastSunday.setDate(lastSunday.getDate() - (dow === 0 ? 0 : dow));
+
+    const grid: { date: string; count: number; isToday: boolean }[][] = [];
+    const monthLabels: { col: number; label: string }[] = [];
+    let prevMonth = -1, colIdx = 0;
+
+    for (let col = 17; col >= 0; col--) {
+      const cs = new Date(lastSunday); cs.setDate(cs.getDate() - col * 7);
+      const cm = new Date(cs); cm.setDate(cm.getDate() - 6);
+      const colData: typeof grid[number] = [];
+      for (let r = 0; r < 7; r++) {
+        const d = new Date(cm); d.setDate(d.getDate() + r); d.setHours(0, 0, 0, 0);
+        const ds = getLocalDateString(d);
+        colData.push({ date: ds, count: pomodoroCountsByDate[ds] || 0, isToday: ds === getLocalDateString(today) });
+        if (r === 0) { const m = d.getMonth(); if (m !== prevMonth) { monthLabels.push({ col: colIdx, label: `${m+1}月` }); prevMonth = m; } }
       }
-      weeks.push(days);
+      grid.push(colData); colIdx++;
+    }
+    if (dow !== 0) {
+      const monday = new Date(today); monday.setDate(monday.getDate() - (dow - 1));
+      const pc: typeof grid[number] = [];
+      for (let r = 0; r < dow; r++) {
+        const d = new Date(monday); d.setDate(d.getDate() + r); d.setHours(0, 0, 0, 0);
+        const ds = getLocalDateString(d);
+        pc.push({ date: ds, count: pomodoroCountsByDate[ds] || 0, isToday: ds === getLocalDateString(today) });
+        if (r === 0) { const m = d.getMonth(); if (m !== prevMonth) { monthLabels.push({ col: colIdx, label: `${m+1}月` }); prevMonth = m; } }
+      }
+      grid.push(pc);
     }
 
-    const dayLabels = ["一", "二", "三", "四", "五", "六", "日"];
+    const gw = grid.length * STEP, gh = 7 * STEP;
+    const sw = LABEL_W + gw, sh = MONTH_H + gh;
+    const dayLabels = [{ l: "一", o: 0 }, { l: "三", o: 2 }, { l: "五", o: 4 }];
+
+    // Weekly totals for trend
+    const weeklyTotals = grid.map(col => col.reduce((s, c) => s + c.count, 0));
+    const maxW = Math.max(...weeklyTotals, 1);
+    const tw = 160, th = 64, tp = { t: 4, r: 4, b: 14, l: 4 };
+    const cw = tw - tp.l - tp.r, che = th - tp.t - tp.b;
+    const pts = weeklyTotals.map((v, i) => ({
+      x: tp.l + (i / Math.max(weeklyTotals.length - 1, 1)) * cw,
+      y: tp.t + che - (v / maxW) * che,
+    }));
+    const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const area = `${line} L${pts[pts.length-1].x},${tp.t+che} L${pts[0].x},${tp.t+che} Z`;
 
     return (
-      <div className="flex gap-4">
-        {/* Left: heatmap grid */}
-        <div className="shrink-0">
-          <div className="flex gap-1.5 overflow-x-auto py-2 custom-scrollbar justify-center">
-            {/* Day labels */}
-            <div className="flex flex-col gap-[3px]" style={{ paddingTop: '1.25rem' }}>
-              {dayLabels.map((label, idx) => (
-                <span key={idx}
-                  className="text-[7px] font-bold text-slate-400 leading-none flex items-center"
-                  style={{ visibility: idx % 2 === 1 ? "visible" : "hidden", height: '14px' }}
-                >{label}</span>
-              ))}
-            </div>
-            {/* Grid */}
-            <div>
-              {/* Month labels */}
-              <div className="flex gap-[3px] mb-[3px]">
-                {weeks.map((_, colIdx) => (
-                  <div key={colIdx} className="text-[7px] font-bold text-slate-400 text-center" style={{ width: '14px' }}>
-                    {monthLabelSet.get(colIdx) || ""}
-                  </div>
-                ))}
-              </div>
-              {/* Cells */}
-              <div className="flex gap-[3px]">
-                {weeks.map((week, wIdx) => (
-                  <div key={wIdx} className="flex flex-col gap-[3px]">
-                    {week.map((day, dIdx) => (
-                      <div key={dIdx}
-                        title={day.isFuture ? a.futureDay : a.daySummary.replace("{dateStr}", day.dateStr).replace("{count}", String(day.count))}
-                        className={`w-[14px] h-[14px] rounded-[2px] transition-all ${day.colorClass} ${
-                          day.isToday ? "ring-1 ring-[#A34E36] ring-offset-1" : ""
-                        } ${day.isFuture ? "" : "cursor-pointer hover:ring-1 hover:ring-[#4D7C5D]"}`}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Legend */}
-          <div className="flex items-center justify-end gap-1.5 mt-2.5 text-[8px] text-slate-400 font-bold">
-            <span>{a.low}</span>
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-white/50 border border-[#EFEBE4]/60" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#C4D7B2]/40" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#C4D7B2]/70" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#4D7C5D]/70" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#3F684C]" />
-            <span>{a.high}</span>
-          </div>
-        </div>
-        {/* Right: weekly trend line chart */}
-        <div className="flex-grow min-w-0 border-l border-[#EFEBE4] pl-4">
-          <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp className="w-3.5 h-3.5 text-[#4D7C5D]" />
-            <span className="text-[9px] font-black text-[#8B6E3C] tracking-widest uppercase">每周趋势</span>
-          </div>
-          <div className="flex items-center justify-center h-full min-h-[100px]">
-            <MiniLineChartSVG />
-          </div>
-        </div>
+      <div className="flex gap-5 items-start">
+        {/* GitHub-style heatmap */}
+        <svg width={sw} height={sh} className="overflow-visible shrink-0">
+          {monthLabels.map(m => (
+            <text key={m.col} x={LABEL_W + m.col * STEP + CELL/2} y={8}
+              textAnchor="middle" className="fill-slate-400 font-bold" fontSize={8}>{m.label}</text>
+          ))}
+          {dayLabels.map(d => (
+            <text key={d.o} x={6} y={MONTH_H + d.o * STEP + CELL - 2}
+              textAnchor="end" className="fill-slate-400 font-bold" fontSize={8}>{d.l}</text>
+          ))}
+          {grid.map((col, ci) => col.map((cell, ri) => (
+            <rect key={`${ci}-${ri}`}
+              x={LABEL_W + ci * STEP} y={MONTH_H + ri * STEP}
+              width={CELL} height={CELL} rx={2} ry={2}
+              className={`${LEVELS[level(cell.count)]} transition-all duration-200 hover:brightness-110 cursor-help ${cell.isToday ? "stroke-[#A34E36] stroke-[2.5]" : ""}`}
+            >
+              <title>{`${cell.date} · ${cell.count} 个番茄`}</title>
+            </rect>
+          )))}
+        </svg>
+
+        {/* Mini trend chart */}
+        <svg width={tw} height={th} viewBox={`0 0 ${tw} ${th}`} className="overflow-visible shrink-0">
+          <defs>
+            <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#4D7C5D" stopOpacity="0.3"/>
+              <stop offset="100%" stopColor="#4D7C5D" stopOpacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <path d={area} fill="url(#aGrad)"/>
+          <path d={line} fill="none" stroke="#4D7C5D" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+          {pts.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r="2" fill="#4D7C5D"/>
+          ))}
+        </svg>
       </div>
     );
   };
-
-  // Weekly trend SVG line chart
-  const MiniLineChartSVG = React.memo(() => {
-    const weeksData: { count: number }[] = [];
-    const today = new Date();
-    const currentDayOfWeek = today.getDay();
-    const startOfGrid = new Date();
-    startOfGrid.setDate(today.getDate() - currentDayOfWeek - 17 * 7);
-    for (let w = 0; w < 18; w++) {
-      let total = 0;
-      for (let d = 0; d < 7; d++) {
-        const cellDate = new Date(startOfGrid.getTime());
-        cellDate.setDate(startOfGrid.getDate() + (w * 7 + d));
-        if (cellDate.getTime() <= today.getTime()) {
-          const dateStr = getLocalDateString(cellDate);
-          total += pomodoroCountsByDate[dateStr] || 0;
-        }
-      }
-      weeksData.push({ count: total });
-    }
-
-    const W = 240;
-    const H = 80;
-    const PAD = { top: 6, right: 6, bottom: 18, left: 6 };
-    const chartW = W - PAD.left - PAD.right;
-    const chartH = H - PAD.top - PAD.bottom;
-    const maxVal = Math.max(...weeksData.map((w) => w.count), 1);
-    const points = weeksData.map((w, i) => ({
-      x: PAD.left + (i / Math.max(weeksData.length - 1, 1)) * chartW,
-      y: PAD.top + chartH - (w.count / maxVal) * chartH,
-      v: w.count,
-    }));
-    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-    const areaPath = `${linePath} L${points[points.length - 1].x},${PAD.top + chartH} L${points[0].x},${PAD.top + chartH} Z`;
-
-    return (
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
-        <defs>
-          <linearGradient id="hMapGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4D7C5D" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#4D7C5D" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
-        <path d={areaPath} fill="url(#hMapGrad)" />
-        <path d={linePath} fill="none" stroke="#4D7C5D" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="2" fill="#4D7C5D" />
-        ))}
-      </svg>
-    );
-  });
 
   const categories = [
     { id: "urgent-important", label: "I. " + m.urgentImportant, color: "bg-[#E8A0BF]", textColor: "text-[#A34E36]", bgClass: "bg-[#FCF2F0]" },
@@ -496,9 +416,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
             </h3>
             <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold uppercase tracking-wider">
               <span>{a.low}</span>
-              {heatmapColors.slice(0, 5).map((_, i) => (
-                <div key={i} className={`w-2.5 h-2.5 rounded ${heatmapColors[i].split(" ")[0]}`} style={i === 0 ? { backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(239,235,228,0.6)" } : undefined} />
-              ))}
+              <div className="w-[10px] h-[10px] rounded bg-[#ebedf0]" />
+              <div className="w-[10px] h-[10px] rounded bg-[#9be9a8]" />
+              <div className="w-[10px] h-[10px] rounded bg-[#40c463]" />
+              <div className="w-[10px] h-[10px] rounded bg-[#30a14e]" />
+              <div className="w-[10px] h-[10px] rounded bg-[#216e39]" />
               <span>{a.high}</span>
             </div>
           </div>
@@ -532,61 +454,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
         </div>
       </div>
 
-      {/* 2. Best day of week + 3. Monthly trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm">
-          <div className="pb-3 border-b border-[#EFEBE4] mb-4">
-            <h3 className="text-xs font-bold text-[#2D323A] flex items-center gap-1.5">
-              <Sun className="w-4 h-4 text-[#C97D3E]" />
-              <span>{a.weeklyDist}</span>
-            </h3>
-          </div>
-          <div className="flex items-end justify-between gap-2 h-28">
-            {dayStats.map((d) => {
-              const pct = Math.round((d.count / maxDay) * 100);
-              return (
-                <div key={d.label} className="flex flex-col items-center gap-1.5 flex-1">
-                  <span className="text-[9px] font-extrabold text-slate-500">{d.count}</span>
-                  <div className="w-full rounded-md relative" style={{ height: '80px' }}>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 rounded-md bg-gradient-to-t from-[#C4D7B2] to-[#B2C8DF] transition-all duration-500"
-                      style={{ height: `${pct}%`, opacity: 0.7 }}
-                    />
-                  </div>
-                  <span className="text-[8px] font-bold text-slate-400">{d.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm">
-          <div className="pb-3 border-b border-[#EFEBE4] mb-4">
-            <h3 className="text-xs font-bold text-[#2D323A] flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-[#4D7C5D]" />
-              <span>{a.monthlyTrend}</span>
-            </h3>
-          </div>
-          <div className="flex items-end justify-between gap-1.5 h-28">
-            {monthlyTrend.map(([month, count]) => {
-              const pct = Math.round((count / maxMonth) * 100);
-              const label = month.slice(5);
-              return (
-                <div key={month} className="flex flex-col items-center gap-1.5 flex-1">
-                  <span className="text-[8px] font-extrabold text-slate-500">{count}</span>
-                  <div className="w-full rounded-md relative" style={{ height: '80px' }}>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 rounded-md bg-gradient-to-t from-[#E8A0BF] to-[#C97D3E] transition-all duration-500"
-                      style={{ height: `${pct}%`, opacity: 0.7 }}
-                    />
-                  </div>
-                  <span className="text-[7px] font-bold text-slate-400">{a.monthlyTrendLabel.replace("{month}", label)}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
       {/* 4. Daily goal progress */}
       <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm">

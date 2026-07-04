@@ -123,45 +123,49 @@ export const FlowMode: React.FC<FlowModeProps> = ({
         </button>
       </div>
 
-      <div className="flex-grow flex flex-col items-center justify-center px-8 overflow-y-auto">
-        <div className={`max-w-lg w-full transition-all duration-500 ${showComplete ? "scale-95 opacity-0" : "scale-100 opacity-100"}`}>
-          <div className={`w-1.5 h-1.5 rounded-full mb-4 ${getQuadColor(currentTask.category)}`} />
-          <h1 className="text-3xl font-bold text-[#2D323A] leading-tight mb-4">
-            {currentTask.title}
-          </h1>
-          {currentTask.description && (
-            <p className="text-base text-slate-500 font-medium leading-relaxed mb-6">
-              {currentTask.description}
-            </p>
-          )}
-          <div className="flex items-center gap-3 text-sm text-slate-400 font-medium">
-            <span className={`text-[10px] font-black px-2 py-1 rounded-md text-white ${getQuadColor(currentTask.category)}`}>
-              {getQuadLabel(currentTask.category)}
-            </span>
-            {currentTask.dueTime && (
-              <span>截止 {currentTask.dueTime}</span>
+      <div className="flex-grow flex flex-col px-8 overflow-y-auto">
+        {/* 任务卡片：垂直居中 */}
+        <div className="flex-grow flex items-center justify-center min-h-0">
+          <div className={`max-w-lg w-full transition-all duration-500 ${showComplete ? "scale-95 opacity-0" : "scale-100 opacity-100"}`}>
+            <div className={`w-1.5 h-1.5 rounded-full mb-4 ${getQuadColor(currentTask.category)}`} />
+            <h1 className="text-3xl font-bold text-[#2D323A] leading-tight mb-4">
+              {currentTask.title}
+            </h1>
+            {currentTask.description && (
+              <p className="text-base text-slate-500 font-medium leading-relaxed mb-6">
+                {currentTask.description}
+              </p>
             )}
-          </div>
+            <div className="flex items-center gap-3 text-sm text-slate-400 font-medium">
+              <span className={`text-[10px] font-black px-2 py-1 rounded-md text-white ${getQuadColor(currentTask.category)}`}>
+                {getQuadLabel(currentTask.category)}
+              </span>
+              {currentTask.dueTime && (
+                <span>截止 {currentTask.dueTime}</span>
+              )}
+            </div>
 
-          <div className="mt-10 flex gap-4">
-            <button
-              onClick={handleDone}
-              className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-[#4D7C5D] text-white font-bold text-sm hover:bg-[#3F684C] transition-all shadow-md hover:shadow-lg cursor-pointer"
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              完成
-            </button>
-            <button
-              onClick={onExit}
-              className="px-8 py-3.5 rounded-2xl border border-[#EFEBE4] bg-white text-slate-500 font-bold text-sm hover:bg-[#FAF8F5] transition-all cursor-pointer"
-            >
-              稍后处理
-            </button>
+            <div className="mt-10 flex gap-4">
+              <button
+                onClick={handleDone}
+                className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-[#4D7C5D] text-white font-bold text-sm hover:bg-[#3F684C] transition-all shadow-md hover:shadow-lg cursor-pointer"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                完成
+              </button>
+              <button
+                onClick={onExit}
+                className="px-8 py-3.5 rounded-2xl border border-[#EFEBE4] bg-white text-slate-500 font-bold text-sm hover:bg-[#FAF8F5] transition-all cursor-pointer"
+              >
+                稍后处理
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* 热力图：固定在底部 */}
         {pomodoroLogs.length > 0 && (
-          <div className="w-full max-w-2xl mt-6 pb-4">
+          <div className="flex-shrink-0 w-full max-w-2xl mx-auto pb-6 pt-4">
             <FocusHeatmap pomodoroLogs={pomodoroLogs} weeks={12} />
           </div>
         )}

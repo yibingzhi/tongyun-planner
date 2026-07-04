@@ -934,7 +934,7 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
                         <button
                           key={colorKey}
                           onClick={() => handleChangeNoteColor(note.id, colorKey)}
-                          className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
+                          className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-110 cursor-pointer ${
                             note.color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
                           }`}
                         />

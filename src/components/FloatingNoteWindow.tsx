@@ -266,7 +266,7 @@ export const FloatingNoteWindow: React.FC<FloatingNoteWindowProps> = ({ noteId }
               <button
                 key={colorKey}
                 onClick={() => handleColorChange(colorKey)}
-                className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
+                className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-110 cursor-pointer ${
                   color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
                 }`}
               />

@@ -384,7 +384,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                   })()}
                 </div>
                 {/* 心情便签 */}
-                <div className="mt-2 flex items-center gap-1.5">
+                <div className="mt-2 relative">
                   <button
                     onClick={() => setShowMoodPicker(!showMoodPicker)}
                     className="text-[10px] font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 cursor-pointer transition-colors"
@@ -398,7 +398,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
                     )}
                   </button>
                   {showMoodPicker && (
-                    <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 min-w-fit animate-fade-in-up">
+                    <div className="absolute right-0 top-full mt-1 z-20 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 grid grid-cols-6 gap-1 min-w-fit animate-fade-in-up">
                       {MOOD_OPTIONS.map((emoji) => (
                         <button
                           key={emoji}

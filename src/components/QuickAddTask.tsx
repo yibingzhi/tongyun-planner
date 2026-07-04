@@ -409,7 +409,7 @@ const NLPDateInput: React.FC<{ onParse: (date?: string, time?: string) => void }
                 </button>
                 <button
                   type="submit"
-                  className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-xs hover:scale-101 active:scale-99 transition-all cursor-pointer"
+                  className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 >
                   {q.add}
                 </button>

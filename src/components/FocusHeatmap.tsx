@@ -1,43 +1,60 @@
 import React, { useMemo } from "react";
-import { Flame, TrendingUp } from "lucide-react";
+import { Flame } from "lucide-react";
 import type { PomodoroLog } from "../types";
 import { getLocalDateString } from "../utils/date";
 
 interface FocusHeatmapProps {
   pomodoroLogs: PomodoroLog[];
-  weeks?: number; // 显示最近多少周,默认 12 周 = 84 天
+  weeks?: number;
 }
 
 /**
- * 专注热力图
- * 类似 GitHub 贡献图:7 行(周一-周日) x N 列(周)
- * 每格颜色深浅代表当天完成的番茄钟数量
+ * GitHub 风格专注热力图
+ * 7 行(周一-周日) x N 列(周)，颜色深浅代表当天番茄钟数量
  */
+const CELL_SIZE = 12;
+const CELL_GAP = 2;
+const STEP = CELL_SIZE + CELL_GAP;
+const MONTH_LABEL_HEIGHT = 14;
+const LABEL_WIDTH = 18;
+
+// GitHub 经典绿色色阶
+const LEVEL_COLORS = [
+  "bg-[#ebedf0]", // 0
+  "bg-[#9be9a8]", // 1-2
+  "bg-[#40c463]", // 3-4
+  "bg-[#30a14e]", // 5-6
+  "bg-[#216e39]", // 7+
+];
+
+function getLevel(count: number): number {
+  if (count === 0) return 0;
+  if (count <= 2) return 1;
+  if (count <= 4) return 2;
+  if (count <= 6) return 3;
+  return 4;
+}
+
 export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks = 12 }) => {
   const { grid, stats, monthLabels } = useMemo(() => {
-    // 1. 汇总每天的番茄数
     const perDay = new Map<string, number>();
     for (const log of pomodoroLogs) {
       const dateStr = getLocalDateString(new Date(log.timestamp));
       perDay.set(dateStr, (perDay.get(dateStr) || 0) + 1);
     }
 
-    // 2. 以今天为基准，构建网格
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
+    const dayOfWeek = today.getDay();
 
-    // 最近一个已完成的周日
     const lastSunday = new Date(today);
     lastSunday.setDate(lastSunday.getDate() - (dayOfWeek === 0 ? 0 : dayOfWeek));
 
-    // grid[col][row]: col 0 = 最早, 最后 = 最新; row 0=周一 ... 6=周日
     const grid: { date: string; count: number }[][] = [];
-    const monthLabelSet = new Map<number, string>();
-
+    const monthLabels: { colIndex: number; label: string }[] = [];
+    let prevMonth = -1;
     let colIndex = 0;
 
-    // 3. 生成 weeks 个完整的周列 (Mon-Sun, 全部是已过去日期)
     for (let col = weeks - 1; col >= 0; col--) {
       const colSunday = new Date(lastSunday);
       colSunday.setDate(colSunday.getDate() - col * 7);
@@ -54,17 +71,17 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
         colData.push({ date: dateStr, count });
 
         if (row === 0) {
-          const month = cellDate.getMonth() + 1;
-          const prev = colIndex > 0 ? monthLabelSet.get(colIndex - 1) : null;
-          const label = `${month}月`;
-          if (label !== prev) monthLabelSet.set(colIndex, label);
+          const month = cellDate.getMonth();
+          if (month !== prevMonth) {
+            monthLabels.push({ colIndex, label: `${month + 1}月` });
+            prevMonth = month;
+          }
         }
       }
       grid.push(colData);
       colIndex++;
     }
 
-    // 4. 追加当前（未完成）周：从本周一到今天
     if (dayOfWeek !== 0) {
       const thisMonday = new Date(today);
       thisMonday.setDate(thisMonday.getDate() - (dayOfWeek - 1));
@@ -79,16 +96,16 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
         partialCol.push({ date: dateStr, count });
 
         if (row === 0) {
-          const month = cellDate.getMonth() + 1;
-          const prev = colIndex > 0 ? monthLabelSet.get(colIndex - 1) : null;
-          const label = `${month}月`;
-          if (label !== prev) monthLabelSet.set(colIndex, label);
+          const month = cellDate.getMonth();
+          if (month !== prevMonth) {
+            monthLabels.push({ colIndex, label: `${month + 1}月` });
+            prevMonth = month;
+          }
         }
       }
       grid.push(partialCol);
     }
 
-    // 5. 统计
     let total = 0;
     let activeDays = 0;
     for (const col of grid) {
@@ -98,7 +115,6 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
       }
     }
 
-    // 计算连续打卡天数(从今天回退)
     let streak = 0;
     const cursor = new Date(today);
     while (true) {
@@ -111,91 +127,29 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
       }
     }
 
-    return {
-      grid,
-      stats: { total, activeDays, streak },
-      monthLabels: monthLabelSet,
-    };
+    return { grid, stats: { total, activeDays, streak }, monthLabels };
   }, [pomodoroLogs, weeks]);
 
-  const getCellClass = (count: number): string => {
-    if (count === 0) return "bg-[#F3EEE8]";
-    if (count <= 2) return "bg-[#DEEAE2]";
-    if (count <= 4) return "bg-[#B8D4C1]";
-    if (count <= 6) return "bg-[#7FB08D]";
-    return "bg-[#4D7C5D]";
-  };
+  const totalWeeks = grid.length;
+  const gridW = totalWeeks * STEP;
+  const gridH = 7 * STEP;
+  const totalSvgW = LABEL_WIDTH + gridW;
+  const totalSvgH = MONTH_LABEL_HEIGHT + gridH;
 
-  const dayLabels = ["一", "二", "三", "四", "五", "六", "日"];
-
-  const weeklyTotals = useMemo(() => {
-    return grid.map((col) => col.reduce((sum, cell) => sum + cell.count, 0));
-  }, [grid]);
-
-  // 右侧迷你折线图
-  const MiniLineChart = () => {
-    const W = 240;
-    const H = 90;
-    const PAD = { top: 8, right: 8, bottom: 18, left: 8 };
-    const chartW = W - PAD.left - PAD.right;
-    const chartH = H - PAD.top - PAD.bottom;
-    const maxVal = Math.max(...weeklyTotals, 1);
-    const points = weeklyTotals.map((v, i) => ({
-      x: PAD.left + (i / Math.max(weeklyTotals.length - 1, 1)) * chartW,
-      y: PAD.top + chartH - (v / maxVal) * chartH,
-      v,
-    }));
-    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-    const areaPath = `${linePath} L${points[points.length - 1].x},${PAD.top + chartH} L${points[0].x},${PAD.top + chartH} Z`;
-
-    // X 轴刻度 — 每隔 2 周显示一个标签
-    const xTicks: { x: number; label: string }[] = [];
-    for (let i = 0; i < weeklyTotals.length; i++) {
-      if (i === 0 || i === weeklyTotals.length - 1 || i % 2 === 0) {
-        const label = monthLabels.get(i);
-        if (label) xTicks.push({ x: points[i].x, label });
-      }
-    }
-
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-1.5 mb-1">
-          <TrendingUp className="w-3.5 h-3.5 text-[#4D7C5D]" />
-          <span className="text-[9px] font-black text-[#8B6E3C] tracking-widest uppercase">每周趋势</span>
-        </div>
-        <div className="flex-grow flex items-center justify-center">
-          <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
-            <defs>
-              <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4D7C5D" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#4D7C5D" stopOpacity="0.02" />
-              </linearGradient>
-            </defs>
-            <path d={areaPath} fill="url(#areaGrad)" />
-            <path d={linePath} fill="none" stroke="#4D7C5D" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-            {points.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r="2" fill="#4D7C5D" className="hover:r-3" />
-            ))}
-            {xTicks.map((t, i) => (
-              <text key={i} x={t.x} y={H - 2} textAnchor="middle" className="text-[6px] fill-slate-400 font-bold">
-                {t.label}
-              </text>
-            ))}
-          </svg>
-        </div>
-      </div>
-    );
-  };
+  // GitHub 经典: 显示一三五(一/三/五)
+  const dayLabels = [
+    { label: "一", offset: 0 },
+    { label: "三", offset: 2 },
+    { label: "五", offset: 4 },
+  ];
 
   return (
-    <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4 shadow-2xs backdrop-blur-xs">
+    <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4 shadow-2xs backdrop-blur-xs select-none">
       {/* 标题行 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Flame className="w-4 h-4 text-[#A34E36]" />
-          <span className="text-[10px] font-black text-[#8B6E3C] tracking-widest uppercase">
-            专注热力图
-          </span>
+          <span className="text-[10px] font-black text-[#8B6E3C] tracking-widest uppercase">专注热力图</span>
         </div>
         <div className="flex items-center gap-2.5 text-[9px] font-bold text-slate-500">
           <span>
@@ -216,72 +170,62 @@ export const FocusHeatmap: React.FC<FocusHeatmapProps> = ({ pomodoroLogs, weeks 
         </div>
       </div>
 
-      {/* 主体：左侧热力图 + 右侧折线图 */}
-      <div className="flex gap-4">
-        {/* 左侧热力图 */}
-        <div className="shrink-0">
-          <div className="flex gap-1.5">
-            {/* 星期标签 */}
-            <div className="flex flex-col gap-[3px]" style={{ paddingTop: '10px' }}>
-              {dayLabels.map((label, idx) => (
-                <span
-                  key={idx}
-                  className="text-[7px] font-bold text-slate-400 leading-none flex items-center"
-                  style={{ visibility: idx % 2 === 1 ? "visible" : "hidden", height: '14px' }}
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
+      {/* SVG 热力图 — 纯 GitHub 风格 */}
+      <svg width={totalSvgW} height={totalSvgH} className="overflow-visible block mx-auto">
+        {/* 月份标签 */}
+        {monthLabels.map((m, i) => (
+          <text
+            key={i}
+            x={LABEL_WIDTH + m.colIndex * STEP + CELL_SIZE / 2}
+            y={8}
+            textAnchor="middle"
+            className="fill-slate-400 font-bold"
+            fontSize={8}
+          >
+            {m.label}
+          </text>
+        ))}
 
-            {/* 热力网格 */}
-            <div>
-              {/* 月份标签 */}
-              <div className="flex gap-[3px] mb-[3px]">
-                {grid.map((_, colIdx) => (
-                  <div key={colIdx} className="text-[7px] font-bold text-slate-400 text-center" style={{ width: '14px' }}>
-                    {monthLabels.get(colIdx) || ""}
-                  </div>
-                ))}
-              </div>
+        {/* 星期标签 */}
+        {dayLabels.map((d) => (
+          <text
+            key={d.offset}
+            x={6}
+            y={MONTH_LABEL_HEIGHT + d.offset * STEP + CELL_SIZE - 2}
+            textAnchor="end"
+            className="fill-slate-400 font-bold"
+            fontSize={8}
+          >
+            {d.label}
+          </text>
+        ))}
 
-              {/* 单元格 */}
-              <div className="flex gap-[3px]">
-                {grid.map((col, colIdx) => (
-                  <div key={colIdx} className="flex flex-col" style={{ gap: '3px' }}>
-                    {col.map((cell, rowIdx) => (
-                      <div
-                        key={rowIdx}
-                        className={`w-[14px] h-[14px] rounded-[2px] ${getCellClass(cell.count)} transition-all hover:ring-1 hover:ring-[#4D7C5D] cursor-help`}
-                        title={`${cell.date} · ${cell.count} 个番茄`}
-                      />
-                    ))}
-                    {/* 补齐当前不完整周的空格，保持对齐 */}
-                    {colIdx === grid.length - 1 && col.length < 7 && (
-                      <div style={{ height: `${(7 - col.length) * 17 - 3}px` }} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* 格子 */}
+        {grid.map((col, ci) =>
+          col.map((cell, ri) => (
+            <rect
+              key={`${ci}-${ri}`}
+              x={LABEL_WIDTH + ci * STEP}
+              y={MONTH_LABEL_HEIGHT + ri * STEP}
+              width={CELL_SIZE}
+              height={CELL_SIZE}
+              rx={2}
+              ry={2}
+              className={`${LEVEL_COLORS[getLevel(cell.count)]} transition-all duration-200 hover:brightness-110 cursor-help`}
+            >
+              <title>{`${cell.date} · ${cell.count} 个番茄`}</title>
+            </rect>
+          ))
+        )}
+      </svg>
 
-          {/* 图例 */}
-          <div className="flex items-center justify-end gap-1.5 mt-2.5 text-[8px] text-slate-400 font-bold">
-            <span>少</span>
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#F3EEE8]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#DEEAE2]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#B8D4C1]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#7FB08D]" />
-            <div className="w-[10px] h-[10px] rounded-[2px] bg-[#4D7C5D]" />
-            <span>多</span>
-          </div>
-        </div>
-
-        {/* 右侧折线图 */}
-        <div className="flex-grow min-w-0 border-l border-[#EFEBE4] pl-4">
-          <MiniLineChart />
-        </div>
+      {/* 图例 */}
+      <div className="flex items-center justify-end gap-1 mt-2 text-[8px] text-slate-400 font-bold">
+        <span>少</span>
+        {LEVEL_COLORS.map((cls, i) => (
+          <div key={i} className={`w-[10px] h-[10px] rounded-[2px] ${cls}`} />
+        ))}
+        <span>多</span>
       </div>
     </div>
   );

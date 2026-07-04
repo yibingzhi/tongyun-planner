@@ -86,7 +86,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
         </div>
         <button
           onClick={handleAddNote}
-          className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_2px_4px_rgba(77,124,93,0.1)] cursor-pointer hover:scale-102"
+          className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-[0_2px_4px_rgba(77,124,93,0.1)] cursor-pointer hover:scale-105"
         >
           <Plus className="w-3.5 h-3.5" />
           {sn.add}
@@ -114,7 +114,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
               <div
                 key={note.id}
                 style={{ transform: `rotate(${note.rotate}deg)` }}
-                className={`group relative rounded-2xl border ${theme.bg} ${theme.border} ${theme.shadow} p-5 flex flex-col justify-between shadow-md transition-all duration-300 hover:scale-102 hover:shadow-lg min-h-[160px]`}
+                className={`group relative rounded-2xl border ${theme.bg} ${theme.border} ${theme.shadow} p-5 flex flex-col justify-between shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lg min-h-[160px]`}
               >
                 <StickyPin type={pinType || "pin"} />
 
@@ -132,7 +132,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
                       <button
                         key={colorKey}
                         onClick={() => handleChangeNoteColor(note.id, colorKey)}
-                        className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-120 cursor-pointer ${
+                        className={`w-3.5 h-3.5 rounded-full ${t.bg} border ${t.border} transition-all hover:scale-110 cursor-pointer ${
                           note.color === colorKey ? "ring-1 ring-slate-400 scale-110" : ""
                         }`}
                         title={colorKey}
