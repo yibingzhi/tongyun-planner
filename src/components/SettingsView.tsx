@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server } from "lucide-react";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server, Copy } from "lucide-react";
 import type { CustomizationConfig, AlertSoundType, Locale } from "../types";
 import type { SyncBackendType } from "../utils/sync/types";
 import { syncEngine } from "../utils/sync/engine";
@@ -1066,6 +1066,125 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       <option value={3600}>每小时</option>
                       <option value={0}>仅手动</option>
                     </select>
+                  </div>
+                )}
+
+                {/* AI 工具集成 */}
+                {syncBackend === "webdav" && webdavUrl && webdavUser && (
+                  <div className="p-3 rounded-xl border border-[#DEEAE2] dark:border-[#4D525A] bg-[#F0F5F1]/50 dark:bg-[#3D424A]/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-3.5 h-3.5 text-[#4D7C5D] dark:text-[#6DAF7E]" />
+                      <span className="text-[11px] font-bold text-[#4D7C5D] dark:text-[#6DAF7E]">AI 智能体集成</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">将待办管理能力作为工具赋予你的 AI 助手，一键复制函数定义即可粘贴到 OpenAI/Claude 的 tools 参数中。</p>
+                    <button
+                      onClick={() => {
+                        const doc = `# 🎯 QiYun-List 数据管理工具集
+
+通过坚果云 WebDAV 读写用户的所有应用数据：待办、便签、心情、习惯、倒计时等。
+
+---
+
+## 📦 数据文件一览
+
+| # | 文件 | 内容 | 结构 |
+|---|------|------|------|
+| 1 | \`tasks.json\` | 待办任务列表 | \`Task[]\` |
+| 2 | \`completed.json\` | 已完成任务 | \`Task[]\` |
+| 3 | \`notes.json\` | 便签 | \`StickyNote[]\` |
+| 4 | \`pomodoro.json\` | 专注记录 | \`PomodoroLog[]\` |
+| 5 | \`countdowns.json\` | 倒计时事件 | \`CountdownEvent[]\` |
+| 6 | \`habits.json\` | 习惯 + 打卡 + 心情 | \`{ habits[], habitLogs, moods }\` |
+| 7 | \`config.json\` | 应用配置 | \`CustomizationConfig\` |
+| 8 | \`manifest.json\` | ⚠️ 版本清单 | \`{ "分类": { "version": 时间戳 } }\` |
+
+> **manifest.json 最关键**：每次写数据后必须更新版本号，否则 App 不会拉取新数据。
+
+---
+
+## 🔧 通用操作
+
+所有文件操作方式一致，以 tasks.json 为例：
+
+### 读取
+\`\`\`bash
+curl -s -u "${webdavUser}:${webdavPass}" \\
+  "${webdavUrl}QiYunList/tasks.json"
+\`\`\`
+404 → 空数组 \`[]\` 或空对象 \`{}\`。
+
+### 写入（新增/更新/删除）
+\`\`\`bash
+# 1. 读取当前数据
+curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}QiYunList/tasks.json"
+
+# 2. 修改数组（id 用 Date.now().toString(36)+Math.random().toString(36).slice(2,6)）
+
+# 3. PUT 写回完整数组
+curl -s -X PUT -u "${webdavUser}:${webdavPass}" \\
+  -H "Content-Type: application/json" \\
+  -d '<完整 JSON 数组>' \\
+  "${webdavUrl}QiYunList/tasks.json"
+
+# 4. ⚠️ 更新 manifest.json 版本号
+#    GET → 修改对应分类 version 为 Date.now() → PUT
+curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}QiYunList/manifest.json"
+#    {"tasks":{"version":1712345678000}}
+curl -s -X PUT -u "${webdavUser}:${webdavPass}" \\
+  -H "Content-Type: application/json" \\
+  -d '<更新后的 manifest>' \\
+  "${webdavUrl}QiYunList/manifest.json"
+\`\`\`
+
+---
+
+## 📋 各数据格式
+
+### Task（待办）
+\`\`\`json
+{"id":"k3x8p2a","title":"准备汇报","category":"important-not-urgent","dueDate":"2026-07-10","dueTime":"18:00","tags":["工作"],"description":"详情","isFavorite":false,"subtasks":[{"id":"m9n","title":"子任务","completed":false}],"repeat":"none"}
+\`\`\`
+category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\` \`not-urgent-not-important\`
+
+### StickyNote（便签）
+\`\`\`json
+{"id":"abc","text":"便签内容","color":"#FFD700","rotate":-3}
+\`\`\`
+
+### CountdownEvent（倒计时）
+\`\`\`json
+{"id":"cde","title":"春节","targetDate":"2027-01-28","emoji":"🎉","color":"#D4380D"}
+\`\`\`
+
+### PomodoroLog（专注记录）
+\`\`\`json
+{"id":"xyz","timestamp":1700000000000,"duration":1500,"taskId":"k3x","taskTitle":"标题"}
+\`\`\`
+
+### habits.json（习惯 + 打卡 + 心情）
+\`\`\`json
+{"habits":[{"id":"h1","title":"早起","emoji":"🌅"}],"habitLogs":{"2026-07-05":["h1"]},"moods":{"2026-07-05":4}}
+\`\`\`
+
+### config.json（配置）
+应用完整配置，读取可查看，修改需谨慎。
+
+---
+
+## 📐 规则
+1. **404** = 数据不存在，初始化为 \`[]\` 或 \`{}\`
+2. **完整写回**：永远 PUT 完整数据，不丢失其他字段
+3. **manifest**：每次写数据后同步更新 manifest.json 版本号（用 \`Date.now()\`）
+4. **确认**：操作前展示变更内容让用户确认`;
+
+                        navigator.clipboard.writeText(doc);
+                        triggerToast("已复制 ✅ 完整技能定义，可直接粘贴给 AI", "success");
+                      }}
+                      className="w-full bg-white dark:bg-[#2D323A] hover:bg-[#F5F1EA] dark:hover:bg-[#3D424A] border border-[#DEEAE2] dark:border-[#4D525A] text-[#4D7C5D] dark:text-[#6DAF7E] py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <Copy className="w-3 h-3" />
+                      复制 AI 工具定义
+                    </button>
                   </div>
                 )}
               </div>

@@ -287,11 +287,11 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     <div className="animate-fade-in-up flex flex-col gap-4 flex-grow z-10 relative select-none">
       <div className="grid grid-cols-3 gap-6 flex-grow">
         {/* 月历网格页 */}
-        <div className="col-span-2 rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm min-h-[420px]">
+        <div className="col-span-2 rounded-2xl bg-white/70 dark:bg-[#2D323A]/70 border border-[#EFEBE4] dark:border-[#4D525A] p-5 flex flex-col shadow-sm backdrop-blur-sm min-h-[420px]">
           {/* 日历导航 */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] mb-4">
-            <h3 className="text-sm font-bold text-[#2D323A] flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-[#4D7C5D]" />
+          <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] dark:border-[#4D525A] mb-4">
+            <h3 className="text-sm font-bold text-[#2D323A] dark:text-[#E8E0D0] flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-[#4D7C5D] dark:text-[#6DAF7E]" />
               <span>
                 {cv.yearMonth.replace("{year}", String(calendarYear)).replace("{month}", String(calendarMonth + 1))}
               </span>
