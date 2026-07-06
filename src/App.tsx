@@ -40,7 +40,7 @@ import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
 import { storage } from "./utils/storage";
 import { syncEngine } from "./utils/sync/engine";
-import { SYNC_APPLIED_EVENT, bumpSyncVersion, type SyncData } from "./utils/sync/types";
+import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, ALL_SYNC_CATEGORIES, type SyncData } from "./utils/sync/types";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -655,6 +655,7 @@ function AppInner() {
     if (isFirstLoad.current) return;
     if (isRestoringRef.current) { isRestoringRef.current = false; return; }
     bumpSyncVersion();
+    bumpCategoryVersion(...ALL_SYNC_CATEGORIES);
     syncEngine.markDirty();
   }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, moodNotes]);
 

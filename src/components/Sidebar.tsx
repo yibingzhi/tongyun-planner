@@ -260,8 +260,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       <div className="space-y-5 flex-shrink-0">
         {/* Logo — simplified */}
         <div className={`flex items-center gap-2.5 ${isCollapsed ? "justify-center px-0" : "px-1"}`}>
-          <div className="w-8 h-8 overflow-hidden flex items-center justify-center flex-shrink-0 rounded-xl">
-            <img src={logo} alt="logo" className="w-8 h-8 object-cover" />
+            <div className="w-8 h-8 overflow-hidden flex items-center justify-center flex-shrink-0 rounded-xl">
+              <img src={logo} alt="logo" className="w-8 h-8 object-cover rounded-xl" />
           </div>
           <div className={`flex flex-col ${textClass}`}>
             <h1 className="text-[13px] font-bold tracking-wide text-[#2D323A] whitespace-nowrap">{t.app.title}</h1>

@@ -17,7 +17,7 @@ export const TitleBar: React.FC = () => {
     >
       <div data-tauri-drag-region className="flex items-center gap-2">
         <div className="w-5 h-5 overflow-hidden flex items-center justify-center rounded-md">
-          <img src={logo} alt="logo" className="w-5 h-5 object-cover" />
+          <img src={logo} alt="logo" className="w-5 h-5 object-cover rounded-md" />
         </div>
         <span data-tauri-drag-region className="text-[11px] font-bold text-[#2D323A] tracking-wide">
           {t.app.title}

@@ -106,51 +106,31 @@ export function useTasks() {
   const progressPercentage = totalCount === 0 ? 0 : Math.round((completedTasks.length / totalCount) * 100);
 
   const handleComplete = useCallback((id: string, shouldSync: boolean = true) => {
-    let completedItem: Task | undefined;
-    let hasPendingDeps = false;
-    setTasks((prev) => {
-      completedItem = prev.find((t) => t.id === id);
-      if (!completedItem) return prev;
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
 
-      // Check dependencies
-      if (completedItem.dependsOn && completedItem.dependsOn.length > 0) {
-        const allCompleted = completedItem.dependsOn.every(depId =>
-          !prev.find(t => t.id === depId) // If not in active tasks, it's completed or deleted
-        );
-        if (!allCompleted) {
-          hasPendingDeps = true;
-          return prev;
-        }
-      }
-
-      let updated = prev.filter((t) => t.id !== id);
-
-      if (completedItem.repeat && completedItem.repeat !== "none") {
-        const nextDue = getNextDueDate(completedItem.dueDate, completedItem.repeat);
-        const recurringTask: Task = {
-          ...completedItem,
-          id: createId("task"),
-          dueDate: nextDue,
-        };
-        updated = [recurringTask, ...updated];
-      }
-
-      saveTasks(updated);
-      return updated;
-    });
-
-    if (hasPendingDeps) return; // Don't complete - dependencies not met
-
-    if (completedItem) {
-      setCompletedTasks((cPrev) => {
-        const cUpdated = [completedItem!, ...cPrev.filter((t) => t.id !== id)];
-        saveCompleted(cUpdated);
-        return cUpdated;
-      });
+    if (task.dependsOn && task.dependsOn.length > 0) {
+      const allCompleted = task.dependsOn.every(depId =>
+        !tasks.find(t => t.id === depId)
+      );
+      if (!allCompleted) return;
     }
 
+    let updatedTasks: Task[];
+    if (task.repeat && task.repeat !== "none") {
+      const nextDue = getNextDueDate(task.dueDate, task.repeat);
+      updatedTasks = [{ ...task, id: createId("task"), dueDate: nextDue }, ...tasks.filter(t => t.id !== id)];
+    } else {
+      updatedTasks = tasks.filter(t => t.id !== id);
+    }
+
+    setTasks(updatedTasks);
+    setCompletedTasks(prev => [task, ...prev.filter(t => t.id !== id)]);
+    saveTasks(updatedTasks);
+    saveCompleted([task, ...completedTasks.filter(t => t.id !== id)]);
+
     if (shouldSync) syncState(id, "complete");
-  }, [saveTasks, saveCompleted, syncState]);
+  }, [tasks, completedTasks, saveTasks, saveCompleted, syncState]);
 
   const handleUndoComplete = useCallback((id: string, shouldSync: boolean = true) => {
     let restoredItem: Task | undefined;
