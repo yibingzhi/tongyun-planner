@@ -2,7 +2,7 @@ import type { Translations } from "./types";
 
 const zhCN: Translations = {
   app: {
-    title: "TongYun Planner",
+    title: "橦云手帐",
     subtitle: "待办日程管理",
   },
 

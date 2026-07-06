@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   BookOpen,
   Unlock,
@@ -309,6 +310,10 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
       return () => clearTimeout(timer);
     }
   }, [undoToast]);
+
+  useEffect(() => {
+    getCurrentWebviewWindow().setTitle(t.app.title);
+  }, [t.app.title]);
 
   const handleMouseDownDrag = (e: React.PointerEvent) => {
     // 允许按住非交互区拖拽窗口

@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "TongYun Planner - 规划与四象限管理",
+        "title": "橦云手帐",
         "width": 1020,
         "height": 720,
         "decorations": false,
@@ -23,7 +23,7 @@
       },
       {
         "label": "widget",
-        "title": "TongYun Planner Widget",
+        "title": "橦云手帐·挂件",
         "width": 300,
         "height": 400,
         "decorations": false,

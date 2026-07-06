@@ -22,7 +22,8 @@
     "lucide-react": "^1.21.0",
     "lunar-javascript": "^1.7.7",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",

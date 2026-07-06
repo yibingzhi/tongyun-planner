@@ -1,7 +1,8 @@
 import React from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { BookOpen, Minus, Maximize2, X } from "lucide-react";
+import { Minus, Maximize2, X } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
+import logo from "../assets/logo.png";
 
 export const TitleBar: React.FC = () => {
   const { t } = useTranslation(); const tb = t.titleBar;
@@ -15,11 +16,11 @@ export const TitleBar: React.FC = () => {
       className="w-full h-9 flex items-center justify-between px-4 bg-[#F4EFEA]/80 border-b border-[#EFEBE4] backdrop-blur-xl z-20 relative flex-shrink-0 cursor-move select-none"
     >
       <div data-tauri-drag-region className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-[#C4D7B2] to-[#B2C8DF] flex items-center justify-center">
-          <BookOpen className="w-3 h-3 text-[#4D7C5D]" />
+        <div className="w-5 h-5 overflow-hidden flex items-center justify-center rounded-md">
+          <img src={logo} alt="logo" className="w-5 h-5 object-cover" />
         </div>
         <span data-tauri-drag-region className="text-[11px] font-bold text-[#2D323A] tracking-wide">
-          TongYun Planner
+          {t.app.title}
         </span>
         <span data-tauri-drag-region className="text-[9px] text-[#8B6E3C] font-extrabold tracking-wider uppercase">
           {tb.subtitle}

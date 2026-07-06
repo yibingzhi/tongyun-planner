@@ -85,6 +85,12 @@ function AppInner() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  useEffect(() => {
+    document.title = t.app.title;
+    getCurrentWebviewWindow().setTitle(t.app.title);
+  }, [t.app.title]);
+
   const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
     safeJsonParse(localStorage.getItem("tongyun_habits") || "[]", [])
   );

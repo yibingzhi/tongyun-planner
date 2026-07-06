@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  BookOpen,
   Home,
   LayoutGrid,
   ListTodo,
@@ -24,6 +23,7 @@ import {
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
 import { useTranslation } from "../i18n/LanguageContext";
+import logo from "../assets/logo.png";
 
 interface SidebarProps {
   activeTab: AppTab;
@@ -260,11 +260,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
       <div className="space-y-5 flex-shrink-0">
         {/* Logo — simplified */}
         <div className={`flex items-center gap-2.5 ${isCollapsed ? "justify-center px-0" : "px-1"}`}>
-          <div className="w-8 h-8 rounded-lg bg-[#4D7C5D] flex items-center justify-center flex-shrink-0">
-            <BookOpen className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 overflow-hidden flex items-center justify-center flex-shrink-0 rounded-xl">
+            <img src={logo} alt="logo" className="w-8 h-8 object-cover" />
           </div>
           <div className={`flex flex-col ${textClass}`}>
-            <h1 className="text-[13px] font-bold tracking-wide text-[#2D323A] whitespace-nowrap">TongYun Planner</h1>
+            <h1 className="text-[13px] font-bold tracking-wide text-[#2D323A] whitespace-nowrap">{t.app.title}</h1>
             <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase whitespace-nowrap">
               {t.app.subtitle}
             </span>
