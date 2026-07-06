@@ -527,5 +527,7 @@ tongyun-planner/
 <div align="center">
   <sub>Built with ❤️ using Tauri · React · Rust · TypeScript</sub>
   <br />
+  <sub>✨ 本产品纯 <strong>Vibe coding</strong> 产物 ✨</sub>
+  <br />
   <sub>© 2026 TongYun Planner. All rights reserved.</sub>
 </div>
