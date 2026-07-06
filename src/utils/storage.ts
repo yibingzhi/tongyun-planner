@@ -1,18 +1,18 @@
 const isTauri = () =>
   typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
-const DB_NAME = 'sqlite:qiyun_list.db';
+const DB_NAME = 'sqlite:tongyun_planner.db';
 
 function getAllKnownKeys(): string[] {
   return [
     'aero_todos', 'aero_completed_todos',
     'aero_sticky_notes', 'aero_pomodoro_logs',
     'aero_customization_config', 'aero_alert_sound_type',
-    'qiyun_countdowns', 'qiyun_habits', 'qiyun_habit_logs',
-    'qiyun_moods', 'qiyun_ai_praise',
-    'qiyun_webdav_url', 'qiyun_webdav_user', 'qiyun_webdav_pass',
-    'aero_last_backup_time', 'qiyun_sync_version', 'qiyun_last_updated',
-    'qiyun_widget_split', 'qiyun_locale', 'qiyun_nickname',
+    'tongyun_countdowns', 'tongyun_habits', 'tongyun_habit_logs',
+    'tongyun_moods', 'tongyun_ai_praise',
+    'tongyun_webdav_url', 'tongyun_webdav_user', 'tongyun_webdav_pass',
+    'aero_last_backup_time', 'tongyun_sync_version', 'tongyun_last_updated',
+    'tongyun_widget_split', 'tongyun_locale', 'tongyun_nickname',
     'pomodoro_focus_duration', 'pomodoro_break_duration',
   ];
 }

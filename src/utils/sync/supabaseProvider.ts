@@ -27,16 +27,16 @@ export class SupabaseProvider implements SyncProvider {
   setConfig(config: SupabaseConfig): void {
     this.config = config;
     this._userId = config.userId || "default";
-    localStorage.setItem("qiyun_supabase_url", config.url);
-    localStorage.setItem("qiyun_supabase_anon_key", config.anonKey);
-    if (config.userId) localStorage.setItem("qiyun_supabase_user_id", config.userId);
+    localStorage.setItem("tongyun_supabase_url", config.url);
+    localStorage.setItem("tongyun_supabase_anon_key", config.anonKey);
+    if (config.userId) localStorage.setItem("tongyun_supabase_user_id", config.userId);
     this.client = null;
   }
 
   loadFromStorage(): void {
-    const url = localStorage.getItem("qiyun_supabase_url");
-    const anonKey = localStorage.getItem("qiyun_supabase_anon_key");
-    const userId = localStorage.getItem("qiyun_supabase_user_id") || "default";
+    const url = localStorage.getItem("tongyun_supabase_url");
+    const anonKey = localStorage.getItem("tongyun_supabase_anon_key");
+    const userId = localStorage.getItem("tongyun_supabase_user_id") || "default";
     if (url && anonKey) {
       this.config = { url, anonKey, userId };
       this._userId = userId;
@@ -59,14 +59,14 @@ export class SupabaseProvider implements SyncProvider {
   async test(): Promise<boolean> {
     try {
       const client = await this.getClient();
-      const { error } = await client.from("qiyun_list_data").select("id").eq("user_id", this._userId).single();
+      const { error } = await client.from("tongyun_planner_data").select("id").eq("user_id", this._userId).single();
       return !error || error.code === "PGRST116";
     } catch { return false; }
   }
 
   async push(data: SyncData): Promise<void> {
     const client = await this.getClient();
-    const { error } = await client.from("qiyun_list_data").upsert({
+    const { error } = await client.from("tongyun_planner_data").upsert({
       user_id: this._userId,
       data,
       version: data.version,
@@ -78,7 +78,7 @@ export class SupabaseProvider implements SyncProvider {
 
   async pull(): Promise<SyncData | null> {
     const client = await this.getClient();
-    const { data, error } = await client.from("qiyun_list_data")
+    const { data, error } = await client.from("tongyun_planner_data")
       .select("data, version")
       .eq("user_id", this._userId)
       .single();

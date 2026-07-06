@@ -19,7 +19,7 @@ export const TitleBar: React.FC = () => {
           <BookOpen className="w-3 h-3 text-[#4D7C5D]" />
         </div>
         <span data-tauri-drag-region className="text-[11px] font-bold text-[#2D323A] tracking-wide">
-          QiYun List
+          TongYun Planner
         </span>
         <span data-tauri-drag-region className="text-[9px] text-[#8B6E3C] font-extrabold tracking-wider uppercase">
           {tb.subtitle}

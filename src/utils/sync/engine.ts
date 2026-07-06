@@ -42,20 +42,20 @@ export class SyncEngine {
   private loadPreferences(): void {
     this.webdavProvider.loadFromStorage();
     this.supabaseProvider.loadFromStorage();
-    const saved = localStorage.getItem("qiyun_sync_backend") as SyncBackendType | null;
+    const saved = localStorage.getItem("tongyun_sync_backend") as SyncBackendType | null;
     if (saved === "webdav" || saved === "supabase") {
       this._currentBackend = saved;
     } else {
       // 有 WebDAV 凭据但未选后端时，自动启用 WebDAV
-      const url = localStorage.getItem("qiyun_webdav_url");
-      const user = localStorage.getItem("qiyun_webdav_user");
+      const url = localStorage.getItem("tongyun_webdav_url");
+      const user = localStorage.getItem("tongyun_webdav_user");
       if (url && user) {
         this._currentBackend = "webdav";
       }
     }
-    const lastSync = localStorage.getItem("qiyun_last_sync_time");
+    const lastSync = localStorage.getItem("tongyun_last_sync_time");
     if (lastSync) this._lastSyncTime = parseInt(lastSync, 10);
-    const autoSync = localStorage.getItem("qiyun_auto_sync");
+    const autoSync = localStorage.getItem("tongyun_auto_sync");
     if (autoSync === "true") this.enableAutoSync = true;
   }
 
@@ -69,13 +69,13 @@ export class SyncEngine {
 
   setBackend(type: SyncBackendType): void {
     this._currentBackend = type;
-    localStorage.setItem("qiyun_sync_backend", type);
+    localStorage.setItem("tongyun_sync_backend", type);
     this.notify();
   }
 
   setAutoSync(enabled: boolean, interval?: number): void {
     this.enableAutoSync = enabled;
-    localStorage.setItem("qiyun_auto_sync", enabled ? "true" : "false");
+    localStorage.setItem("tongyun_auto_sync", enabled ? "true" : "false");
     if (enabled) this.startAutoSync(interval);
     else this.stopAutoSync();
   }
@@ -147,7 +147,7 @@ export class SyncEngine {
       }
 
       this._lastSyncTime = Date.now();
-      localStorage.setItem("qiyun_last_sync_time", String(this._lastSyncTime));
+      localStorage.setItem("tongyun_last_sync_time", String(this._lastSyncTime));
       localStorage.setItem("aero_last_backup_time", String(this._lastSyncTime));
       this._status = "success";
       this.dirtyCategories.clear();

@@ -25,7 +25,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode; initialLoca
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem("qiyun_locale", newLocale);
+    localStorage.setItem("tongyun_locale", newLocale);
   }, []);
 
   const value: LanguageContextType = {

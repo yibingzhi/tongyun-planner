@@ -21,18 +21,18 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
   const { t } = useTranslation(); const a = t.analytics; const m = t.matrix;
 
   const [dailyGoal, setDailyGoal] = useState(() => {
-    const saved = localStorage.getItem("qiyun_daily_goal");
+    const saved = localStorage.getItem("tongyun_daily_goal");
     return saved ? parseInt(saved, 10) : 4;
   });
 
   useEffect(() => {
-    localStorage.setItem("qiyun_daily_goal", String(dailyGoal));
+    localStorage.setItem("tongyun_daily_goal", String(dailyGoal));
   }, [dailyGoal]);
 
   // AI 报告生成
   const [reportLoading, setReportLoading] = useState(false);
   const [reportContent, setReportContent] = useState<string | null>(() => {
-    const cached = localStorage.getItem("qiyun_analytics_report");
+    const cached = localStorage.getItem("tongyun_analytics_report");
     if (cached) {
       try { const parsed = JSON.parse(cached); if (parsed.date === getLocalDateString()) return parsed.content; } catch {}
     }
@@ -63,7 +63,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
         taskCategories: cats,
       });
       setReportContent(content);
-      localStorage.setItem("qiyun_analytics_report", JSON.stringify({ date: getLocalDateString(), content }));
+      localStorage.setItem("tongyun_analytics_report", JSON.stringify({ date: getLocalDateString(), content }));
     } catch (e) {
       console.error("生成报告失败", e);
     } finally {

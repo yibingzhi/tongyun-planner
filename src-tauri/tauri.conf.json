@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "QiYun List",
+  "productName": "TongYun Planner",
   "version": "0.1.0",
-  "identifier": "com.qiyunlist.app",
+  "identifier": "com.tongyunplanner.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "QiYun List - 规划与四象限管理",
+        "title": "TongYun Planner - 规划与四象限管理",
         "width": 1020,
         "height": 720,
         "decorations": false,
@@ -23,7 +23,7 @@
       },
       {
         "label": "widget",
-        "title": "QiYun List Widget",
+        "title": "TongYun Planner Widget",
         "width": 300,
         "height": 400,
         "decorations": false,

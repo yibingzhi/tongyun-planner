@@ -1,6 +1,6 @@
 # 支持渠道
 
-感谢您使用 QiYun List！如果您需要帮助，可以通过以下渠道获取支持。
+感谢您使用 TongYun Planner！如果您需要帮助，可以通过以下渠道获取支持。
 
 ## 获取帮助
 
@@ -15,12 +15,12 @@
 ### 社区支持
 
 #### GitHub Issues
-- 项目地址：https://gitee.com/your-username/qiyun-list/issues
+- 项目地址：https://gitee.com/your-username/tongyun-planner/issues
 - 用于报告问题、提出功能建议
 - 请使用相应的 Issue 模板
 
 #### 讨论区
-- 项目讨论：https://gitee.com/your-username/qiyun-list/discussions
+- 项目讨论：https://gitee.com/your-username/tongyun-planner/discussions
 - 用于一般性讨论、问答
 - 欢迎分享使用心得和建议
 
@@ -110,10 +110,10 @@
 ## 联系我们
 
 ### 邮箱
-- 一般咨询：[info@qiyunlist.com]（请替换为实际邮箱）
-- 技术支持：[support@qiyunlist.com]（请替换为实际邮箱）
-- 安全问题：[security@qiyunlist.com]（请替换为实际邮箱）
-- 商务合作：[business@qiyunlist.com]（请替换为实际邮箱）
+- 一般咨询：[info@tongyunplanner.com]（请替换为实际邮箱）
+- 技术支持：[support@tongyunplanner.com]（请替换为实际邮箱）
+- 安全问题：[security@tongyunplanner.com]（请替换为实际邮箱）
+- 商务合作：[business@tongyunplanner.com]（请替换为实际邮箱）
 
 ### 响应时间
 - 一般咨询：48 小时内响应
@@ -131,7 +131,7 @@
 
 ## 致谢
 
-感谢所有为 QiYun List 做出贡献的人！
+感谢所有为 TongYun Planner 做出贡献的人！
 
 ### 核心贡献者
 - [贡献者列表]（待添加）

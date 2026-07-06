@@ -17,7 +17,7 @@ const SESSION_ID: string = (() => {
 let devChannel: BroadcastChannel | null = null;
 if (!isTauri && typeof window !== "undefined" && typeof BroadcastChannel !== "undefined") {
   try {
-    devChannel = new BroadcastChannel("qiyun-todo-sync");
+    devChannel = new BroadcastChannel("tongyun-todo-sync");
     // 桥接：把 BroadcastChannel 消息重新分发为 window "todo-sync-event" CustomEvent。
     // App.tsx / FloatingNoteWindow 用的是 @tauri-apps/api/event 的 listen，
     // 在非 Tauri 环境下它不会触发；这里额外派发一个原生事件，

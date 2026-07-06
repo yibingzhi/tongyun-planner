@@ -14,7 +14,7 @@
 请不要在公开的 Issue 中报告安全漏洞。
 
 ### 2. 发送邮件
-请发送邮件到 [security@qiyunlist.com]（请替换为实际邮箱），包含：
+请发送邮件到 [security@tongyunplanner.com]（请替换为实际邮箱），包含：
 - 漏洞描述
 - 重现步骤
 - 影响范围
@@ -150,8 +150,8 @@
 - 安全培训教育
 
 ### 联系方式
-- 安全邮箱：[security@qiyunlist.com]（请替换为实际邮箱）
-- 安全团队：[security-team@qiyunlist.com]（请替换为实际邮箱）
+- 安全邮箱：[security@tongyunplanner.com]（请替换为实际邮箱）
+- 安全团队：[security-team@tongyunplanner.com]（请替换为实际邮箱）
 
 ## 安全认证
 

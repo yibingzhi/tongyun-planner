@@ -167,12 +167,12 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
   const [selectedWidgetNoteId, setSelectedWidgetNoteId] = useState<string | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [undoToast, setUndoToast] = useState<{ taskId: string; title: string } | null>(null);
-  const savedSplit = localStorage.getItem("qiyun_widget_split") === "true";
+  const savedSplit = localStorage.getItem("tongyun_widget_split") === "true";
   const [splitView, setSplitView] = useState(savedSplit);
   const toggleSplit = () => {
     const next = !splitView;
     setSplitView(next);
-    localStorage.setItem("qiyun_widget_split", String(next));
+    localStorage.setItem("tongyun_widget_split", String(next));
   };
   const [widgetEditingMinutes, setWidgetEditingMinutes] = useState<string | null>(null);
   const commitWidgetMinutes = (raw: string) => {

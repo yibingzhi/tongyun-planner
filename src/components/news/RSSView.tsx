@@ -27,7 +27,7 @@ interface RSSViewProps {
 
 export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, isBookmarked, toggleBookmark }) => {
   const [feeds, setFeeds] = useState<RSSFeed[]>(() => {
-    const saved = localStorage.getItem("qiyun_rss_feeds");
+    const saved = localStorage.getItem("tongyun_rss_feeds");
     return saved ? safeJsonParse(saved, DEFAULT_FEEDS) : DEFAULT_FEEDS;
   });
   const [selectedFeed, setSelectedFeed] = useState<RSSFeed>(feeds[0] || DEFAULT_FEEDS[0]);
@@ -107,7 +107,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
     };
     const updated = [...feeds, newFeed];
     setFeeds(updated);
-    localStorage.setItem("qiyun_rss_feeds", JSON.stringify(updated));
+    localStorage.setItem("tongyun_rss_feeds", JSON.stringify(updated));
     setSelectedFeed(newFeed);
     setNewFeedName("");
     setNewFeedUrl("");
@@ -116,7 +116,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
   const handleDeleteFeed = (id: string) => {
     const updated = feeds.filter((f) => f.id !== id);
     setFeeds(updated);
-    localStorage.setItem("qiyun_rss_feeds", JSON.stringify(updated));
+    localStorage.setItem("tongyun_rss_feeds", JSON.stringify(updated));
     if (selectedFeed.id === id && updated.length > 0) {
       setSelectedFeed(updated[0]);
     }

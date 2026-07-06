@@ -86,23 +86,23 @@ function AppInner() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
   const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_habits") || "[]", [])
+    safeJsonParse(localStorage.getItem("tongyun_habits") || "[]", [])
   );
   const [habitLogs, setHabitLogs] = useState<Record<string, string[]>>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_habit_logs") || "{}", {})
+    safeJsonParse(localStorage.getItem("tongyun_habit_logs") || "{}", {})
   );
   const [moods, setMoods] = useState<Record<string, number>>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_moods") || "{}", {})
+    safeJsonParse(localStorage.getItem("tongyun_moods") || "{}", {})
   );
   const [moodNotes, setMoodNotes] = useState<Record<string, string>>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_mood_notes") || "{}", {})
+    safeJsonParse(localStorage.getItem("tongyun_mood_notes") || "{}", {})
   );
 
   const handleAddHabit = useCallback((title: string, emoji: string) => {
     const newHabit = { id: createId("habit"), title, emoji };
     setHabits((prev) => {
       const updated = [...prev, newHabit];
-      localStorage.setItem("qiyun_habits", JSON.stringify(updated));
+      localStorage.setItem("tongyun_habits", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -110,7 +110,7 @@ function AppInner() {
   const handleDeleteHabit = useCallback((id: string) => {
     setHabits((prev) => {
       const updated = prev.filter((h) => h.id !== id);
-      localStorage.setItem("qiyun_habits", JSON.stringify(updated));
+      localStorage.setItem("tongyun_habits", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -119,7 +119,7 @@ function AppInner() {
     setHabitLogs((prev) => {
       const dayLogs = prev[date] || [];
       const updated = { ...prev, [date]: dayLogs.includes(habitId) ? dayLogs.filter((id) => id !== habitId) : [...dayLogs, habitId] };
-      localStorage.setItem("qiyun_habit_logs", JSON.stringify(updated));
+      localStorage.setItem("tongyun_habit_logs", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -127,7 +127,7 @@ function AppInner() {
   const handleSetMood = useCallback((date: string, mood: number) => {
     setMoods((prev) => {
       const updated = { ...prev, [date]: mood };
-      localStorage.setItem("qiyun_moods", JSON.stringify(updated));
+      localStorage.setItem("tongyun_moods", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -135,7 +135,7 @@ function AppInner() {
   const handleSetMoodNote = useCallback((date: string, note: string) => {
     setMoodNotes((prev) => {
       const updated = { ...prev, [date]: note };
-      localStorage.setItem("qiyun_mood_notes", JSON.stringify(updated));
+      localStorage.setItem("tongyun_mood_notes", JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -215,7 +215,7 @@ function AppInner() {
       await initPromise;
 
       try {
-        const store = await load("qiyun_list_data.json", { defaults: {}, autoSave: false });
+        const store = await load("tongyun_planner_data.json", { defaults: {}, autoSave: false });
         handlersRef.current.tasksHook.storeRef.current = store;
 
         // 番茄日志：仅从 localStorage 读取，不再生成 mock 数据
@@ -230,16 +230,16 @@ function AppInner() {
           handlersRef.current.notesHook.setStickyNotes(safeJsonParse(localNotes, []));
         }
 
-        const localCountdowns = localStorage.getItem("qiyun_countdowns");
+        const localCountdowns = localStorage.getItem("tongyun_countdowns");
         if (localCountdowns) handlersRef.current.countdownHook.setCountdowns(safeJsonParse(localCountdowns, []));
 
         // ============ 基于 timestamp 的合并策略 (#7) ============
         // 以往：localStorage 非空就用 local，把 tauri-store 里可能更新的数据反写覆盖。
-        // 现在：tauri-store 存 last_updated，localStorage 存 qiyun_last_updated，谁新用谁。
+        // 现在：tauri-store 存 last_updated，localStorage 存 tongyun_last_updated，谁新用谁。
         const storedTasks = await store.get<Task[]>("tasks");
         const storedCompleted = await store.get<Task[]>("completedTasks");
         const storeLastUpdated = (await store.get<number>("last_updated")) || 0;
-        const localLastUpdated = parseInt(localStorage.getItem("qiyun_last_updated") || "0", 10);
+        const localLastUpdated = parseInt(localStorage.getItem("tongyun_last_updated") || "0", 10);
         const localTasks = localStorage.getItem("aero_todos");
         const localCompleted = localStorage.getItem("aero_completed_todos");
 
@@ -274,7 +274,7 @@ function AppInner() {
           // 反过来：把较新的 store 同步到 localStorage 缓存，并对齐 last_updated
           localStorage.setItem("aero_todos", JSON.stringify(resolvedTasks));
           localStorage.setItem("aero_completed_todos", JSON.stringify(resolvedCompleted));
-          localStorage.setItem("qiyun_last_updated", String(storeLastUpdated));
+          localStorage.setItem("tongyun_last_updated", String(storeLastUpdated));
         }
       } catch (e) {
         console.warn("Store 加载失败，回退到 localStorage", e);
@@ -448,9 +448,9 @@ function AppInner() {
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_sticky_notes", JSON.stringify(notesHook.stickyNotes)); }, [isHydrated, notesHook.stickyNotes]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
   useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_moods", JSON.stringify(moods)); }, [isHydrated, moods]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("qiyun_mood_notes", JSON.stringify(moodNotes)); }, [isHydrated, moodNotes]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_moods", JSON.stringify(moods)); }, [isHydrated, moods]);
+  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_mood_notes", JSON.stringify(moodNotes)); }, [isHydrated, moodNotes]);
 
   // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
   // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
@@ -596,7 +596,7 @@ function AppInner() {
         : ["你真牛逼！🎉", "太强了吧！💪", "完美收官！✨", "效率爆表！🚀", "任务终结者！🏆", "无敌是多么寂寞！😎", "今天也是元气满满的一天！☀️", "你值得一朵小红花 🌸", "帅呆了！🔥", "行云流水！⭐"];
       let aiPool: string[] = [];
       try {
-        const stored = localStorage.getItem("qiyun_ai_praise");
+        const stored = localStorage.getItem("tongyun_ai_praise");
         if (stored) aiPool = safeJsonParse(stored, []);
       } catch (e) {}
       const pool = [...fixedPool, ...aiPool];
@@ -616,9 +616,9 @@ function AppInner() {
     countdownHook.setCountdowns(data.countdowns);
     setHabits(data.habits);
     setHabitLogs(data.habitLogs);
-    localStorage.setItem("qiyun_habits", JSON.stringify(data.habits));
-    localStorage.setItem("qiyun_habit_logs", JSON.stringify(data.habitLogs));
-    localStorage.setItem("qiyun_moods", JSON.stringify(data.moods));
+    localStorage.setItem("tongyun_habits", JSON.stringify(data.habits));
+    localStorage.setItem("tongyun_habit_logs", JSON.stringify(data.habitLogs));
+    localStorage.setItem("tongyun_moods", JSON.stringify(data.moods));
     if (data.customizationConfig) {
       customizationHook.setCustomizationConfig(data.customizationConfig);
     }
@@ -1066,7 +1066,7 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { 
 }
 
 function App() {
-  const savedLocale = localStorage.getItem("qiyun_locale") as "zh-CN" | "en" | null;
+  const savedLocale = localStorage.getItem("tongyun_locale") as "zh-CN" | "en" | null;
   return (
     <LanguageProvider initialLocale={savedLocale || "zh-CN"}>
       <AppErrorBoundary>

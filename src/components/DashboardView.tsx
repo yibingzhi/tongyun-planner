@@ -51,7 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { t } = useTranslation();
   const d = t.dashboard;
 
-  const [nickname] = useState(() => localStorage.getItem("qiyun_nickname") || "");
+  const [nickname] = useState(() => localStorage.getItem("tongyun_nickname") || "");
   const today = getLocalDateString();
   const localeKey = config.locale || "zh-CN";
 
@@ -120,7 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Quote —— 每小时缓存一次;点"换一句"强制刷新
   // 一言不是每天固定,但也不需要每次进入都调,按小时为粒度平衡新鲜感与请求次数
   type HitokotoData = { text: string; from: string };
-  const HITOKOTO_CACHE_KEY = "qiyun_hitokoto_hourly";
+  const HITOKOTO_CACHE_KEY = "tongyun_hitokoto_hourly";
   const currentHourKey = `${today}-${new Date().getHours()}`;
   const [hitokoto, setHitokoto] = useState<HitokotoData | null>(() =>
     readDailyCache<HitokotoData>(HITOKOTO_CACHE_KEY, currentHourKey, localeKey)
@@ -153,7 +153,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   // History —— 当日缓存,历史上的今天一天内根本不会变
-  const HISTORY_CACHE_KEY = "qiyun_history_today";
+  const HISTORY_CACHE_KEY = "tongyun_history_today";
   const [historyEvents, setHistoryEvents] = useState<string[]>(() =>
     readDailyCache<string[]>(HISTORY_CACHE_KEY, today, localeKey) || []
   );
@@ -192,7 +192,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [today, currentHourKey, localeKey]);
 
   // AI Daily Suggestion —— 当日缓存,只在跨天/语言变化时重新生成
-  const SUGGESTION_CACHE_KEY = "qiyun_ai_daily_suggestion";
+  const SUGGESTION_CACHE_KEY = "tongyun_ai_daily_suggestion";
   const [dailySuggestion, setDailySuggestion] = useState<string | null>(() =>
     readDailyCache<string>(SUGGESTION_CACHE_KEY, today, localeKey)
   );
@@ -235,7 +235,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   }, [config.aiApiKey, today, localeKey]);
 
   // Prose —— 同样当日缓存,进入 Dashboard 自动生成一次,支持手动重新生成
-  const PROSE_CACHE_KEY = "qiyun_ai_daily_prose";
+  const PROSE_CACHE_KEY = "tongyun_ai_daily_prose";
   const [prose, setProse] = useState<string | null>(() =>
     readDailyCache<string>(PROSE_CACHE_KEY, today, localeKey)
   );

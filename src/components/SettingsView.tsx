@@ -187,19 +187,19 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   const { t } = useTranslation();
   const s = t.settings;
   const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system" | "fun">("personalization");
-  const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("qiyun_webdav_url") || "");
-  const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("qiyun_webdav_user") || "");
-  const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("qiyun_webdav_pass") || "");
+  const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("tongyun_webdav_url") || "");
+  const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("tongyun_webdav_user") || "");
+  const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("tongyun_webdav_pass") || "");
   const [syncBackend, setSyncBackend] = useState<SyncBackendType>(() => syncEngine.currentBackend);
-  const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem("qiyun_supabase_url") || "");
-  const [supabaseKey, setSupabaseKey] = useState(() => localStorage.getItem("qiyun_supabase_anon_key") || "");
+  const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem("tongyun_supabase_url") || "");
+  const [supabaseKey, setSupabaseKey] = useState(() => localStorage.getItem("tongyun_supabase_anon_key") || "");
   const [syncStatus, setSyncStatus] = useState(syncEngine.status);
   const [syncLastTime, setSyncLastTime] = useState<number | null>(syncEngine.lastSyncTime);
   const [isLoading, setIsLoading] = useState(false);
   const [isAiTesting, setIsAiTesting] = useState(false);
   const [toast, setToast] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [aiPraiseList, setAiPraiseList] = useState<string[]>(() => {
-    return safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []);
+    return safeJsonParse(localStorage.getItem("tongyun_ai_praise"), []);
   });
   const [generatingPraise, setGeneratingPraise] = useState(false);
 
@@ -325,8 +325,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               </h4>
               <input
                 type="text"
-                defaultValue={localStorage.getItem("qiyun_nickname") || ""}
-                onChange={(e) => localStorage.setItem("qiyun_nickname", e.target.value)}
+                defaultValue={localStorage.getItem("tongyun_nickname") || ""}
+                onChange={(e) => localStorage.setItem("tongyun_nickname", e.target.value)}
                 placeholder={s.nicknamePlaceholder}
                 className="w-full px-3 py-2 rounded-xl border border-[#EFEBE4] bg-white/80 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#C4D7B2] focus:border-transparent transition-all"
               />
@@ -876,7 +876,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     value={webdavUrl}
                     onChange={(e) => {
                       setWebdavUrl(e.target.value);
-                      localStorage.setItem("qiyun_webdav_url", e.target.value);
+                      localStorage.setItem("tongyun_webdav_url", e.target.value);
                     }}
                     className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                   />
@@ -890,7 +890,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       value={webdavUser}
                       onChange={(e) => {
                         setWebdavUser(e.target.value);
-                        localStorage.setItem("qiyun_webdav_user", e.target.value);
+                        localStorage.setItem("tongyun_webdav_user", e.target.value);
                       }}
                       className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                     />
@@ -903,7 +903,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                       value={webdavPass}
                       onChange={(e) => {
                         setWebdavPass(e.target.value);
-                        localStorage.setItem("qiyun_webdav_pass", e.target.value);
+                        localStorage.setItem("tongyun_webdav_pass", e.target.value);
                       }}
                       className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                     />
@@ -923,7 +923,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     value={supabaseUrl}
                     onChange={(e) => {
                       setSupabaseUrl(e.target.value);
-                      localStorage.setItem("qiyun_supabase_url", e.target.value);
+                      localStorage.setItem("tongyun_supabase_url", e.target.value);
                     }}
                     className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                   />
@@ -936,7 +936,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     value={supabaseKey}
                     onChange={(e) => {
                       setSupabaseKey(e.target.value);
-                      localStorage.setItem("qiyun_supabase_anon_key", e.target.value);
+                      localStorage.setItem("tongyun_supabase_anon_key", e.target.value);
                     }}
                     className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
                   />
@@ -1079,7 +1079,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">将待办管理能力作为工具赋予你的 AI 助手，一键复制函数定义即可粘贴到 OpenAI/Claude 的 tools 参数中。</p>
                     <button
                       onClick={() => {
-                        const doc = `# 🎯 QiYun-List 数据管理工具集
+                        const doc = `# 🎯 TongYun-List 数据管理工具集
 
 通过坚果云 WebDAV 读写用户的所有应用数据：待办、便签、心情、习惯、倒计时等。
 
@@ -1109,14 +1109,14 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 ### 读取
 \`\`\`bash
 curl -s -u "${webdavUser}:${webdavPass}" \\
-  "${webdavUrl}QiYunList/tasks.json"
+  "${webdavUrl}TongYunPlanner/tasks.json"
 \`\`\`
 404 → 空数组 \`[]\` 或空对象 \`{}\`。
 
 ### 写入（新增/更新/删除）
 \`\`\`bash
 # 1. 读取当前数据
-curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}QiYunList/tasks.json"
+curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}TongYunPlanner/tasks.json"
 
 # 2. 修改数组（id 用 Date.now().toString(36)+Math.random().toString(36).slice(2,6)）
 
@@ -1124,16 +1124,16 @@ curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}QiYunList/tasks.json"
 curl -s -X PUT -u "${webdavUser}:${webdavPass}" \\
   -H "Content-Type: application/json" \\
   -d '<完整 JSON 数组>' \\
-  "${webdavUrl}QiYunList/tasks.json"
+  "${webdavUrl}TongYunPlanner/tasks.json"
 
 # 4. ⚠️ 更新 manifest.json 版本号
 #    GET → 修改对应分类 version 为 Date.now() → PUT
-curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}QiYunList/manifest.json"
+curl -s -u "${webdavUser}:${webdavPass}" "${webdavUrl}TongYunPlanner/manifest.json"
 #    {"tasks":{"version":1712345678000}}
 curl -s -X PUT -u "${webdavUser}:${webdavPass}" \\
   -H "Content-Type: application/json" \\
   -d '<更新后的 manifest>' \\
-  "${webdavUrl}QiYunList/manifest.json"
+  "${webdavUrl}TongYunPlanner/manifest.json"
 \`\`\`
 
 ---
@@ -1208,18 +1208,18 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                       stickyNotes: safeJsonParse(localStorage.getItem("aero_sticky_notes"), []),
                       customizationConfig: safeJsonParse(localStorage.getItem("aero_customization_config"), {}),
                       pomodoroLogs: safeJsonParse(localStorage.getItem("aero_pomodoro_logs"), []),
-                      countdowns: safeJsonParse(localStorage.getItem("qiyun_countdowns"), []),
-                      habits: safeJsonParse(localStorage.getItem("qiyun_habits"), []),
-                      habitLogs: safeJsonParse(localStorage.getItem("qiyun_habit_logs"), {}),
-                      moods: safeJsonParse(localStorage.getItem("qiyun_moods"), {}),
-                      aiPraise: safeJsonParse(localStorage.getItem("qiyun_ai_praise"), []),
+                      countdowns: safeJsonParse(localStorage.getItem("tongyun_countdowns"), []),
+                      habits: safeJsonParse(localStorage.getItem("tongyun_habits"), []),
+                      habitLogs: safeJsonParse(localStorage.getItem("tongyun_habit_logs"), {}),
+                      moods: safeJsonParse(localStorage.getItem("tongyun_moods"), {}),
+                      aiPraise: safeJsonParse(localStorage.getItem("tongyun_ai_praise"), []),
                       exportedAt: new Date().toISOString(),
                     };
                     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
-                    a.download = `qiyun-list-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.download = `tongyun-planner-backup-${new Date().toISOString().slice(0, 10)}.json`;
                     a.click();
                     URL.revokeObjectURL(url);
                     triggerToast(s.snapshotExported || "导出成功 ✅", "success");
@@ -1255,7 +1255,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                         }
                         applySyncData(normalized);
                         if (data.aiPraise) {
-                          localStorage.setItem("qiyun_ai_praise", JSON.stringify(data.aiPraise));
+                          localStorage.setItem("tongyun_ai_praise", JSON.stringify(data.aiPraise));
                         }
                         triggerToast(s.snapshotImported || "导入成功 ✅", "success");
                       } catch {
@@ -1362,7 +1362,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                           if (newOnes.length > 0) {
                             const updated = [...aiPraiseList, ...newOnes];
                             setAiPraiseList(updated);
-                            localStorage.setItem("qiyun_ai_praise", JSON.stringify(updated));
+                            localStorage.setItem("tongyun_ai_praise", JSON.stringify(updated));
                           }
                         } catch {}
                         setGeneratingPraise(false);
@@ -1384,7 +1384,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                           onClick={() => {
                             const updated = aiPraiseList.filter((_, j) => j !== i);
                             setAiPraiseList(updated);
-                            localStorage.setItem("qiyun_ai_praise", JSON.stringify(updated));
+                            localStorage.setItem("tongyun_ai_praise", JSON.stringify(updated));
                           }}
                           className="p-0.5 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer flex-shrink-0 ml-2"
                         >

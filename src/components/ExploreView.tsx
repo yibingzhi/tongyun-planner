@@ -22,8 +22,8 @@ interface Feed {
   lastFetched?: number;
 }
 
-const CORS_PROXY_KEY = "qiyun_cors_proxy";
-const FEEDS_KEY = "qiyun_explore_feeds";
+const CORS_PROXY_KEY = "tongyun_cors_proxy";
+const FEEDS_KEY = "tongyun_explore_feeds";
 
 const DEFAULT_PROXY = "https://api.allorigins.win/get?url=";
 

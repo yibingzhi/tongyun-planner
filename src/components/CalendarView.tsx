@@ -66,7 +66,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   // 联网获取节假日数据（含调休），缓存在 localStorage
   const [holidayData, setHolidayData] = useState<Record<string, string>>({});
   useEffect(() => {
-    const cacheKey = `qiyun_holidays_v2_${calendarYear}`;
+    const cacheKey = `tongyun_holidays_v2_${calendarYear}`;
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
@@ -93,19 +93,19 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
 
   // 心情便签 (使用独立 key，避免与 MoodView 的数值心情冲突)
   const [moods, setMoods] = useState<Record<string, string>>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_calendar_emojis") || "{}", {})
+    safeJsonParse(localStorage.getItem("tongyun_calendar_emojis") || "{}", {})
   );
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const setMoodForDate = (date: string, emoji: string) => {
     const updated = { ...moods, [date]: emoji };
     setMoods(updated);
-    localStorage.setItem("qiyun_calendar_emojis", JSON.stringify(updated));
+    localStorage.setItem("tongyun_calendar_emojis", JSON.stringify(updated));
     setShowMoodPicker(false);
   };
 
   // 时间块规划
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_timeblocks") || "[]", [])
+    safeJsonParse(localStorage.getItem("tongyun_timeblocks") || "[]", [])
   );
   const [showTimeBlockInput, setShowTimeBlockInput] = useState(false);
   const [newBlockTitle, setNewBlockTitle] = useState("");
@@ -113,7 +113,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   const [newBlockEnd, setNewBlockEnd] = useState("10:00");
 
   useEffect(() => {
-    localStorage.setItem("qiyun_timeblocks", JSON.stringify(timeBlocks));
+    localStorage.setItem("tongyun_timeblocks", JSON.stringify(timeBlocks));
   }, [timeBlocks]);
 
   const selectedDateBlocks = timeBlocks.filter(b => b.date === selectedCalendarDate).sort((a, b) => a.startTime.localeCompare(b.startTime));

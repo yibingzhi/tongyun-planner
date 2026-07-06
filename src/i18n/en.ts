@@ -2,7 +2,7 @@ import type { Translations } from "./types";
 
 const en: Translations = {
   app: {
-    title: "QiYun List",
+    title: "TongYun Planner",
     subtitle: "Task Manager",
   },
 

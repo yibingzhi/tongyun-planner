@@ -171,7 +171,7 @@ fn webdav_download(
 fn fetch_rss(url: String) -> Result<String, String> {
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
-        .user_agent("QiYunList/1.0 RSS Reader")
+        .user_agent("TongYunPlanner/1.0 RSS Reader")
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -212,13 +212,13 @@ pub fn run() {
             let show_item = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
             let toggle_widget_item = MenuItem::with_id(app, "toggle_widget", "显示/隐藏挂件", true, None::<&str>)?;
             let toggle_lock_item = MenuItem::with_id(app, "toggle_lock", "锁定/解锁挂件", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "退出 QiYun List", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "退出 TongYun Planner", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &toggle_widget_item, &toggle_lock_item, &quit_item])?;
 
             // 构建系统托盘图标
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("QiYun List - 四象限待办管理")
+                .tooltip("TongYun Planner - 四象限待办管理")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {

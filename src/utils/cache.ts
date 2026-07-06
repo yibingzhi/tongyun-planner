@@ -1,4 +1,4 @@
-const CACHE_PREFIX = "qiyun_cache_";
+const CACHE_PREFIX = "tongyun_cache_";
 
 interface CacheEntry<T> {
   data: T;

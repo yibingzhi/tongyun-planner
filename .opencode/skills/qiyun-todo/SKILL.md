@@ -1,11 +1,11 @@
 ---
-name: qiyun-todo
-description: Use when the user asks to add, list, query, or manage tasks via WebDAV (坚果云). Enables opencode to read and write the qiyun-list task database through WebDAV sync.
+name: tongyun-todo
+description: Use when the user asks to add, list, query, or manage tasks via WebDAV (坚果云). Enables opencode to read and write the tongyun-planner task database through WebDAV sync.
 ---
 
-# qiyun-todo
+# tongyun-todo
 
-This skill lets opencode interact with the [qiyun-list](https://github.com/user/qiyun-list) task management app's data through WebDAV (坚果云).
+This skill lets opencode interact with the [tongyun-planner](https://github.com/user/tongyun-planner) task management app's data through WebDAV (坚果云).
 
 ## How to get credentials
 
@@ -18,7 +18,7 @@ These should match what they have configured in the app's Settings → 云同步
 
 ## Task data schema
 
-Tasks live in a JSON array file on WebDAV at `{baseUrl}/QiYunList/tasks.json`. Each entry:
+Tasks live in a JSON array file on WebDAV at `{baseUrl}/TongYunPlanner/tasks.json`. Each entry:
 
 ```json
 {
@@ -46,7 +46,7 @@ Tasks live in a JSON array file on WebDAV at `{baseUrl}/QiYunList/tasks.json`. E
 ## Reading tasks
 
 ```bash
-curl -s -u "<username>:<password>" "<baseUrl>/QiYunList/tasks.json"
+curl -s -u "<username>:<password>" "<baseUrl>/TongYunPlanner/tasks.json"
 ```
 
 ## Adding a task
@@ -60,7 +60,7 @@ curl -s -u "<username>:<password>" "<baseUrl>/QiYunList/tasks.json"
 curl -s -X PUT -u "<username>:<password>" \
   -H "Content-Type: application/json" \
   -d '<updated JSON array>' \
-  "<baseUrl>/QiYunList/tasks.json"
+  "<baseUrl>/TongYunPlanner/tasks.json"
 ```
 
 ## Updating / deleting a task

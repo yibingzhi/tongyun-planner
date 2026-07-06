@@ -1,11 +1,11 @@
 # 贡献指南
 
-感谢您对 QiYun List 项目的关注！我们欢迎任何形式的贡献。
+感谢您对 TongYun Planner 项目的关注！我们欢迎任何形式的贡献。
 
 ## 如何贡献
 
 ### 报告问题
-1. 使用 [Issue 模板](https://gitee.com/your-username/qiyun-list/issues/new) 提交问题
+1. 使用 [Issue 模板](https://gitee.com/your-username/tongyun-planner/issues/new) 提交问题
 2. 清晰描述问题，包括重现步骤、期望行为和实际行为
 3. 如果可能，提供截图或错误日志
 
@@ -22,7 +22,7 @@
 - 提交信息：使用中文或英文，清晰描述变更内容
 
 ### 开发环境设置
-1. 克隆项目：`git clone https://gitee.com/your-username/qiyun-list.git`
+1. 克隆项目：`git clone https://gitee.com/your-username/tongyun-planner.git`
 2. 安装依赖：`npm install`
 3. 启动开发服务器：`npm run tauri dev`
 4. 进行更改并测试
@@ -31,7 +31,7 @@
 ## 项目结构
 
 ```
-qiyun-list/
+tongyun-planner/
 ├── src/                    # 前端源码
 │   ├── components/         # React 组件
 │   ├── App.tsx             # 主应用组件

@@ -20,10 +20,10 @@ export const NewsView: React.FC<NewsViewProps> = ({ config }) => {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [bookmarks, setBookmarks] = useState<BookmarkedArticle[]>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_news_bookmarks") || "[]", [])
+    safeJsonParse(localStorage.getItem("tongyun_news_bookmarks") || "[]", [])
   );
   const [readHistory, setReadHistory] = useState<ReadHistoryEntry[]>(() =>
-    safeJsonParse(localStorage.getItem("qiyun_news_history") || "[]", [])
+    safeJsonParse(localStorage.getItem("tongyun_news_history") || "[]", [])
   );
 
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -31,34 +31,34 @@ export const NewsView: React.FC<NewsViewProps> = ({ config }) => {
   const [aiLoading, setAiLoading] = useState(false);
 
   const [readerFontSize, setReaderFontSize] = useState<"sm" | "md" | "lg" | "xl">(
-    () => (localStorage.getItem("qiyun_news_font_size") as any) || "md"
+    () => (localStorage.getItem("tongyun_news_font_size") as any) || "md"
   );
   const [readerFontFamily, setReaderFontFamily] = useState<"serif" | "sans">(
-    () => (localStorage.getItem("qiyun_news_font_family") as any) || "serif"
+    () => (localStorage.getItem("tongyun_news_font_family") as any) || "serif"
   );
   const [readerColumns, setReaderColumns] = useState<"single" | "double">(
-    () => (localStorage.getItem("qiyun_news_columns") as any) || "single"
+    () => (localStorage.getItem("tongyun_news_columns") as any) || "single"
   );
 
   useEffect(() => {
-    localStorage.setItem("qiyun_news_bookmarks", JSON.stringify(bookmarks));
+    localStorage.setItem("tongyun_news_bookmarks", JSON.stringify(bookmarks));
   }, [bookmarks]);
 
   useEffect(() => {
-    localStorage.setItem("qiyun_news_history", JSON.stringify(readHistory.slice(0, 100)));
+    localStorage.setItem("tongyun_news_history", JSON.stringify(readHistory.slice(0, 100)));
   }, [readHistory]);
 
   const handleFontSizeChange = (size: "sm" | "md" | "lg" | "xl") => {
     setReaderFontSize(size);
-    localStorage.setItem("qiyun_news_font_size", size);
+    localStorage.setItem("tongyun_news_font_size", size);
   };
   const handleFontFamilyChange = (family: "serif" | "sans") => {
     setReaderFontFamily(family);
-    localStorage.setItem("qiyun_news_font_family", family);
+    localStorage.setItem("tongyun_news_font_family", family);
   };
   const handleColumnsChange = (cols: "single" | "double") => {
     setReaderColumns(cols);
-    localStorage.setItem("qiyun_news_columns", cols);
+    localStorage.setItem("tongyun_news_columns", cols);
   };
 
   const isBookmarked = useCallback(

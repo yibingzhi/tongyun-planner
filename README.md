@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="src-tauri/icons/icon.png" alt="QiYun List Logo" width="120" height="120" style="border-radius: 24px;" />
+  <img src="src-tauri/icons/icon.png" alt="TongYun Planner Logo" width="120" height="120" style="border-radius: 24px;" />
 
-  <h1 align="center">🍃 QiYun List · 绮云列表</h1>
+  <h1 align="center">🍃 TongYun Planner · 橦云手账</h1>
 
   <p align="center">
-    <strong>一款基于 Tauri + React + TypeScript 构建的现代化待办事项管理应用</strong>
+    <strong>一款基于 Tauri + React + TypeScript 构建的现代化手账风个人效率空间</strong>
     <br />
-    融合艾森豪威尔四象限法则 · 手账风美学设计 · AI 智能辅助
+    融合艾森豪威尔四象限法则 · 拟物手账美学设计 · AI 智能心流助手
   </p>
 
   <p align="center">
@@ -25,7 +25,7 @@
     <img src="https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&labelColor=2D323A" alt="Vite" />
     <img src="https://img.shields.io/badge/Rust-1.85-000000?style=for-the-badge&logo=rust&labelColor=2D323A" alt="Rust" />
     <br />
-    <img src="https://img.shields.io/github/license/your-username/qiyun-list?style=flat-square&color=4D7C5D" alt="License" />
+    <img src="https://img.shields.io/github/license/your-username/tongyun-planner?style=flat-square&color=4D7C5D" alt="License" />
     <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-8B6E3C?style=flat-square" alt="Platform" />
     <img src="https://img.shields.io/badge/i18n-中文%20%7C%20English-5B99B0?style=flat-square" alt="i18n" />
   </p>
@@ -33,9 +33,9 @@
 
 ---
 
-**QiYun List（绮云列表）** 不仅是一个待办事项应用，更是你的**个人效能中心**。它融合了经典的艾森豪威尔四象限法则与精致的手账风美学设计，并借助 AI 力量重塑任务管理体验。
+**TongYun Planner（橦云手账）** 不仅是一个效率工具，更是你的**数字生活手账**。它将拟物化的纸面纹理、便签、心情日记和习惯打卡，与科学的四象限时间管理、白噪音及 AI 助手相融合，在纷繁的世界里为您留出一块温暖、安宁的心流角落。
 
-从四象限矩阵到番茄钟专注，从桌面小组件到心流模式，从 AI 智能分类到全平台数据同步——每一处细节都经过精心打磨，帮助你**更聪明地工作，更优雅地生活**。
+从四象限矩阵到番茄钟专注，从桌面小组件到心流模式，从 AI 智能分类到全平台数据同步——每一处设计都极具温度，帮助你**更有序地梳理日常，更温柔地面对生活**。
 
 ---
 
@@ -332,8 +332,8 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://gitee.com/your-username/qiyun-list.git
-cd qiyun-list
+git clone https://gitee.com/your-username/tongyun-planner.git
+cd tongyun-planner
 
 # 2. 安装前端依赖
 npm install
@@ -362,7 +362,7 @@ npm run tauri build
 ## 📁 项目结构
 
 ```
-qiyun-list/
+tongyun-planner/
 ├── src/                          # 前端源码
 │   ├── main.tsx                  # React 入口
 │   ├── App.tsx                   # 主应用组件（状态聚合中枢）
@@ -478,7 +478,7 @@ qiyun-list/
 
 ### Tauri 配置 (`src-tauri/tauri.conf.json`)
 
-- 应用标识：`com.qiyunlist.app`
+- 应用标识：`com.tongyunplanner.app`
 - 主窗口尺寸：1020 × 720，无边框设计
 - 小组件窗口：300 × 400，置顶、透明、无任务栏
 
@@ -527,5 +527,5 @@ qiyun-list/
 <div align="center">
   <sub>Built with ❤️ using Tauri · React · Rust · TypeScript</sub>
   <br />
-  <sub>© 2026 QiYun List. All rights reserved.</sub>
+  <sub>© 2026 TongYun Planner. All rights reserved.</sub>
 </div>

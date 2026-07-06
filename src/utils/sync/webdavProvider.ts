@@ -13,8 +13,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 const SYNC_TIMEOUT = 30000;
 const MANIFEST_FILE = "manifest.json";
-const LEGACY_BACKUP_FILE = "qiyun_list_backup.json";
-const REMOTE_DIR = "QiYunList/";
+const LEGACY_BACKUP_FILE = "tongyun_planner_backup.json";
+const REMOTE_DIR = "TongYunPlanner/";
 
 const isTauri = () => typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
 
@@ -119,15 +119,15 @@ export class WebDAVProvider implements SyncProvider {
 
   setConfig(config: WebDavConfig): void {
     this.config = config;
-    localStorage.setItem("qiyun_webdav_url", config.url);
-    localStorage.setItem("qiyun_webdav_user", config.username);
-    if (config.password) localStorage.setItem("qiyun_webdav_pass", config.password);
+    localStorage.setItem("tongyun_webdav_url", config.url);
+    localStorage.setItem("tongyun_webdav_user", config.username);
+    if (config.password) localStorage.setItem("tongyun_webdav_pass", config.password);
   }
 
   loadFromStorage(): void {
-    const url = localStorage.getItem("qiyun_webdav_url");
-    const username = localStorage.getItem("qiyun_webdav_user");
-    const password = localStorage.getItem("qiyun_webdav_pass");
+    const url = localStorage.getItem("tongyun_webdav_url");
+    const username = localStorage.getItem("tongyun_webdav_user");
+    const password = localStorage.getItem("tongyun_webdav_pass");
     if (url && username) {
       this.config = { url, username, password: password || undefined };
     }
@@ -141,7 +141,7 @@ export class WebDAVProvider implements SyncProvider {
     if (!this.config) return false;
     try {
       await ensureDir(this.config, REMOTE_DIR);
-      await uploadFile(this.config, REMOTE_DIR + "qiyun_list_test.txt", "ok");
+      await uploadFile(this.config, REMOTE_DIR + "tongyun_planner_test.txt", "ok");
       return true;
     } catch (_e) { return false; }
   }
@@ -226,7 +226,7 @@ export class WebDAVProvider implements SyncProvider {
           const payload = JSON.parse(json);
           applyCategoryPayload(cat, payload);
           // Update local category version to match remote
-          localStorage.setItem("qiyun_cat_ver_" + cat, String(remoteVer));
+          localStorage.setItem("tongyun_cat_ver_" + cat, String(remoteVer));
           anyUpdated = true;
         }
       }
@@ -240,7 +240,7 @@ export class WebDAVProvider implements SyncProvider {
     return localData;
   }
 
-  /** Legacy: read the old single qiyun_list_backup.json */
+  /** Legacy: read the old single tongyun_planner_backup.json */
   private async pullLegacy(): Promise<SyncData | null> {
     if (!this.config) return null;
     const json = await tryDownload(this.config, LEGACY_BACKUP_FILE);
@@ -276,7 +276,7 @@ export class WebDAVProvider implements SyncProvider {
     // Legacy fallback
     if (!this.config) return null;
     try {
-      const text = await downloadFile(this.config, "qiyun_list_version.txt");
+      const text = await downloadFile(this.config, "tongyun_planner_version.txt");
       return parseInt(text.trim(), 10);
     } catch (_e) { return null; }
   }

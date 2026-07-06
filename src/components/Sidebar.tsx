@@ -134,18 +134,18 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const s = t.sidebar;
-  const [hasWebdavUrl] = useState(() => !!localStorage.getItem("qiyun_webdav_url"));
+  const [hasWebdavUrl] = useState(() => !!localStorage.getItem("tongyun_webdav_url"));
   const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
 
   // Sidebar collapse state
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    return localStorage.getItem("qiyun_sidebar_collapsed") === "true";
+    return localStorage.getItem("tongyun_sidebar_collapsed") === "true";
   });
 
   const toggleCollapsed = () => {
     const next = !isCollapsed;
     setIsCollapsed(next);
-    localStorage.setItem("qiyun_sidebar_collapsed", String(next));
+    localStorage.setItem("tongyun_sidebar_collapsed", String(next));
   };
 
   // Text transition class to prevent deformation during collapse/expand
@@ -264,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             <BookOpen className="w-4 h-4 text-white" />
           </div>
           <div className={`flex flex-col ${textClass}`}>
-            <h1 className="text-[13px] font-bold tracking-wide text-[#2D323A] whitespace-nowrap">QiYun List</h1>
+            <h1 className="text-[13px] font-bold tracking-wide text-[#2D323A] whitespace-nowrap">TongYun Planner</h1>
             <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase whitespace-nowrap">
               {t.app.subtitle}
             </span>

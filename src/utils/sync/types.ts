@@ -63,22 +63,22 @@ export interface SyncProvider {
   pull(): Promise<SyncData | null>;
 }
 
-export const SYNC_APPLIED_EVENT = "qiyun-sync-applied";
+export const SYNC_APPLIED_EVENT = "tongyun-sync-applied";
 
 export function getLocalSyncVersion(): number {
-  return parseInt(localStorage.getItem("qiyun_sync_version") || "0", 10);
+  return parseInt(localStorage.getItem("tongyun_sync_version") || "0", 10);
 }
 
 /** 本地数据变更时调用，递增版本号供冲突比较 */
 export function bumpSyncVersion(): number {
   const v = Date.now();
-  localStorage.setItem("qiyun_sync_version", String(v));
+  localStorage.setItem("tongyun_sync_version", String(v));
   return v;
 }
 
 /* ── Per-category local version tracking ── */
 
-const CAT_VERSION_PREFIX = "qiyun_cat_ver_";
+const CAT_VERSION_PREFIX = "tongyun_cat_ver_";
 
 /** Get the local version stamp for a single category */
 export function getLocalCategoryVersion(cat: SyncCategory): number {
@@ -92,7 +92,7 @@ export function bumpCategoryVersion(...cats: SyncCategory[]): number {
     localStorage.setItem(CAT_VERSION_PREFIX + cat, String(v));
   }
   // Also bump global version for backward compat
-  localStorage.setItem("qiyun_sync_version", String(v));
+  localStorage.setItem("tongyun_sync_version", String(v));
   return v;
 }
 
@@ -134,13 +134,13 @@ export function applyCategoryPayload(cat: SyncCategory, payload: unknown): void 
       localStorage.setItem("aero_pomodoro_logs", JSON.stringify(payload));
       break;
     case "countdowns":
-      localStorage.setItem("qiyun_countdowns", JSON.stringify(payload));
+      localStorage.setItem("tongyun_countdowns", JSON.stringify(payload));
       break;
     case "habits": {
       const h = payload as { habits?: unknown; habitLogs?: unknown; moods?: unknown };
-      localStorage.setItem("qiyun_habits", JSON.stringify(h.habits || []));
-      localStorage.setItem("qiyun_habit_logs", JSON.stringify(h.habitLogs || {}));
-      localStorage.setItem("qiyun_moods", JSON.stringify(h.moods || {}));
+      localStorage.setItem("tongyun_habits", JSON.stringify(h.habits || []));
+      localStorage.setItem("tongyun_habit_logs", JSON.stringify(h.habitLogs || {}));
+      localStorage.setItem("tongyun_moods", JSON.stringify(h.moods || {}));
       break;
     }
     case "config":
@@ -165,14 +165,14 @@ export function getLocalSyncData(): SyncData {
     completedTasks: readJson("aero_completed_todos", "[]"),
     stickyNotes: readJson("aero_sticky_notes", "[]"),
     pomodoroLogs: readJson("aero_pomodoro_logs", "[]"),
-    countdowns: readJson("qiyun_countdowns", "[]"),
+    countdowns: readJson("tongyun_countdowns", "[]"),
     customizationConfig: (() => {
       const v = localStorage.getItem("aero_customization_config");
       return v ? JSON.parse(v) : null;
     })(),
-    habits: readJson("qiyun_habits", "[]"),
-    habitLogs: readJson("qiyun_habit_logs", "{}"),
-    moods: readJson("qiyun_moods", "{}"),
+    habits: readJson("tongyun_habits", "[]"),
+    habitLogs: readJson("tongyun_habit_logs", "{}"),
+    moods: readJson("tongyun_moods", "{}"),
   };
 }
 
@@ -208,15 +208,15 @@ export function applySyncData(data: SyncData): void {
   localStorage.setItem("aero_completed_todos", JSON.stringify(data.completedTasks));
   localStorage.setItem("aero_sticky_notes", JSON.stringify(data.stickyNotes));
   localStorage.setItem("aero_pomodoro_logs", JSON.stringify(data.pomodoroLogs));
-  localStorage.setItem("qiyun_countdowns", JSON.stringify(data.countdowns));
+  localStorage.setItem("tongyun_countdowns", JSON.stringify(data.countdowns));
   if (data.customizationConfig) {
     localStorage.setItem("aero_customization_config", JSON.stringify(data.customizationConfig));
   }
-  localStorage.setItem("qiyun_habits", JSON.stringify(data.habits));
-  localStorage.setItem("qiyun_habit_logs", JSON.stringify(data.habitLogs));
-  localStorage.setItem("qiyun_moods", JSON.stringify(data.moods));
-  localStorage.setItem("qiyun_sync_version", String(data.version));
-  localStorage.setItem("qiyun_last_updated", String(Date.now()));
+  localStorage.setItem("tongyun_habits", JSON.stringify(data.habits));
+  localStorage.setItem("tongyun_habit_logs", JSON.stringify(data.habitLogs));
+  localStorage.setItem("tongyun_moods", JSON.stringify(data.moods));
+  localStorage.setItem("tongyun_sync_version", String(data.version));
+  localStorage.setItem("tongyun_last_updated", String(Date.now()));
 
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(SYNC_APPLIED_EVENT, { detail: data }));

@@ -2,9 +2,9 @@
 
 ## 安装和运行
 
-### Q: 如何安装 QiYun List？
+### Q: 如何安装 TongYun Planner？
 A: 请按照以下步骤：
-1. 克隆项目：`git clone https://gitee.com/your-username/qiyun-list.git`
+1. 克隆项目：`git clone https://gitee.com/your-username/tongyun-planner.git`
 2. 安装依赖：`npm install`
 3. 启动开发服务器：`npm run tauri dev`
 
@@ -60,9 +60,9 @@ A: 在番茄钟视图中：
 
 ### Q: 数据存储在哪里？
 A: 数据存储在本地：
-- Windows：`%APPDATA%\com.qiyunlist.app\`
-- macOS：`~/Library/Application Support/com.qiyunlist.app/`
-- Linux：`~/.config/com.qiyunlist.app/`
+- Windows：`%APPDATA%\com.tongyunplanner.app\`
+- macOS：`~/Library/Application Support/com.tongyunplanner.app/`
+- Linux：`~/.config/com.tongyunplanner.app/`
 
 ### Q: 如何备份数据？
 A: 有以下几种方式：

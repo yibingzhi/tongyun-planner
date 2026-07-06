@@ -26,7 +26,7 @@ const DEFAULT_CUSTOMIZATION_CONFIG: CustomizationConfig = {
   aiAutoCategorize: false,
   enableAutoBackup: true,
   enableCelebration: true,
-      locale: (localStorage.getItem("qiyun_locale") === "en" ? "en" : "zh-CN") as "zh-CN" | "en",
+      locale: (localStorage.getItem("tongyun_locale") === "en" ? "en" : "zh-CN") as "zh-CN" | "en",
 };
 
 export function useCustomization() {
@@ -37,7 +37,7 @@ export function useCustomization() {
     setCustomizationConfig(newConfig);
     localStorage.setItem("aero_customization_config", JSON.stringify(newConfig));
     if (newConfig.locale) {
-      localStorage.setItem("qiyun_locale", newConfig.locale);
+      localStorage.setItem("tongyun_locale", newConfig.locale);
     }
     syncState("settings", "settings_sync", JSON.stringify(newConfig));
   }, [syncState]);

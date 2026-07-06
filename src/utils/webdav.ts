@@ -63,12 +63,12 @@ export async function webdavUpload(config: WebDavConfig, filename: string, conte
  * Downloads text file content from a WebDav server.
  */
 export async function webdavUploadVersion(config: WebDavConfig, timestamp: number): Promise<void> {
-  await webdavUpload(config, "qiyun_list_version.txt", String(timestamp));
+  await webdavUpload(config, "tongyun_planner_version.txt", String(timestamp));
 }
 
 export async function webdavDownloadVersion(config: WebDavConfig): Promise<number | null> {
   try {
-    const text = await webdavDownload(config, "qiyun_list_version.txt");
+    const text = await webdavDownload(config, "tongyun_planner_version.txt");
     return parseInt(text.trim(), 10);
   } catch (e: any) {
     // 匹配稳定的错误码前缀，避免依赖后端文案

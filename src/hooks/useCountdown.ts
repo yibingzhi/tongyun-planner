@@ -6,11 +6,11 @@ import { safeJsonParse } from "../utils/json";
 export function useCountdown() {
   // lazy initializer 直接从 localStorage 恢复，避免首次 render 时被空数组覆盖
   const [countdowns, setCountdowns] = useState<CountdownEvent[]>(() =>
-    safeJsonParse<CountdownEvent[]>(localStorage.getItem("qiyun_countdowns"), [])
+    safeJsonParse<CountdownEvent[]>(localStorage.getItem("tongyun_countdowns"), [])
   );
 
   const saveCountdowns = useCallback((updated: CountdownEvent[]) => {
-    localStorage.setItem("qiyun_countdowns", JSON.stringify(updated));
+    localStorage.setItem("tongyun_countdowns", JSON.stringify(updated));
   }, []);
 
   const handleAddCountdown = useCallback((event: { title: string; targetDate: string; emoji?: string; color?: string }) => {

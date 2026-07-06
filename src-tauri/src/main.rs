@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    qiyun_list_lib::run()
+    tongyun_planner_lib::run()
 }

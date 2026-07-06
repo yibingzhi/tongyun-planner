@@ -83,7 +83,7 @@ export function useTasks() {
   const saveTasks = useCallback(async (updatedTasks: Task[]) => {
     try {
       localStorage.setItem("aero_todos", JSON.stringify(updatedTasks));
-      localStorage.setItem("qiyun_last_updated", String(Date.now()));
+      localStorage.setItem("tongyun_last_updated", String(Date.now()));
       pendingTasksRef.current = updatedTasks;
       scheduleFlush();
     } catch (e) {
@@ -94,7 +94,7 @@ export function useTasks() {
   const saveCompleted = useCallback(async (updatedCompleted: Task[]) => {
     try {
       localStorage.setItem("aero_completed_todos", JSON.stringify(updatedCompleted));
-      localStorage.setItem("qiyun_last_updated", String(Date.now()));
+      localStorage.setItem("tongyun_last_updated", String(Date.now()));
       pendingCompletedRef.current = updatedCompleted;
       scheduleFlush();
     } catch (e) {

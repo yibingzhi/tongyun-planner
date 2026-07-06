@@ -1,12 +1,12 @@
 [package]
-name = "qiyun-list"
+name = "tongyun-planner"
 version = "0.1.0"
-description = "QiYun List - Eisenhower matrix todo desktop app"
-authors = ["QiYun List contributors"]
+description = "TongYun Planner - Eisenhower matrix todo desktop app"
+authors = ["TongYun Planner contributors"]
 edition = "2021"
 
 [lib]
-name = "qiyun_list_lib"
+name = "tongyun_planner_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
