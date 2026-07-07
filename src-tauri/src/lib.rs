@@ -2,6 +2,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::menu::{Menu, MenuItem};
 use serde::{Serialize, Deserialize};
+use std::path::PathBuf;
 
 mod email;
 
@@ -168,6 +169,182 @@ fn webdav_download(
     res.text().map_err(|e| e.to_string())
 }
 
+// WebDAV 二进制上传 (base64 编码): 用于图片/附件等非文本文件
+#[tauri::command]
+fn webdav_upload_binary(
+    url: String,
+    username: String,
+    password: Option<String>,
+    filename: String,
+    content_base64: String,
+    content_type: String,
+) -> Result<(), String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, filename);
+
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(&content_base64)
+        .map_err(|e| format!("Base64 decode error: {}", e))?;
+
+    let mut req = client.put(&target_url)
+        .header("Content-Type", &content_type)
+        .body(bytes);
+
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("E_HTTP_{}: Upload failed", res.status().as_u16()));
+    }
+    Ok(())
+}
+
+// WebDAV 二进制下载 (返回 base64)
+#[tauri::command]
+fn webdav_download_binary(
+    url: String,
+    username: String,
+    password: Option<String>,
+    filename: String,
+) -> Result<String, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, filename);
+
+    let mut req = client.get(&target_url);
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("E_NOT_FOUND".to_string());
+    }
+    if !res.status().is_success() {
+        return Err(format!("E_HTTP_{}", res.status().as_u16()));
+    }
+
+    let bytes = res.bytes().map_err(|e| e.to_string())?;
+    use base64::Engine;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+}
+
+// WebDAV 删除文件 (DELETE)
+#[tauri::command]
+fn webdav_delete(
+    url: String,
+    username: String,
+    password: Option<String>,
+    filename: String,
+) -> Result<(), String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let base_url = if url.ends_with('/') { url } else { format!("{}/", url) };
+    let target_url = format!("{}{}", base_url, filename);
+
+    let mut req = client.delete(&target_url);
+    if let Some(pass) = password {
+        req = req.basic_auth(username, Some(pass));
+    } else {
+        req = req.basic_auth(username, None::<String>);
+    }
+
+    let res = req.send().map_err(|e| e.to_string())?;
+    if res.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("E_NOT_FOUND".to_string());
+    }
+    if !res.status().is_success() {
+        return Err(format!("E_HTTP_{}", res.status().as_u16()));
+    }
+    Ok(())
+}
+
+// ── 本地文件操作 (App Data Directory) ──
+
+fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path().app_data_dir().map_err(|e| format!("Cannot get app data dir: {}", e))
+}
+
+fn ensure_tongyun_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app_data_dir(app)?;
+    let tongyun = dir.join("TongYunPlanner");
+    std::fs::create_dir_all(&tongyun).map_err(|e| format!("Cannot create dir: {}", e))?;
+    Ok(tongyun)
+}
+
+#[tauri::command]
+fn file_save(app: AppHandle, path: String, data: Vec<u8>) -> Result<(), String> {
+    let base = ensure_tongyun_dir(&app)?;
+    let full = base.join(&path);
+    if let Some(parent) = full.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Cannot create parent dir: {}", e))?;
+    }
+    std::fs::write(&full, data).map_err(|e| format!("Cannot write file: {}", e))
+}
+
+#[tauri::command]
+fn file_read(app: AppHandle, path: String) -> Result<Vec<u8>, String> {
+    let base = ensure_tongyun_dir(&app)?;
+    let full = base.join(&path);
+    if !full.exists() {
+        return Err("E_NOT_FOUND".to_string());
+    }
+    std::fs::read(&full).map_err(|e| format!("Cannot read file: {}", e))
+}
+
+#[tauri::command]
+fn file_delete(app: AppHandle, path: String) -> Result<(), String> {
+    let base = ensure_tongyun_dir(&app)?;
+    let full = base.join(&path);
+    if !full.exists() {
+        return Err("E_NOT_FOUND".to_string());
+    }
+    std::fs::remove_file(&full).map_err(|e| format!("Cannot delete file: {}", e))
+}
+
+#[tauri::command]
+fn file_list(app: AppHandle, prefix: String) -> Result<Vec<String>, String> {
+    let base = ensure_tongyun_dir(&app)?;
+    let dir = base.join(&prefix);
+    if !dir.exists() || !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut result = Vec::new();
+    for entry in std::fs::read_dir(&dir).map_err(|e| format!("Cannot list dir: {}", e))? {
+        let entry = entry.map_err(|e| format!("Cannot read entry: {}", e))?;
+        if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+            if let Some(name) = entry.file_name().to_str() {
+                let relative = if prefix.is_empty() {
+                    name.to_string()
+                } else {
+                    format!("{}/{}", prefix, name)
+                };
+                result.push(relative);
+            }
+        }
+    }
+    Ok(result)
+}
+
 // 7. RSS 代理拉取命令：在 Rust 端 GET 远程 RSS/Atom XML，绕过前端 CORS 限制
 #[tauri::command]
 fn fetch_rss(url: String) -> Result<String, String> {
@@ -206,6 +383,13 @@ pub fn run() {
             webdav_mkcol,
             webdav_upload,
             webdav_download,
+            webdav_upload_binary,
+            webdav_download_binary,
+            webdav_delete,
+            file_save,
+            file_read,
+            file_delete,
+            file_list,
             fetch_rss,
             email::send_test_email
         ])

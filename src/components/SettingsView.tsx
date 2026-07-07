@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server, Copy, Mail, Send } from "lucide-react";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server, Copy, Mail, Send, HardDrive, CheckCircle2 } from "lucide-react";
 import type { CustomizationConfig, AlertSoundType, Locale, EmailConfig } from "../types";
 import type { SyncBackendType } from "../utils/sync/types";
+import { storageManager, type StorageBackendType } from "../utils/storage";
 import { syncEngine } from "../utils/sync/engine";
 import { normalizeSyncData, applySyncData } from "../utils/sync/types";
 import { PLANNER_COLORS } from "../constants";
@@ -193,6 +194,15 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   const [syncBackend, setSyncBackend] = useState<SyncBackendType>(() => syncEngine.currentBackend);
   const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem("tongyun_supabase_url") || "");
   const [supabaseKey, setSupabaseKey] = useState(() => localStorage.getItem("tongyun_supabase_anon_key") || "");
+  const [storageBackend, setStorageBackend] = useState<StorageBackendType>(() => storageManager.current);
+  const [ossRegion, setOssRegion] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_oss_config") || "{}").region || ""; } catch { return ""; } });
+  const [ossBucket, setOssBucket] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_oss_config") || "{}").bucket || ""; } catch { return ""; } });
+  const [ossKeyId, setOssKeyId] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_oss_config") || "{}").accessKeyId || ""; } catch { return ""; } });
+  const [ossKeySecret, setOssKeySecret] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_oss_config") || "{}").accessKeySecret || ""; } catch { return ""; } });
+  const [cosRegion, setCosRegion] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_cos_config") || "{}").region || ""; } catch { return ""; } });
+  const [cosBucket, setCosBucket] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_cos_config") || "{}").bucket || ""; } catch { return ""; } });
+  const [cosSecretId, setCosSecretId] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_cos_config") || "{}").secretId || ""; } catch { return ""; } });
+  const [cosSecretKey, setCosSecretKey] = useState(() => { try { return JSON.parse(localStorage.getItem("tongyun_cos_config") || "{}").secretKey || ""; } catch { return ""; } });
   const [syncStatus, setSyncStatus] = useState(syncEngine.status);
   const [syncLastTime, setSyncLastTime] = useState<number | null>(syncEngine.lastSyncTime);
   const [isLoading, setIsLoading] = useState(false);
@@ -1426,6 +1436,82 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     </select>
                   </div>
                 )}
+
+                {/* ── 附件存储后端 ── */}
+                <div className="pt-3 border-t border-[#EFEBE4]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <HardDrive className="w-3.5 h-3.5 text-[#8B6E3C]" />
+                    <span className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">附件存储</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-3 font-medium">任务附件（图片/文件）的存储位置。云端后端支持公网 URL，AI 可直接读取。</p>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {([["local", "本地存储"], ["webdav", "WebDAV (坚果云)"], ["oss", "阿里云 OSS"], ["cos", "腾讯云 COS"], ["supabase", "Supabase"]] as [StorageBackendType, string][]).map(([val, label]) => {
+                      const selected = storageBackend === val;
+                      return (
+                        <button key={val} onClick={() => { setStorageBackend(val); storageManager.setBackend(val); }}
+                          className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold border transition-all cursor-pointer ${
+                            selected ? "bg-[#4D7C5D] text-white border-[#4D7C5D]" : "bg-white text-slate-600 border-[#EFEBE4] hover:border-[#4D7C5D]"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {storageBackend === "oss" && (
+                    <div className="space-y-2 mb-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Region (oss-cn-hangzhou)" value={ossRegion} onChange={(e) => setOssRegion(e.target.value)} className="bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                        <input type="text" placeholder="Bucket" value={ossBucket} onChange={(e) => setOssBucket(e.target.value)} className="bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                      </div>
+                      <input type="text" placeholder="AccessKey ID" value={ossKeyId} onChange={(e) => setOssKeyId(e.target.value)} className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                      <div className="flex gap-2">
+                        <input type="password" placeholder="AccessKey Secret" value={ossKeySecret} onChange={(e) => setOssKeySecret(e.target.value)} className="flex-1 bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                        <button onClick={() => { storageManager.oss.setConfig({ region: ossRegion, bucket: ossBucket, accessKeyId: ossKeyId, accessKeySecret: ossKeySecret }); triggerToast("OSS 配置已保存", "success"); }}
+                          className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-3 rounded-xl text-[10px] font-extrabold cursor-pointer transition-all"><Save className="w-3 h-3 inline" /></button>
+                      </div>
+                    </div>
+                  )}
+
+                  {storageBackend === "cos" && (
+                    <div className="space-y-2 mb-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Region (ap-guangzhou)" value={cosRegion} onChange={(e) => setCosRegion(e.target.value)} className="bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                        <input type="text" placeholder="Bucket" value={cosBucket} onChange={(e) => setCosBucket(e.target.value)} className="bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                      </div>
+                      <input type="text" placeholder="SecretId" value={cosSecretId} onChange={(e) => setCosSecretId(e.target.value)} className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                      <div className="flex gap-2">
+                        <input type="password" placeholder="SecretKey" value={cosSecretKey} onChange={(e) => setCosSecretKey(e.target.value)} className="flex-1 bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" />
+                        <button onClick={() => { storageManager.cos.setConfig({ region: cosRegion, bucket: cosBucket, secretId: cosSecretId, secretKey: cosSecretKey }); triggerToast("COS 配置已保存", "success"); }}
+                          className="bg-[#4D7C5D] hover:bg-[#3F684C] text-white px-3 rounded-xl text-[10px] font-extrabold cursor-pointer transition-all"><Save className="w-3 h-3 inline" /></button>
+                      </div>
+                    </div>
+                  )}
+
+                  {storageBackend !== "local" && storageBackend !== "webdav" && !["oss", "cos"].includes(storageBackend) && (
+                    <p className="text-[10px] text-slate-400 mb-2 italic">该后端的 SDK 集成尚未完成，配置保存后即可使用</p>
+                  )}
+
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/60 border border-[#EFEBE4]">
+                    <div className="flex items-center gap-2">
+                      {storageManager.isConfigured() ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                      <span className="text-[10px] font-bold text-slate-700">{storageManager.provider.displayName}</span>
+                      {storageManager.provider.supportsPublicUrl && storageManager.isConfigured() && (
+                        <span className="text-[8px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full font-bold">AI 可读</span>
+                      )}
+                    </div>
+                    {storageBackend !== "local" && (
+                      <button onClick={async () => { setIsLoading(true); const ok = await storageManager.test(); setIsLoading(false); triggerToast(ok ? "连接成功 ✅" : "连接失败 ❌", ok ? "success" : "error"); }}
+                        disabled={isLoading || !storageManager.isConfigured()}
+                        className="text-[9px] px-2 py-1 rounded-lg border border-[#EFEBE4] hover:border-[#4D7C5D] disabled:opacity-40 text-slate-500 font-bold cursor-pointer transition-all"
+                      >
+                        {isLoading ? <RefreshCw className="w-2.5 h-2.5 animate-spin inline" /> : null} 测试
+                      </button>
+                    )}
+                  </div>
+                </div>
 
                 {/* AI 工具集成 */}
                 {syncBackend === "webdav" && webdavUrl && webdavUser && (

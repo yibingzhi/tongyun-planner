@@ -38,7 +38,7 @@ import { useSync, subscribeDevSync } from "./hooks/useSync";
 import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
-import { storage } from "./utils/storage";
+import { storage } from "./utils/unifiedStorage";
 import { syncEngine } from "./utils/sync/engine";
 import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, ALL_SYNC_CATEGORIES, type SyncData } from "./utils/sync/types";
 

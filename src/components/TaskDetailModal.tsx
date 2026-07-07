@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag, Zap, Link2, Unlink } from "lucide-react";
-import type { Task } from "../types";
+import React, { useState, useRef, useEffect } from "react";
+import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag, Zap, Link2, Unlink, Paperclip, File, Trash2, Upload, Download, ExternalLink, RefreshCw } from "lucide-react";
+import type { Task, Attachment } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
 import { parseNaturalDate, formatNaturalPreview } from "../utils/dateParser";
+import { storageManager, getAttachmentPath } from "../utils/storage";
 
 interface TaskDetailModalProps {
   task: Task;
@@ -33,6 +34,39 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   const [tagInput, setTagInput] = useState("");
   const [editDueDate, setEditDueDate] = useState(task.dueDate || "");
   const [editDueTime, setEditDueTime] = useState(task.dueTime || "");
+  const [attachments, setAttachments] = useState<Attachment[]>(task.attachments || []);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imgUrls, setImgUrls] = useState<Record<string, string>>({});
+  const blobUrls = useRef<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load blob URLs for image attachments
+  useEffect(() => {
+    // Revoke previous blob URLs
+    blobUrls.current.forEach(url => URL.revokeObjectURL(url));
+    blobUrls.current = [];
+
+    const load = async () => {
+      const map: Record<string, string> = {};
+      for (const att of (task.attachments || [])) {
+        if (!att.type.startsWith("image/")) continue;
+        const publicUrl = storageManager.getPublicUrl(att.path);
+        if (publicUrl) { map[att.id] = publicUrl; continue; }
+        try {
+          const url = await storageManager.getFileUrl(att.path, att.type);
+          map[att.id] = url;
+          blobUrls.current.push(url);
+        } catch { /* ignore */ }
+      }
+      setImgUrls(map);
+    };
+    load();
+    return () => {
+      blobUrls.current.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [task.attachments]);
+
 
   return (
     <div
@@ -242,8 +276,160 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
               </button>
             </div>
           </div>
+
+          {/* Attachments */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Paperclip className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">附件</span>
+              {attachments.length > 0 && (
+                <span className="text-[9px] text-slate-400 font-medium">{attachments.length}</span>
+              )}
+            </div>
+            <div className="space-y-1.5 mb-2">
+              {attachments.map((att) => {
+                const isImage = att.type.startsWith("image/");
+                const previewSrc = imgUrls[att.id];
+                const hasPublicUrl = storageManager.getPublicUrl(att.path) !== null;
+                return (
+                  <div key={att.id} className="flex items-center gap-2 px-1 py-1.5 bg-[#FAF8F5] border border-[#EFEBE4] rounded-lg">
+                    {isImage && previewSrc ? (
+                      <button onClick={() => setPreviewUrl(previewSrc)} className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 cursor-pointer hover:opacity-80 transition-opacity">
+                        <img src={previewSrc} alt={att.name} className="w-full h-full object-cover" />
+                      </button>
+                    ) : (
+                      <button onClick={async () => { try { const data = await storageManager.downloadFile(att.path); if (!data) return; const blob = new Blob([data], { type: att.type }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = att.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) { console.error(e); } }} className="w-10 h-10 rounded-lg bg-[#F0F5F1] flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-[#E3EBE5] transition-colors">
+                        <File className="w-4 h-4 text-[#4D7C5D]" />
+                      </button>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-medium text-slate-700 truncate block">{att.name}</span>
+                      <span className="text-[8px] text-slate-400">{(att.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const data = await storageManager.downloadFile(att.path);
+                            if (!data) return;
+                            const blob = new Blob([data], { type: att.type });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = att.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch (e) { console.error("Download failed", e); }
+                        }}
+                        className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                        title="下载"
+                      >
+                        <Download className="w-3 h-3" />
+                      </button>
+                      {hasPublicUrl && (
+                        <a href={storageManager.getPublicUrl(att.path)!} target="_blank" rel="noreferrer" className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-blue-600 transition-colors" title="在新标签页打开">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => {
+                          const next = attachments.filter(a => a.id !== att.id);
+                          setAttachments(next);
+                          onEditTask(task.id, { attachments: next });
+                        }}
+                        className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                        title="删除"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !storageManager.isConfigured()}
+                className="flex items-center gap-1.5 text-[10px] bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] disabled:opacity-40 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+              >
+                {uploading ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Upload className="w-3 h-3" />
+                )}
+                {uploading ? "上传中..." : "添加附件"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const buffer = await file.arrayBuffer();
+                    const bytes = new Uint8Array(buffer);
+                    const attId = crypto.randomUUID();
+                    const path = getAttachmentPath(task.id, attId, file.name);
+                    const savedPath = await storageManager.uploadFile(path, bytes, file.type);
+                    const att: Attachment = {
+                      id: attId,
+                      name: file.name,
+                      path: savedPath,
+                      type: file.type,
+                      size: file.size,
+                      createdAt: new Date().toISOString(),
+                    };
+                    const next = [...attachments, att];
+                    setAttachments(next);
+                    onEditTask(task.id, { attachments: next });
+                    // Load display URL immediately for the new image
+                    if (att.type.startsWith("image/")) {
+                      try {
+                        const url = await storageManager.getFileUrl(att.path, att.type);
+                        setImgUrls(prev => ({ ...prev, [att.id]: url }));
+                      } catch { /* ignore */ }
+                    }
+                  } catch (err: any) {
+                    console.error("Upload failed", err);
+                  } finally {
+                    setUploading(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              {!storageManager.isConfigured() && (
+                <span className="text-[9px] text-amber-600">存储未配置，请在设置中配置存储后端</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Image preview lightbox */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-8"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <button
+            onClick={() => setPreviewUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors cursor-pointer z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={previewUrl}
+            alt="preview"
+            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 });
