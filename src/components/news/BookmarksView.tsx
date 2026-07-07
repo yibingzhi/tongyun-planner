@@ -42,9 +42,9 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredBookmarks.map((article, idx) => (
+          {filteredBookmarks.map((article) => (
             <div
-              key={idx}
+              key={article.link + article.title}
               className="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/60 border border-transparent hover:border-[#E8E0D0] cursor-pointer transition-all"
             >
               <div className="flex-grow min-w-0" onClick={() => onOpenArticle(article)}>
@@ -75,8 +75,8 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
             <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.15em]">最近阅读</span>
           </div>
           <div className="space-y-1">
-            {readHistory.slice(0, 10).map((entry, idx) => (
-              <div key={idx} className="flex items-center gap-2 py-1.5 text-[11px] text-slate-400">
+            {readHistory.slice(0, 10).map((entry) => (
+              <div key={entry.title + entry.readAt} className="flex items-center gap-2 py-1.5 text-[11px] text-slate-400">
                 <span className="w-1 h-1 rounded-full bg-slate-200 flex-shrink-0" />
                 <span className="truncate font-medium">{entry.title}</span>
                 <span className="text-slate-200 text-[9px] ml-auto flex-shrink-0">

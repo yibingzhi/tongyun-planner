@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server, Copy } from "lucide-react";
-import type { CustomizationConfig, AlertSoundType, Locale } from "../types";
+import { Sparkles, Heart, Cloud, RefreshCw, Upload, Download, AlertTriangle, Moon, Save, Link2, X, Wand2, Server, Copy, Mail, Send } from "lucide-react";
+import type { CustomizationConfig, AlertSoundType, Locale, EmailConfig } from "../types";
 import type { SyncBackendType } from "../utils/sync/types";
 import { syncEngine } from "../utils/sync/engine";
 import { normalizeSyncData, applySyncData } from "../utils/sync/types";
@@ -186,7 +186,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 }) => {
   const { t } = useTranslation();
   const s = t.settings;
-  const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system" | "fun">("personalization");
+  const [subTab, setSubTab] = useState<"personalization" | "ai" | "sunset" | "sync" | "system" | "fun" | "email">("personalization");
   const [webdavUrl, setWebdavUrl] = useState(() => localStorage.getItem("tongyun_webdav_url") || "");
   const [webdavUser, setWebdavUser] = useState(() => localStorage.getItem("tongyun_webdav_user") || "");
   const [webdavPass, setWebdavPass] = useState(() => localStorage.getItem("tongyun_webdav_pass") || "");
@@ -203,6 +203,120 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   });
   const [generatingPraise, setGeneratingPraise] = useState(false);
 
+  const [emailConfig, setEmailConfig] = useState<EmailConfig>(() => {
+    const saved = localStorage.getItem("tongyun_email_config");
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return {
+      smtpProvider: "qq",
+      smtpHost: "smtp.qq.com",
+      smtpPort: 465,
+      smtpUser: "",
+      smtpPass: "",
+      recipientEmail: "",
+      enableRemindBefore: true,
+      remindBeforeMinutes: 30,
+      enableDailyDigest: true,
+      digestHour: 8,
+      digestMinute: 0,
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem("tongyun_email_config", JSON.stringify(emailConfig));
+  }, [emailConfig]);
+
+  const [showEmailHelp, setShowEmailHelp] = useState(false);
+  const [emailSendResult, setEmailSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const EMAIL_HELP: Record<string, { title: string; steps: string[] }> = {
+    qq: {
+      title: "QQ邮箱 授权码获取",
+      steps: [
+        "登录 QQ邮箱 → 设置 → 账户",
+        "找到「POP3/SMTP服务」→ 点击「开启」",
+        "按提示发送短信到指定号码",
+        "成功后会生成一个 16 位授权码",
+        "将授权码填入上方「授权码」输入框（非 QQ 密码）",
+      ],
+    },
+    "163": {
+      title: "163邮箱 授权码获取",
+      steps: [
+        "登录 163邮箱 → 设置 → POP3/SMTP/IMAP",
+        "开启「IMAP/SMTP服务」（如果已开启，先关闭再重新开启以刷新授权码）",
+        "按提示发送短信验证",
+        "成功后会生成 16 位授权码",
+        "将授权码填入上方「授权码」输入框（非邮箱密码）",
+        "如果 465 端口不行，试试切换端口为 994（SSL）或 587（STARTTLS）",
+      ],
+    },
+    gmail: {
+      title: "Gmail 应用专用密码",
+      steps: [
+        "登录 Google 账号 → 安全性 → 两步验证（需开启）",
+        "在「应用专用密码」中生成一个新密码",
+        "选择「邮件」和「Windows 计算机」",
+        "将生成的 16 位密码填入上方「授权码」",
+        "注意：Gmail 需使用 587 端口 + STARTTLS",
+      ],
+    },
+  };
+
+  const SMTP_PRESETS: Record<string, { host: string; port: number }> = {
+    qq: { host: "smtp.qq.com", port: 465 },
+    "163": { host: "smtp.163.com", port: 465 },
+    gmail: { host: "smtp.gmail.com", port: 587 },
+  };
+
+  const handleSelectEmailProvider = (provider: string) => {
+    if (provider === "custom") {
+      setEmailConfig(p => ({ ...p, smtpProvider: "custom" }));
+    } else {
+      const preset = SMTP_PRESETS[provider];
+      if (preset) {
+        setEmailConfig(p => ({
+          ...p,
+          smtpProvider: provider as EmailConfig["smtpProvider"],
+          smtpHost: preset.host,
+          smtpPort: preset.port,
+        }));
+      }
+    }
+  };
+
+  const handleSaveEmail = () => {
+    localStorage.setItem("tongyun_email_config", JSON.stringify(emailConfig));
+    triggerToast(s.emailSaved, "success");
+  };
+
+  const handleTestEmail = async () => {
+    setEmailSendResult(null);
+    if (!emailConfig.smtpUser || !emailConfig.smtpPass) {
+      triggerToast(s.emailTestFail, "error");
+      return;
+    }
+    const { invoke } = await import("@tauri-apps/api/core");
+    try {
+      await invoke("send_test_email", {
+        config: {
+          smtp_host: emailConfig.smtpHost,
+          smtp_port: emailConfig.smtpPort,
+          smtp_user: emailConfig.smtpUser,
+          smtp_pass: emailConfig.smtpPass,
+          recipient_email: emailConfig.recipientEmail,
+        },
+      });
+      setEmailSendResult({ ok: true, msg: s.emailTestSuccess });
+      triggerToast(s.emailTestSuccess, "success");
+    } catch (e: any) {
+      const errMsg = typeof e === "string" ? e : String(e);
+      setEmailSendResult({ ok: false, msg: errMsg });
+      triggerToast(s.emailTestFail, "error");
+    }
+  };
+
   useEffect(() => {
     return syncEngine.subscribe((state) => {
       setSyncStatus(state.status);
@@ -211,7 +325,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
   }, []);
   const triggerToast = (text: string, type: "success" | "error") => {
     setToast({ text, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), type === "error" ? 8000 : 3000);
   };
 
   const handleColorChange = (quadId: "urgent-important" | "important-not-urgent" | "urgent-not-important" | "not-urgent-not-important", colorKey: string) => {
@@ -294,6 +408,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             { id: "personalization", label: s.personalization },
             { id: "sunset", label: s.sunset },
             { id: "ai", label: s.ai },
+            { id: "email", label: s.emailTitle },
             { id: "sync", label: s.sync },
             { id: "fun", label: s.fun },
             { id: "system", label: s.system },
@@ -830,7 +945,250 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
           </div>
         )}
 
-        {/* 4. 备份同步 WebDav 面签 */}
+        {/* 4. 邮件提醒面签 */}
+        {subTab === "email" && (
+          <div className="space-y-4 flex-grow overflow-y-auto max-h-[520px] pr-1 custom-scrollbar">
+            {/* 提示信息 */}
+            <div className="bg-[#FAF5ED] border border-[#EFE5D3] p-4 rounded-2xl flex items-start gap-3">
+              <Mail className="w-5 h-5 text-[#8B6E3C] mt-0.5 shrink-0" />
+              <div className="text-xs text-slate-600 leading-relaxed font-medium">
+                <strong>📧 {s.emailTitle}</strong>
+                <p className="mt-1">{s.emailDesc}</p>
+              </div>
+            </div>
+
+            {/* 邮箱提供商选择 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                  {s.emailProvider}
+                </h4>
+                {emailConfig.smtpProvider !== "custom" && (
+                  <button
+                    onClick={() => setShowEmailHelp(!showEmailHelp)}
+                    className="text-[10px] font-bold text-[#4D7C5D] hover:text-[#3F684C] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[#F0F5F1] transition-all cursor-pointer"
+                  >
+                    {showEmailHelp ? "收起帮助" : "❓ 如何获取授权码？"}
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { id: "qq", label: "QQ邮箱" },
+                  { id: "163", label: "163邮箱" },
+                  { id: "gmail", label: "Gmail" },
+                  { id: "custom", label: "✏️ " + (t.common.custom || "自定义") },
+                ].map((p) => {
+                  const isSelected = emailConfig.smtpProvider === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => { handleSelectEmailProvider(p.id); setShowEmailHelp(false); }}
+                      className={`py-2.5 rounded-xl text-[10px] font-extrabold border transition-all duration-200 cursor-pointer text-center hover:scale-105 active:scale-95 ${
+                        isSelected
+                          ? "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36] shadow-xs"
+                          : "bg-white border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] hover:border-slate-300"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 授权码帮助面板 */}
+            {showEmailHelp && emailConfig.smtpProvider !== "custom" && (
+              <div className="bg-[#FAF5ED] border border-[#EFE5D3] p-4 rounded-2xl animate-fade-in-up">
+                <h5 className="text-xs font-bold text-[#8B6E3C] mb-2">
+                  📖 {EMAIL_HELP[emailConfig.smtpProvider]?.title || "帮助"}
+                </h5>
+                <ol className="space-y-1.5 ml-4">
+                  {EMAIL_HELP[emailConfig.smtpProvider]?.steps.map((step, i) => (
+                    <li key={i} className="text-[11px] text-slate-600 leading-relaxed list-decimal">{step}</li>
+                  ))}
+                </ol>
+                <p className="text-[10px] text-[#A34E36] font-bold mt-2">
+                  ⚠️ 授权码是 16 位字符，不是你登录邮箱的密码
+                </p>
+              </div>
+            )}
+
+            {/* SMTP 配置 */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block">{s.emailSmtpHost}</label>
+                  <input
+                    type="text"
+                    value={emailConfig.smtpHost}
+                    onChange={e => setEmailConfig(p => ({ ...p, smtpHost: e.target.value }))}
+                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block">{s.emailSmtpPort}</label>
+                  <input
+                    type="number"
+                    value={emailConfig.smtpPort}
+                    onChange={e => setEmailConfig(p => ({ ...p, smtpPort: parseInt(e.target.value) || 465 }))}
+                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block">
+                    📤 发件邮箱（SMTP 登录）
+                  </label>
+                  <input
+                    type="text"
+                    value={emailConfig.smtpUser}
+                    onChange={e => setEmailConfig(p => ({ ...p, smtpUser: e.target.value }))}
+                    placeholder="yourname@163.com"
+                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block">{s.emailSmtpPass}</label>
+                  <input
+                    type="password"
+                    value={emailConfig.smtpPass}
+                    onChange={e => setEmailConfig(p => ({ ...p, smtpPass: e.target.value }))}
+                    placeholder="••••••••"
+                    className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase block">
+                  📥 接收提醒邮箱（收件箱）
+                </label>
+                <input
+                  type="text"
+                  value={emailConfig.recipientEmail}
+                  onChange={e => setEmailConfig(p => ({ ...p, recipientEmail: e.target.value }))}
+                  placeholder="yourname@163.com"
+                  className="w-full bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+                />
+              </div>
+            </div>
+
+            {/* 提醒规则 */}
+            <div className="border-t border-[#EFEBE4] pt-4 space-y-3">
+              <h4 className="text-[11px] font-bold text-[#8B6E3C] tracking-wide uppercase">
+                {s.emailRemindRules}
+              </h4>
+
+              {/* 到期前提醒 */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
+                <div>
+                  <span className="text-xs font-bold text-slate-700 block">{s.emailRemindBefore}</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">{s.emailRemindBeforeDesc}</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={emailConfig.enableRemindBefore}
+                  onChange={e => setEmailConfig(p => ({ ...p, enableRemindBefore: e.target.checked }))}
+                  className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
+                />
+              </div>
+              {emailConfig.enableRemindBefore && (
+                <div className="flex items-center gap-3 ml-4 pl-3 border-l-2 border-[#DEEAE2]">
+                  <span className="text-[10px] font-bold text-slate-500">{s.emailRemindBeforeLabel}</span>
+                  <select
+                    value={emailConfig.remindBeforeMinutes}
+                    onChange={e => setEmailConfig(p => ({ ...p, remindBeforeMinutes: parseInt(e.target.value) }))}
+                    className="bg-white border border-[#EFEBE4] px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-[#4D7C5D]"
+                  >
+                    <option value={15}>15 {s.emailMinutes}</option>
+                    <option value={30}>30 {s.emailMinutes}</option>
+                    <option value={60}>1 {s.emailHour}</option>
+                    <option value={120}>2 {s.emailHour}</option>
+                    <option value={1440}>1 {s.emailDay}</option>
+                  </select>
+                  <span className="text-[10px] text-slate-400 font-medium">{t.common.send || "发送"}</span>
+                </div>
+              )}
+
+              {/* 每日汇总 */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-[#EFEBE4] bg-white/50">
+                <div>
+                  <span className="text-xs font-bold text-slate-700 block">{s.emailDigest}</span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">{s.emailDigestDesc}</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={emailConfig.enableDailyDigest}
+                  onChange={e => setEmailConfig(p => ({ ...p, enableDailyDigest: e.target.checked }))}
+                  className="w-4 h-4 accent-[#4D7C5D] cursor-pointer"
+                />
+              </div>
+              {emailConfig.enableDailyDigest && (
+                <div className="flex items-center gap-3 ml-4 pl-3 border-l-2 border-[#DEEAE2]">
+                  <span className="text-[10px] font-bold text-slate-500">{s.emailDigestTime}</span>
+                  <select
+                    value={emailConfig.digestHour}
+                    onChange={e => setEmailConfig(p => ({ ...p, digestHour: parseInt(e.target.value) }))}
+                    className="bg-white border border-[#EFEBE4] px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-[#4D7C5D]"
+                  >
+                    {Array.from({ length: 24 }).map((_, h) => (
+                      <option key={h} value={h}>{h.toString().padStart(2, "0")}:{emailConfig.digestMinute.toString().padStart(2, "0")}</option>
+                    ))}
+                  </select>
+                  <span className="text-[10px] text-slate-400 font-medium">({s.emailBgHint})</span>
+                </div>
+              )}
+            </div>
+
+            {/* 保存 & 测试 */}
+            <div className="flex gap-3 pt-1 sticky bottom-0 bg-white/90 backdrop-blur-sm pb-1">
+              <button
+                type="button"
+                onClick={handleSaveEmail}
+                className="flex-1 bg-[#4D7C5D] hover:bg-[#3F684C] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {s.emailSave}
+              </button>
+              <button
+                type="button"
+                onClick={handleTestEmail}
+                className="flex-1 bg-[#8B6E3C] hover:bg-[#725A31] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-xs"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {s.emailTest}
+              </button>
+            </div>
+
+            {/* 发送结果 */}
+            {emailSendResult && (
+              <div className={`p-3 rounded-xl border text-xs font-bold leading-relaxed ${
+                emailSendResult.ok
+                  ? "bg-[#F0F5F1] border-[#DEEAE2] text-[#4D7C5D]"
+                  : "bg-[#FCF2F0] border-[#F5DFDB] text-[#A34E36]"
+              }`}>
+                <div className="flex items-start gap-2">
+                  <span>{emailSendResult.ok ? "✅" : "❌"}</span>
+                  <span>{emailSendResult.msg}</span>
+                </div>
+                {!emailSendResult.ok && emailSendResult.msg.includes("535") && (
+                  <div className="mt-2 pt-2 border-t border-[#F5DFDB] text-[10px] text-slate-600 font-medium space-y-1">
+                    <p>🔍 常见原因：</p>
+                    <ul className="list-disc ml-4 space-y-0.5">
+                      <li>未开启邮箱的 SMTP 服务（点上方「如何获取授权码？」查看步骤）</li>
+                      <li>填的是登录密码，不是 16 位授权码</li>
+                      <li>授权码已过期，需重新生成</li>
+                      <li>账号或授权码有多余空格</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. 备份同步 WebDav 面签 */}
         {subTab === "sync" && (
           <div className="space-y-4 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
             {/* 同步后端选择 */}
@@ -1271,7 +1629,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
           </div>
         )}
 
-        {/* 5. 系统设置与提示音面签 */}
+        {/* 6. 系统设置与提示音面签 */}
         {subTab === "system" && (
           <div className="space-y-6 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
             {/* 语言选择 */}
@@ -1325,7 +1683,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
           </div>
         )}
 
-        {/* 6. 趣味设置 */}
+        {/* 7. 趣味设置 */}
         {subTab === "fun" && (
           <div className="space-y-6 flex-grow overflow-y-auto max-h-[380px] pr-1 custom-scrollbar">
             {/* 夸夸模式开关 */}

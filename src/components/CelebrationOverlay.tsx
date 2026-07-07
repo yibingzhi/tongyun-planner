@@ -64,7 +64,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = React.memo(
       ))}
 
       {/* Message */}
-      <div className="animate-celebration-bounce bg-white/90 backdrop-blur-md border border-[#EFEBE4] rounded-2xl px-8 py-5 shadow-xl pointer-events-auto select-none">
+      <div className="animate-celebration-bounce bg-white/90 backdrop-blur-sm border border-[#EFEBE4] rounded-2xl px-8 py-5 shadow-xl pointer-events-auto select-none">
         <p className="text-lg font-bold text-[#2D323A] text-center whitespace-nowrap">
           {message}
         </p>

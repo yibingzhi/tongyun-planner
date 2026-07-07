@@ -29,7 +29,7 @@ function getMoodEmoji(value: number | undefined): string {
   return entry ? entry.emoji : "";
 }
 
-export const MoodView: React.FC<MoodViewProps> = ({ moods, moodNotes, onSetMood, onSetMoodNote }) => {
+export const MoodView: React.FC<MoodViewProps> = React.memo(({ moods, moodNotes, onSetMood, onSetMoodNote }) => {
   const today = getLocalDateString();
   const todayMood = moods[today];
   const todayNote = moodNotes[today] || "";
@@ -305,4 +305,4 @@ export const MoodView: React.FC<MoodViewProps> = ({ moods, moodNotes, onSetMood,
       })()}
     </div>
   );
-};
+});

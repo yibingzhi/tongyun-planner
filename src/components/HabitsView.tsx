@@ -18,7 +18,7 @@ interface HabitsViewProps {
 
 const HABIT_EMOJIS = ["💪", "📖", "🧘", "🏃", "💧", "🥗", "🌙", "☀️", "🎯", "✍️", "🎨", "🧠"];
 
-export const HabitsView: React.FC<HabitsViewProps> = ({
+export const HabitsView: React.FC<HabitsViewProps> = React.memo(({
   habits,
   habitLogs,
   onAddHabit,
@@ -174,4 +174,4 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
       )}
     </div>
   );
-};
+});

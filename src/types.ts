@@ -126,3 +126,17 @@ export interface WebDavConfig {
   password?: string;
 }
 
+export interface EmailConfig {
+  smtpProvider: "qq" | "163" | "gmail" | "custom";
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  recipientEmail: string;
+  enableRemindBefore: boolean;
+  remindBeforeMinutes: number;
+  enableDailyDigest: boolean;
+  digestHour: number;
+  digestMinute: number;
+}
+

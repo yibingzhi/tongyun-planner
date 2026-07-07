@@ -183,9 +183,9 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     const dayTasks = tasksByDueDate[dateStr] || [];
     if (dayTasks.length === 0) return null;
 
-    return dayTasks.slice(0, 3).map((t, idx) => (
+    return dayTasks.slice(0, 3).map((t) => (
       <span
-        key={idx}
+        key={t.id}
         className={`w-1 h-1 rounded-full ${
           t.category === "urgent-important"
             ? "bg-[#E8A0BF]"

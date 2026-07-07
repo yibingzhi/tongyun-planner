@@ -41,7 +41,7 @@ interface DashboardViewProps {
   config: CustomizationConfig;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({
+export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
   tasks,
   completedTasks,
   handleComplete,
@@ -510,7 +510,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   const year = match ? match[1] : "";
                   const text = match ? evt.slice(match[0].length) : evt;
                   return (
-                    <div key={idx} className="timeline-dot flex items-start gap-2">
+                    <div key={`evt-${year}-${idx}`} className="timeline-dot flex items-start gap-2">
                       {year && (
                         <span className="text-[7px] font-black text-[#4D7C5D] bg-[#F0F5F1] px-1 py-0.5 rounded shrink-0">
                           {year}
@@ -617,7 +617,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       if (!trimmed) return null;
                       const isFirst = idx === 0 && !proseTitle;
                       return (
-                        <div key={idx} className="relative">
+                        <div key={`prose-${idx}`} className="relative">
                           {arr.length > 1 && idx > 0 && (
                             <div className="flex items-center gap-2 my-2.5 opacity-30">
                               <span className="h-px flex-grow bg-[#DEEAE2]" />
@@ -727,5 +727,5 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
     </div>
   );
-};
+});
 

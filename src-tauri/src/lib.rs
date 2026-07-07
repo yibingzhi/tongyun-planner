@@ -3,6 +3,8 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::menu::{Menu, MenuItem};
 use serde::{Serialize, Deserialize};
 
+mod email;
+
 // 1. 定义多窗口间传递的同步状态数据结构
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TodoSyncPayload {
@@ -204,7 +206,8 @@ pub fn run() {
             webdav_mkcol,
             webdav_upload,
             webdav_download,
-            fetch_rss
+            fetch_rss,
+            email::send_test_email
         ])
         // 6. 初始化系统托盘
         .setup(|app| {

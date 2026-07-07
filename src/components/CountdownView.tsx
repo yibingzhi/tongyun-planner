@@ -34,7 +34,7 @@ interface CountdownViewProps {
   handleDeleteCountdown: (id: string) => void;
 }
 
-export const CountdownView: React.FC<CountdownViewProps> = ({
+export const CountdownView: React.FC<CountdownViewProps> = React.memo(({
   countdowns,
   handleAddCountdown,
   handleDeleteCountdown,
@@ -223,4 +223,4 @@ export const CountdownView: React.FC<CountdownViewProps> = ({
       )}
     </div>
   );
-};
+});

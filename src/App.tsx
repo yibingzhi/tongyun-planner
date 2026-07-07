@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
 import { load } from "@tauri-apps/plugin-store";
@@ -787,25 +787,163 @@ function AppInner() {
     );
   }
 
+  return <MainLayout
+    flowMode={flowMode}
+    setFlowMode={setFlowMode}
+    activeTab={activeTab}
+    setActiveTab={setActiveTab}
+    t={t}
+    fontFamily={customizationHook.customizationConfig.fontFamily || "sans"}
+    tasks={tasksHook.tasks}
+    completedTasks={tasksHook.completedTasks}
+    progressPercentage={tasksHook.progressPercentage}
+    wrappedHandleComplete={wrappedHandleComplete}
+    handleDeleteTask={tasksHook.handleDeleteTask}
+    handleTaskClick={tasksHook.handleTaskClick}
+    handleCloseDetail={tasksHook.handleCloseDetail}
+    handleToggleSubtask={tasksHook.handleToggleSubtask}
+    handleAddSubtask={tasksHook.handleAddSubtask}
+    handleSaveNotes={tasksHook.handleSaveNotes}
+    handleUpdateTags={tasksHook.handleUpdateTags}
+    handleEditTask={tasksHook.handleEditTask}
+    handleUndoComplete={tasksHook.handleUndoComplete}
+    handleToggleFavorite={tasksHook.handleToggleFavorite}
+    handleTogglePin={tasksHook.handleTogglePin}
+    handleAddTaskWithAI={handleAddTaskWithAI}
+    handleConfirmAiTasks={handleConfirmAiTasks}
+    expandedNoteId={tasksHook.expandedNoteId}
+    setExpandedNoteId={tasksHook.setExpandedNoteId}
+    editingNotes={tasksHook.editingNotes}
+    setEditingNotes={tasksHook.setEditingNotes}
+    detailTaskId={tasksHook.detailTaskId}
+    notesHook={notesHook}
+    countdownHook={countdownHook}
+    pomodoroHook={pomodoroHook}
+    widgetHook={widgetHook}
+    aiHook={aiHook}
+    customizationHook={customizationHook}
+    habits={habits}
+    habitLogs={habitLogs}
+    moods={moods}
+    moodNotes={moodNotes}
+    handleAddHabit={handleAddHabit}
+    handleDeleteHabit={handleDeleteHabit}
+    handleToggleHabitLog={handleToggleHabitLog}
+    handleSetMood={handleSetMood}
+    handleSetMoodNote={handleSetMoodNote}
+    handlePinNoteToDesktop={handlePinNoteToDesktop}
+    celebrationMessage={celebrationMessage}
+    setCelebrationMessage={setCelebrationMessage}
+    syncStatus={syncStatus}
+    lastBackupTime={lastBackupTime}
+    calendarYear={calendarYear}
+    setCalendarYear={setCalendarYear}
+    calendarMonth={calendarMonth}
+    setCalendarMonth={setCalendarMonth}
+    selectedCalendarDate={selectedCalendarDate}
+    setSelectedCalendarDate={setSelectedCalendarDate}
+    commandPaletteOpen={commandPaletteOpen}
+    setCommandPaletteOpen={setCommandPaletteOpen}
+    windowLabel={windowLabel}
+    resetTasks={tasksHook.resetTasks}
+    handleClearCompleted={tasksHook.handleClearCompleted}
+  />;
+}
+
+// Memoized main layout — only re-renders when view-relevant state changes
+interface MainLayoutProps {
+  flowMode: boolean; setFlowMode: (v: boolean) => void;
+  activeTab: AppTab; setActiveTab: (v: AppTab) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+  fontFamily: string;
+  tasks: Task[]; completedTasks: Task[];
+  progressPercentage: number;
+  wrappedHandleComplete: (id: string) => void;
+  handleDeleteTask: (id: string) => void;
+  handleTaskClick: (task: Task) => void;
+  handleCloseDetail: () => void;
+  handleToggleSubtask: (taskId: string, subtaskId: string) => void;
+  handleAddSubtask: (taskId: string, title: string) => void;
+  handleSaveNotes: (id: string, notes: string) => void;
+  handleUpdateTags: (id: string, tags: string[]) => void;
+  handleEditTask: (id: string, updates: Partial<Task>) => void;
+  handleUndoComplete: (id: string) => void;
+  handleToggleFavorite: (id: string) => void;
+  handleTogglePin: (id: string) => void;
+  handleAddTaskWithAI: (data: any) => void;
+  handleConfirmAiTasks: () => void;
+  expandedNoteId: string | null;
+  setExpandedNoteId: (id: string | null) => void;
+  editingNotes: string;
+  setEditingNotes: (notes: string) => void;
+  detailTaskId: string | null;
+  notesHook: ReturnType<typeof useStickyNotes>;
+  countdownHook: ReturnType<typeof useCountdown>;
+  pomodoroHook: ReturnType<typeof usePomodoro>;
+  widgetHook: ReturnType<typeof useWidget>;
+  aiHook: ReturnType<typeof useAI>;
+  customizationHook: ReturnType<typeof useCustomization>;
+  habits: { id: string; title: string; emoji: string }[];
+  habitLogs: Record<string, string[]>;
+  moods: Record<string, number>;
+  moodNotes: Record<string, string>;
+  handleAddHabit: (title: string, emoji: string) => void;
+  handleDeleteHabit: (id: string) => void;
+  handleToggleHabitLog: (habitId: string, date: string) => void;
+  handleSetMood: (date: string, mood: number) => void;
+  handleSetMoodNote: (date: string, note: string) => void;
+  handlePinNoteToDesktop: (id: string) => void;
+  celebrationMessage: string | null;
+  setCelebrationMessage: (msg: string | null) => void;
+  syncStatus: "synced" | "syncing" | "error";
+  lastBackupTime: number | null;
+  calendarYear: number; setCalendarYear: React.Dispatch<React.SetStateAction<number>>;
+  calendarMonth: number; setCalendarMonth: React.Dispatch<React.SetStateAction<number>>;
+  selectedCalendarDate: string; setSelectedCalendarDate: (d: string) => void;
+  commandPaletteOpen: boolean; setCommandPaletteOpen: (v: boolean) => void;
+  windowLabel: string;
+  resetTasks: () => void;
+  handleClearCompleted: () => void;
+}
+
+const MainLayout = React.memo(function MainLayout({
+  flowMode, setFlowMode, activeTab, setActiveTab, t, fontFamily,
+  tasks, completedTasks, progressPercentage,
+  wrappedHandleComplete, handleDeleteTask, handleTaskClick,
+  handleCloseDetail, handleToggleSubtask, handleAddSubtask,
+  handleSaveNotes, handleUpdateTags, handleEditTask, handleUndoComplete,
+  handleToggleFavorite, handleTogglePin, handleAddTaskWithAI, handleConfirmAiTasks,
+  expandedNoteId, setExpandedNoteId, editingNotes, setEditingNotes, detailTaskId,
+  notesHook, countdownHook, pomodoroHook, widgetHook, aiHook, customizationHook,
+  habits, habitLogs, moods, moodNotes,
+  handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
+  handleSetMood, handleSetMoodNote, handlePinNoteToDesktop,
+  celebrationMessage, setCelebrationMessage,
+  syncStatus, lastBackupTime,
+  calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
+  selectedCalendarDate, setSelectedCalendarDate,
+  commandPaletteOpen, setCommandPaletteOpen, windowLabel,
+  resetTasks, handleClearCompleted,
+}: MainLayoutProps) {
   return (
     <>
       {flowMode ? (
         <FlowMode
-          tasks={tasksHook.tasks}
+          tasks={tasks}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
           pomodoroLogs={pomodoroHook.pomodoroLogs}
         />
       ) : (
-        <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${customizationHook.customizationConfig.fontFamily || "sans"}`}>
+        <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${fontFamily || "sans"}`}>
       <TitleBar />
       <div className="flex flex-grow min-h-0 relative">
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          progressPercentage={tasksHook.progressPercentage}
-          completedTasksCount={tasksHook.completedTasks.length}
-          tasksCount={tasksHook.tasks.length}
+          progressPercentage={progressPercentage}
+          completedTasksCount={completedTasks.length}
+          tasksCount={tasks.length}
           stickyNotesCount={notesHook.stickyNotes.length}
           countdownCount={countdownHook.countdowns.length}
           habitsCount={habits.length}
@@ -833,7 +971,7 @@ function AppInner() {
           handleToggleWidget={widgetHook.handleToggleWidget}
           handleToggleWidgetLock={widgetHook.handleToggleWidgetLock}
           isWidgetLocked={widgetHook.isWidgetLocked}
-          resetTasks={tasksHook.resetTasks}
+          resetTasks={resetTasks}
           pomodoroTaskId={pomodoroHook.pomodoroTaskId}
           pomodoroTaskTitle={pomodoroHook.pomodoroTaskTitle}
           setPomodoroTaskId={pomodoroHook.setPomodoroTaskId}
@@ -842,6 +980,7 @@ function AppInner() {
           lastBackupTime={lastBackupTime}
           onEnterFlowMode={() => setFlowMode(true)}
         />
+        {useMemo(() => (
         <main className="flex-grow p-6 overflow-y-auto flex flex-col gap-5 z-10 relative custom-scrollbar min-h-0">
           {activeTab !== "home" && (
             <>
@@ -887,7 +1026,7 @@ function AppInner() {
           )}
 
           {aiHook.showAiInbox && (activeTab === "matrix" || activeTab === "list") && (
-            <div className="bg-white/60 border border-[#EFEBE4] p-4 rounded-2xl shadow-sm z-10 relative backdrop-blur-md flex flex-col gap-2.5 transition-all duration-300">
+            <div className="bg-white/60 border border-[#EFEBE4] p-4 rounded-2xl shadow-sm z-10 relative backdrop-blur-sm flex flex-col gap-2.5 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#8B6E3C]" />
@@ -909,7 +1048,7 @@ function AppInner() {
                   <div className="text-[10px] font-bold text-slate-500 mb-1 border-b border-[#EFEBE4] pb-1.5">{t.quickAdd.aiPreview}</div>
                   <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                     {aiHook.aiPreviewTasks.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-[#FAF8F5]/85 border border-[#EFEBE4] rounded-xl flex flex-col gap-2 shadow-2xs">
+                      <div key={`ai-${item.title}-${idx}`} className="p-3 bg-[#FAF8F5]/85 border border-[#EFEBE4] rounded-xl flex flex-col gap-2 shadow-2xs">
                         <div className="flex gap-2 items-center">
                           <input type="text" value={item.title} onChange={(e) => { const u = [...aiHook.aiPreviewTasks]; u[idx].title = e.target.value; aiHook.setAiPreviewTasks(u); }} className="flex-grow bg-white border border-[#EFEBE4] px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]" placeholder={t.quickAdd.taskTitle} />
                           <input type="date" value={item.dueDate} onChange={(e) => { const u = [...aiHook.aiPreviewTasks]; u[idx].dueDate = e.target.value; aiHook.setAiPreviewTasks(u); }} className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#4D7C5D] w-28 flex-shrink-0" />
@@ -955,16 +1094,16 @@ function AppInner() {
           )}
 
           {activeTab === "home" && (
-            <DashboardView tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={tasksHook.handleTaskClick} config={customizationHook.customizationConfig} />
+            <DashboardView tasks={tasks} completedTasks={completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
-            <MatrixView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
+            <MatrixView tasks={tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
           )}
           {activeTab === "list" && (
-            <ListView tasks={tasksHook.tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={tasksHook.handleDeleteTask} expandedNoteId={tasksHook.expandedNoteId} setExpandedNoteId={tasksHook.setExpandedNoteId} editingNotes={tasksHook.editingNotes} setEditingNotes={tasksHook.setEditingNotes} handleSaveNotes={tasksHook.handleSaveNotes} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={tasksHook.handleToggleFavorite} handleTogglePin={tasksHook.handleTogglePin} onTaskClick={tasksHook.handleTaskClick} />
+            <ListView tasks={tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={handleDeleteTask} expandedNoteId={expandedNoteId} setExpandedNoteId={setExpandedNoteId} editingNotes={editingNotes} setEditingNotes={setEditingNotes} handleSaveNotes={handleSaveNotes} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "calendar" && (
-            <CalendarView tasks={tasksHook.tasks} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
+            <CalendarView tasks={tasks} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
           )}
           {activeTab === "notes" && (
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
@@ -973,10 +1112,10 @@ function AppInner() {
             <NewsView config={customizationHook.customizationConfig} />
           )}
           {activeTab === "analytics" && (
-            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasksHook.tasks} completedTasks={tasksHook.completedTasks} />
+            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasks} completedTasks={completedTasks} />
           )}
           {activeTab === "completed" && (
-            <CompletedView completedTasks={tasksHook.completedTasks} handleClearCompleted={tasksHook.handleClearCompleted} handleUndoComplete={tasksHook.handleUndoComplete} handleDeleteTask={tasksHook.handleDeleteTask} />
+            <CompletedView completedTasks={completedTasks} handleClearCompleted={handleClearCompleted} handleUndoComplete={handleUndoComplete} handleDeleteTask={handleDeleteTask} />
           )}
           {activeTab === "countdown" && (
             <CountdownView countdowns={countdownHook.countdowns} handleAddCountdown={countdownHook.handleAddCountdown} handleDeleteCountdown={countdownHook.handleDeleteCountdown} />
@@ -985,52 +1124,75 @@ function AppInner() {
             <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
           )}
           {activeTab === "gantt" && (
-            <GanttView tasks={tasksHook.tasks} onTaskClick={tasksHook.handleTaskClick} />
+            <GanttView tasks={tasks} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "mood" && (
             <MoodView moods={moods} moodNotes={moodNotes} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} />
           )}
           {activeTab === "settings" && (
-            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={tasksHook.resetTasks} />
+            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={resetTasks} />
           )}
         </main>
+        ), [
+          activeTab, tasks, completedTasks,
+          t, fontFamily,
+          wrappedHandleComplete, handleDeleteTask, handleTaskClick,
+          handleCloseDetail, handleToggleSubtask, handleAddSubtask,
+          handleSaveNotes, handleUpdateTags, handleEditTask, handleUndoComplete,
+          handleToggleFavorite, handleTogglePin,
+          handleAddTaskWithAI, handleConfirmAiTasks,
+          expandedNoteId, setExpandedNoteId, editingNotes, setEditingNotes,
+          detailTaskId,
+          aiHook.showAiInbox, aiHook.setShowAiInbox,
+          aiHook.aiInputMessage, aiHook.setAiInputMessage,
+          aiHook.aiPreviewTasks, aiHook.setAiPreviewTasks,
+          aiHook.aiInputText, aiHook.setAiInputText,
+          aiHook.aiInputLoading, aiHook.handleAiBatchInput,
+          aiHook.searchQuery, aiHook.setSearchQuery,
+          aiHook.categoryFilter, aiHook.setCategoryFilter,
+          aiHook.tagFilter, aiHook.setTagFilter,
+          pomodoroHook.handleStartFocus, pomodoroHook.pomodoroLogs,
+          pomodoroHook.alertSoundType, pomodoroHook.setAlertSoundType,
+          customizationHook.customizationConfig, customizationHook.handleConfigChange,
+          notesHook.stickyNotes, notesHook.handleAddNote,
+          notesHook.handleEditNoteText, notesHook.handleChangeNoteColor, notesHook.handleDeleteNote,
+          countdownHook.countdowns, countdownHook.handleAddCountdown, countdownHook.handleDeleteCountdown,
+          habits, habitLogs, moods, moodNotes,
+          handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
+          handleSetMood, handleSetMoodNote, handlePinNoteToDesktop,
+          calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
+          selectedCalendarDate, setSelectedCalendarDate,
+          resetTasks, handleClearCompleted,
+        ])}
 
         {celebrationMessage && (
           <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />
         )}
-        {tasksHook.detailTaskId && (() => {
-          const activeTask = tasksHook.tasks.find((t: Task) => t.id === tasksHook.detailTaskId);
-          const completedTask = !activeTask ? tasksHook.completedTasks.find((t: Task) => t.id === tasksHook.detailTaskId) : undefined;
+        {detailTaskId && (() => {
+          const activeTask = tasks.find((t: Task) => t.id === detailTaskId);
+          const completedTask = !activeTask ? completedTasks.find((t: Task) => t.id === detailTaskId) : undefined;
           const task = activeTask || completedTask;
           if (!task) return null;
           const isCompleted = !activeTask && !!completedTask;
-          // 已完成任务的编辑要写回 completedTasks，避免默默丢失
           const editHandler = isCompleted
-            ? (id: string, updates: Partial<Task>) => {
-                tasksHook.setCompletedTasks((prev: Task[]) => {
-                  const next = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
-                  tasksHook.saveCompleted(next);
-                  return next;
-                });
-              }
-            : tasksHook.handleEditTask;
+            ? (id: string, updates: Partial<Task>) => handleEditTask(id, updates)
+            : handleEditTask;
           return (
-            <TaskDetailModal task={task} onClose={tasksHook.handleCloseDetail} onToggleSubtask={tasksHook.handleToggleSubtask} onAddSubtask={tasksHook.handleAddSubtask} onSaveNotes={tasksHook.handleSaveNotes} onUpdateTags={tasksHook.handleUpdateTags} onEditTask={editHandler} allTasks={tasksHook.tasks} />
+            <TaskDetailModal task={task} onClose={handleCloseDetail} onToggleSubtask={handleToggleSubtask} onAddSubtask={handleAddSubtask} onSaveNotes={handleSaveNotes} onUpdateTags={handleUpdateTags} onEditTask={editHandler} allTasks={tasks} />
           );
         })()}
       </div>
     </div>
     )}
-    {/* 全局命令面板 Cmd/Ctrl+K */}
     {windowLabel === "main" && (
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
-        tasks={tasksHook.tasks}
+        tasks={tasks}
         stickyNotes={notesHook.stickyNotes}
-        onTaskClick={(task) => { tasksHook.handleTaskClick(task); setCommandPaletteOpen(false); }}
+        onTaskClick={(task) => { handleTaskClick(task); setCommandPaletteOpen(false); }}
         onNavigate={(tab) => { setActiveTab(tab); setFlowMode(false); }}
-        onCreateTask={() => { /* ListView 的 QuickAddTask 会自动获焦 */ }}
+        onCreateTask={() => {}}
         onStartFocus={pomodoroHook.handleStartFocus}
         onToggleWidget={widgetHook.handleToggleWidget}
         onToggleWidgetLock={() => widgetHook.handleToggleWidgetLock()}
@@ -1038,8 +1200,8 @@ function AppInner() {
       />
     )}
   </>
-);
-}
+  );
+});
 
 class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null as Error | null };

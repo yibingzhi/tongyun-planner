@@ -253,9 +253,9 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-4">
-            {filteredArticles.map((article, idx) => (
+            {filteredArticles.map((article) => (
               <div
-                key={idx}
+                key={article.link + article.title}
                 className="group p-4 bg-white/60 dark:bg-[#2D323A]/60 hover:bg-white dark:hover:bg-[#3D424A] border border-[#E8E0D0]/60 dark:border-[#4D525A]/60 hover:border-[#E8E0D0] dark:hover:border-[#6DAF7E]/50 rounded-xl flex flex-col justify-between gap-3 hover:shadow-sm transition-all duration-200 cursor-pointer relative"
               >
                 <button

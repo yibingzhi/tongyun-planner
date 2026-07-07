@@ -74,7 +74,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
   );
   return (
     <div className="flex flex-col gap-4 flex-grow z-10 relative select-none">
-      <div className="flex justify-between items-center bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm backdrop-blur-md">
+      <div className="flex justify-between items-center bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm backdrop-blur-sm">
         <div>
           <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
             <StickyNote className="w-4 h-4 text-[#8B6E3C]" />

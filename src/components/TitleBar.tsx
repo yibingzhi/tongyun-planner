@@ -4,7 +4,7 @@ import { Minus, Maximize2, X } from "lucide-react";
 import { useTranslation } from "../i18n/LanguageContext";
 import logo from "../assets/logo.png";
 
-export const TitleBar: React.FC = () => {
+export const TitleBar: React.FC = React.memo(() => {
   const { t } = useTranslation(); const tb = t.titleBar;
   const handleMinimize = () => getCurrentWebviewWindow().minimize();
   const handleToggleMaximize = () => getCurrentWebviewWindow().toggleMaximize();
@@ -13,7 +13,7 @@ export const TitleBar: React.FC = () => {
   return (
     <div
       data-tauri-drag-region
-      className="w-full h-9 flex items-center justify-between px-4 bg-[#F4EFEA]/80 border-b border-[#EFEBE4] backdrop-blur-xl z-20 relative flex-shrink-0 cursor-move select-none"
+      className="w-full h-9 flex items-center justify-between px-4 bg-[#F4EFEA]/80 border-b border-[#EFEBE4] backdrop-blur-sm z-20 relative flex-shrink-0 cursor-move select-none"
     >
       <div data-tauri-drag-region className="flex items-center gap-2">
         <div className="w-5 h-5 overflow-hidden flex items-center justify-center rounded-md">
@@ -54,4 +54,4 @@ export const TitleBar: React.FC = () => {
       </div>
     </div>
   );
-};
+});

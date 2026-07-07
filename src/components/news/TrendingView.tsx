@@ -199,7 +199,7 @@ export const TrendingView: React.FC = () => {
                   <div className="flex flex-col">
                     {items.map((item, idx) => (
                       <button
-                        key={idx}
+                        key={item.url}
                         onClick={() => openExternal(item.url)}
                         className="group flex items-start gap-2 px-2.5 py-2 rounded-lg hover:bg-white/80 dark:hover:bg-[#3D424A]/80 transition-all text-left cursor-pointer"
                       >

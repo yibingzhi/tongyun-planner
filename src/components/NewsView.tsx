@@ -14,7 +14,7 @@ interface NewsViewProps {
   config: CustomizationConfig;
 }
 
-export const NewsView: React.FC<NewsViewProps> = ({ config }) => {
+export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
   const [activeSubTab, setActiveSubTab] = useState<"trending" | "rss" | "bookmarks" | "github">("trending");
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -197,4 +197,4 @@ export const NewsView: React.FC<NewsViewProps> = ({ config }) => {
       )}
     </div>
   );
-};
+});
