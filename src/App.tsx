@@ -779,6 +779,7 @@ function AppInner() {
     isExplicit?: boolean;
     repeat?: any;
     tags?: string[];
+    priority?: Task["priority"];
   }) => {
     const { taskId } = await tasksHook.handleAddTask(taskData);
 
@@ -793,6 +794,33 @@ function AppInner() {
       }
     }
   }, [tasksHook.handleAddTask, tasksHook.setTasks, tasksHook.saveTasks, customizationHook.customizationConfig, aiHook.aiAutoCategorize]);
+
+  // News → action linkage (feature A): turn an article into a task / journal entry
+  const handleNewsSaveTask = useCallback((ref: { title: string; url: string }) => {
+    handleAddTaskWithAI({
+      title: ref.title,
+      description: ref.url,
+      notes: ref.url,
+      category: "important-not-urgent",
+      dueDate: getLocalDateString(),
+      priority: "low",
+      tags: ["资讯"],
+    });
+  }, [handleAddTaskWithAI]);
+
+  const handleNewsSaveJournal = useCallback((ref: { title: string; url: string; description?: string }) => {
+    const entry: JournalEntry = {
+      id: createId(),
+      linkKey: "news-" + createId(),
+      title: ref.title,
+      content: (ref.description ? ref.description + "\n\n" : "") + "来源: " + (ref.url || ""),
+      date: getLocalDateString(),
+      isDaily: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    handleUpsertJournal(entry);
+  }, [handleUpsertJournal]);
 
   const handlePinNoteToDesktop = async (id: string) => {
     try {
@@ -940,6 +968,8 @@ function AppInner() {
     alertSoundType={pomodoroHook.alertSoundType}
     setAlertSoundType={pomodoroHook.setAlertSoundType}
     handleClearCompleted={tasksHook.handleClearCompleted}
+    onNewsSaveTask={handleNewsSaveTask}
+    onNewsSaveJournal={handleNewsSaveJournal}
       />
     </PomodoroContext.Provider>
   );
@@ -1010,6 +1040,8 @@ interface MainLayoutProps {
   windowLabel: string;
   resetTasks: () => void;
   handleClearCompleted: () => void;
+  onNewsSaveTask: (ref: { title: string; url: string }) => void;
+  onNewsSaveJournal: (ref: { title: string; url: string; description?: string }) => void;
 }
 
 const MainLayout = React.memo(function MainLayout({
@@ -1031,6 +1063,7 @@ const MainLayout = React.memo(function MainLayout({
   selectedCalendarDate, setSelectedCalendarDate,
   commandPaletteOpen, setCommandPaletteOpen, windowLabel,
   resetTasks, handleClearCompleted,
+  onNewsSaveTask, onNewsSaveJournal,
 }: MainLayoutProps) {
   return (
     <>
@@ -1191,7 +1224,11 @@ const MainLayout = React.memo(function MainLayout({
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
           )}
           {activeTab === "news" && (
-            <NewsView config={customizationHook.customizationConfig} />
+            <NewsView
+              config={customizationHook.customizationConfig}
+              onSaveTask={onNewsSaveTask}
+              onSaveJournal={onNewsSaveJournal}
+            />
           )}
           {activeTab === "analytics" && (
             <AnalyticsView pomodoroLogs={pomodoroLogs} tasks={tasks} completedTasks={completedTasks} />

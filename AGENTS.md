@@ -44,3 +44,42 @@
 
 ### 相关文件
 - `AGENTS.md`（本文件）
+
+## Session 3 (2026-07-10)
+
+### 背景
+用户提出产品路线图 A-E，并确定「先做 A，之后立刻做 B」：
+- A. 资讯 → 行动联动：RSS / Trending / Explore 里一键「稍后读 / 存为任务 / 收藏到日记」
+- B. 全局剪贴板捕获（桌面端专属）：复制文字/链接时弹窗「存为任务 / 便签 / 日记」
+- C. 智能规划：智能日计划编排 + 系统通知/到期提醒
+- D. 日记延续：#标签浏览 + 单篇/整本导出
+- E. 生活向：轻量记账 + 本地语音备忘
+
+### 完成项（Feature A）
+- **资讯→行动联动** 全量打通：每条资讯新增「稍后读 / 存为任务 / 收藏到日记」一键操作
+- 新增 `src/components/news/newsActions.ts`（NewsRef / NewsActions 类型）与 `src/components/news/NewsItemActions.tsx`（三按钮组件，hover 显隐）
+- `App.tsx` 新增 `handleNewsSaveTask`（→ tasksHook.handleAddTask，category=important-not-urgent, priority=low, tags=["资讯"]）与 `handleNewsSaveJournal`（→ handleUpsertJournal，新建 JournalEntry）
+- 经 `MainLayout` 透传 `onNewsSaveTask/onNewsSaveJournal` 到 `NewsView`（注意：`<NewsView>` 渲染在 `MainLayout` 内，不在 `AppInner` 直接作用域）
+- `NewsView` 增加 toast 反馈，并把 `actions` 下发到 TrendingView / GitHubView / RSSView / BookmarksView / ExploreView
+- **ExploreView 此前未被任何地方渲染**，本次新增为 NewsView 的「视野」子标签页（此前是孤立死代码）
+
+### 关键决策
+- 「稍后读」复用既有 bookmark 机制（toggleBookmark，title+link 作唯一键）
+- 存为任务默认归入「重要不紧急」象限、低优先级、打「资讯」标签，降低打扰
+- 动作按钮默认 opacity-0，hover/focus 时显现，避免污染信息流视觉
+
+### 相关文件
+- `src/components/news/newsActions.ts`
+- `src/components/news/NewsItemActions.tsx`
+- `src/components/news/TrendingView.tsx`
+- `src/components/news/GitHubView.tsx`
+- `src/components/news/RSSView.tsx`
+- `src/components/news/BookmarksView.tsx`
+- `src/components/ExploreView.tsx`
+- `src/components/NewsView.tsx`
+- `src/App.tsx`
+
+### 待办（下一步 B）
+- B 依赖 Tauri 桌面 API：需确认 `src-tauri` 已启用 clipboard-plugin / global-shortcut 或监听系统剪贴板变更
+- 监听复制事件 → 弹出「存为任务 / 便签 / 日记」轻量窗或面板
+- 便签写入走 `useStickyNotes`（notesHook）；任务/日记复用 A 中已建 handler 思路

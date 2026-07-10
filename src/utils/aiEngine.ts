@@ -301,7 +301,55 @@ export async function generateProse(
 }
 
 /**
- * 6d. AI 每日建议 — 根据今日待办推荐优先级
+ * 6e. AI 「朝花夕拾」回眸散文 —— 把用户收藏/读过的旧条目，织成一篇温柔的温故小文。
+ */
+export async function generateRecollection(
+  config: CustomizationConfig,
+  locale: string,
+  items: { title: string; source?: string; date?: string }[]
+): Promise<string> {
+  if (items.length === 0) return "";
+  const now = new Date();
+  const dateStr =
+    locale === "zh-CN"
+      ? `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
+      : now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  const listText = items
+    .map((it, i) => {
+      const when = it.date ? `（收藏于${it.date}）` : "";
+      const src = it.source ? `「${it.source}」` : "";
+      return `${i + 1}. ${src}${it.title}${when}`;
+    })
+    .join("\n");
+
+  const systemPrompt = `你是一位文笔温润的散文家，偏爱"朝花夕拾"的语调——于平实的日常里拾起细碎的欢喜与怅惘。
+请围绕下面用户"曾经收藏或读过"的信息清单，写一篇温柔的回眸散文，把其中几则自然地织进文字，像傍晚翻看旧物，点到具体的那一朵"朝花"。
+
+要求：
+1. 角色：你是沉静的散文家，语调平实自然，用通达从容的白话。可带一点书卷气，但不堆砌辞藻、不宏大叙事。
+2. 细节：落笔于微小、具体的日常；用平实的句式，悄悄把清单里的某几条收藏当作"小确幸 / 旧时光 / 未读的好奇"轻轻提起，让人会心。
+3. 态度：温和舒缓，透着"完工后的松弛"。欢迎读者停留，也接纳放下。
+4. 长度：正文 400-700 字，结合当前日期 ${dateStr}。
+
+结构：
+- 起：从一个细微的当下切入（窗边的光、一杯凉掉的茶、一条很久没点开过的链接）。
+- 展：由这细节展开，自然地想起清单里收藏过的某篇文章、某个念头。
+- 尾：收束到自己的心境。
+
+格式：第一行为标题（4-12 字，像一句随手记下的话），空一行后写正文。只返回散文本身，不要任何额外说明。`;
+
+  const userPrompt = `今天是 ${dateStr}。这是用户此前收藏或读过的一些内容：\n${listText}\n\n请以"朝花夕拾"的笔调，写一篇把这些旧物轻轻拾起的回眸散文。`;
+
+  try {
+    return await callAI(config, systemPrompt, userPrompt);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * 6d. AI 每日建议 —— 基于今日任务智能推荐与优先级
  */
 export async function generateDailySuggestion(
   config: CustomizationConfig,

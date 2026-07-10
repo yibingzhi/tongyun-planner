@@ -4,12 +4,15 @@ import { openExternal } from "../../utils/openExternal";
 import { callAI } from "../../utils/aiEngine";
 import type { CustomizationConfig } from "../../types";
 import type { GitHubRepo } from "./types";
+import { NewsItemActions } from "./NewsItemActions";
+import type { NewsActions } from "./newsActions";
 
 interface GitHubViewProps {
   config: CustomizationConfig;
+  actions: NewsActions;
 }
 
-export const GitHubView: React.FC<GitHubViewProps> = ({ config }) => {
+export const GitHubView: React.FC<GitHubViewProps> = ({ config, actions }) => {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [githubLoading, setGithubLoading] = useState(false);
   const [githubError, setGithubError] = useState<string | null>(null);
@@ -147,7 +150,12 @@ export const GitHubView: React.FC<GitHubViewProps> = ({ config }) => {
                   {repoAiLoading === repo.id ? "分析中" : "AI 分析"}
                 </button>
                 <ExternalLink className="w-3 h-3 text-slate-200 group-hover:text-slate-400 transition-colors flex-shrink-0 mt-1 cursor-pointer" onClick={() => openExternal(repo.html_url)} />
-              </div>
+               </div>
+               <NewsItemActions
+                 className="mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                 newsRef={{ title: repo.full_name, url: repo.html_url, description: repo.description || undefined, source: "GitHub" }}
+                 actions={actions}
+               />
               {repoAiAnalyses[repo.id] && (
                 <div className="mt-2 ml-9 bg-[#F0F5F1] border border-[#DEEAE2] rounded-lg px-3 py-2 flex items-start gap-2">
                   <Sparkles className="w-3 h-3 text-[#4D7C5D]/50 flex-shrink-0 mt-0.5" />

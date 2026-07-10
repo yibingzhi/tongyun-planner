@@ -11,6 +11,8 @@ import {
   DEFAULT_FEEDS, FEED_CATEGORY_LABELS, FEED_CATEGORY_COLORS,
   type RSSFeed, type Article
 } from "./types";
+import { NewsItemActions } from "./NewsItemActions";
+import type { NewsActions } from "./newsActions";
 
 const isTauri =
   typeof window !== "undefined" &&
@@ -23,9 +25,10 @@ interface RSSViewProps {
   onOpenArticle: (article: Article) => void;
   isBookmarked: (article: Article) => boolean;
   toggleBookmark: (article: Article) => void;
+  actions: NewsActions;
 }
 
-export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, isBookmarked, toggleBookmark }) => {
+export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, isBookmarked, toggleBookmark, actions }) => {
   const [feeds, setFeeds] = useState<RSSFeed[]>(() => {
     const saved = localStorage.getItem("tongyun_rss_feeds");
     return saved ? safeJsonParse(saved, DEFAULT_FEEDS) : DEFAULT_FEEDS;
@@ -282,6 +285,11 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
                   <span>阅读全文</span>
                   <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
+                <NewsItemActions
+                  className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                  newsRef={{ title: article.title, url: article.link, description: article.description, source: article.feedName }}
+                  actions={actions}
+                />
               </div>
             ))}
           </div>

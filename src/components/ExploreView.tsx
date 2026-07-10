@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Compass, Rss, Plus, Trash2, ExternalLink, RefreshCw, Globe, Newspaper, TrendingUp, Code2, Loader2, ChevronRight, Settings2 } from "lucide-react";
 import { createId } from "../utils/id";
 import { fetchWithRetry } from "../utils/cache";
+import { NewsItemActions } from "./news/NewsItemActions";
+import type { NewsActions } from "./news/newsActions";
 
 interface Article {
   id: string;
@@ -66,7 +68,7 @@ async function fetchRSS(url: string, proxy: string): Promise<{ title: string; ar
   return { title: feedTitle, articles };
 }
 
-export const ExploreView: React.FC = React.memo(() => {
+export const ExploreView: React.FC<{ actions: NewsActions }> = React.memo(({ actions }) => {
   const [feeds, setFeeds] = useState<Feed[]>(() => {
     try {
       const saved = localStorage.getItem(FEEDS_KEY);
@@ -306,6 +308,11 @@ export const ExploreView: React.FC = React.memo(() => {
                       </>
                     )}
                   </div>
+                  <NewsItemActions
+                    className="mt-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                    newsRef={{ title: article.title, url: article.link, description: article.description, source: article.sourceTitle }}
+                    actions={actions}
+                  />
                 </div>
               ))}
             </div>

@@ -5,6 +5,8 @@ import { openExternal } from "../../utils/openExternal";
 import { PLATFORMS, type TrendingItem } from "./types";
 import { parseRSSXML } from "./rssParser";
 import { getCachedData, setCachedData, fetchWithRetry } from "../../utils/cache";
+import { NewsItemActions } from "./NewsItemActions";
+import type { NewsActions } from "./newsActions";
 
 const isTauri =
   typeof window !== "undefined" &&
@@ -58,7 +60,7 @@ async function fetchPlatformDataWithRetry(platform: string): Promise<TrendingIte
   return fetchWithRetry(() => fetchPlatformData(platform), 1, 1500);
 }
 
-export const TrendingView: React.FC = () => {
+export const TrendingView: React.FC<{ actions: NewsActions }> = ({ actions }) => {
   const [allTrendingData, setAllTrendingData] = useState<Record<string, TrendingItem[]>>(() => {
     const cached: Record<string, TrendingItem[]> = {};
     for (const p of PLATFORMS) {
@@ -196,20 +198,29 @@ export const TrendingView: React.FC = () => {
                     <span className="text-[9px] font-medium">暂无数据</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col">
+                   <div className="flex flex-col">
                     {items.map((item, idx) => (
-                      <button
+                      <div
                         key={item.url}
-                        onClick={() => openExternal(item.url)}
-                        className="group flex items-start gap-2 px-2.5 py-2 rounded-lg hover:bg-[#F0F5F1]/60 transition-all text-left cursor-pointer"
+                        className="group flex items-start gap-2 px-2.5 py-2 rounded-lg hover:bg-[#F0F5F1]/60 transition-all"
                       >
                         <span className={"w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[8px] font-bold mt-[1px] " + (idx < 3 ? "bg-[#4D7C5D] text-white" : "bg-[#F0F5F1] text-[#4D7C5D]")}>
                           {idx + 1}
                         </span>
-                        <span className="min-w-0 flex-grow text-[11px] text-slate-700 leading-snug group-hover:text-[#A34E36] transition-colors line-clamp-2">
-                          {item.title}
-                        </span>
-                      </button>
+                        <div className="min-w-0 flex-grow">
+                          <button
+                            onClick={() => openExternal(item.url)}
+                            className="w-full text-left text-[11px] text-slate-700 leading-snug group-hover:text-[#A34E36] transition-colors line-clamp-2 cursor-pointer"
+                          >
+                            {item.title}
+                          </button>
+                          <NewsItemActions
+                            className="mt-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"
+                            newsRef={{ title: item.title, url: item.url, source: platform.label }}
+                            actions={actions}
+                          />
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

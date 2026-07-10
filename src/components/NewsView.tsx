@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { TrendingUp, GitFork, Rss, Bookmark, Search } from "lucide-react";
+import { TrendingUp, GitFork, Rss, Bookmark, Search, Compass } from "lucide-react";
 import { callAI } from "../utils/aiEngine";
 import type { CustomizationConfig } from "../types";
 import { safeJsonParse } from "../utils/json";
@@ -8,14 +8,18 @@ import { TrendingView } from "./news/TrendingView";
 import { GitHubView } from "./news/GitHubView";
 import { RSSView } from "./news/RSSView";
 import { BookmarksView } from "./news/BookmarksView";
+import { ExploreView } from "./ExploreView";
 import { ReadingOverlay } from "./news/ReadingOverlay";
+import type { NewsActions } from "./news/newsActions";
 
 interface NewsViewProps {
   config: CustomizationConfig;
+  onSaveTask: (ref: { title: string; url: string }) => void;
+  onSaveJournal: (ref: { title: string; url: string; description?: string }) => void;
 }
 
-export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
-  const [activeSubTab, setActiveSubTab] = useState<"trending" | "rss" | "bookmarks" | "github">("trending");
+export const NewsView: React.FC<NewsViewProps> = React.memo(({ config, onSaveTask, onSaveJournal }) => {
+  const [activeSubTab, setActiveSubTab] = useState<"trending" | "rss" | "bookmarks" | "github" | "explore">("trending");
   const [searchQuery, setSearchQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -87,6 +91,29 @@ export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
     addToHistory(article);
   }, [addToHistory]);
 
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 1800);
+  }, []);
+
+  const actions: NewsActions = {
+    readLater: (ref) => {
+      toggleBookmark({ title: ref.title, link: ref.url, description: ref.description || "", pubDate: "", content: "", feedName: ref.source } as Article);
+      showToast("已加入稍后读");
+    },
+    saveTask: (ref) => {
+      onSaveTask({ title: ref.title, url: ref.url });
+      showToast("已存为任务");
+    },
+    saveJournal: (ref) => {
+      onSaveJournal({ title: ref.title, url: ref.url, description: ref.description });
+      showToast("已收藏到日记");
+    },
+  };
+
   const handleGenerateAISummary = async (article: Article) => {
     if (!config.aiApiKey) {
       setAiLoading(true);
@@ -113,6 +140,7 @@ export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
     { key: "trending" as const, icon: TrendingUp, label: "今日热议" },
     { key: "github" as const, icon: GitFork, label: "GitHub 趋势" },
     { key: "rss" as const, icon: Rss, label: "RSS 阅览室" },
+    { key: "explore" as const, icon: Compass, label: "视野" },
     { key: "bookmarks" as const, icon: Bookmark, label: "收藏夹" },
   ];
 
@@ -155,25 +183,29 @@ export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
 
       {/* Content area */}
       <div className="flex-grow bg-[#FCFAF4] border border-[#E8E0D0] rounded-2xl p-6 shadow-sm relative flex flex-col min-h-[400px]">
-        {activeSubTab === "trending" && <TrendingView />}
-        {activeSubTab === "github" && <GitHubView config={config} />}
+        {activeSubTab === "trending" && <TrendingView actions={actions} />}
+        {activeSubTab === "github" && <GitHubView config={config} actions={actions} />}
         {activeSubTab === "rss" && (
           <RSSView
             searchQuery={searchQuery}
             onOpenArticle={openArticle}
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
+            actions={actions}
           />
         )}
         {activeSubTab === "bookmarks" && (
           <BookmarksView
+            config={config}
             searchQuery={searchQuery}
             bookmarks={bookmarks}
             readHistory={readHistory}
             onOpenArticle={openArticle}
             toggleBookmark={toggleBookmark}
+            actions={actions}
           />
         )}
+        {activeSubTab === "explore" && <ExploreView actions={actions} />}
       </div>
 
       {/* Reading Overlay */}
@@ -194,6 +226,12 @@ export const NewsView: React.FC<NewsViewProps> = React.memo(({ config }) => {
           onGenerateAISummary={handleGenerateAISummary}
           onDismissSummary={() => setAiSummary(null)}
         />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[120] px-4 py-2 rounded-xl bg-[#2D323A] text-[#F5F1EA] text-[11px] font-bold shadow-lg animate-[fadeIn_0.2s_ease-out]">
+          {toast}
+        </div>
       )}
     </div>
   );
