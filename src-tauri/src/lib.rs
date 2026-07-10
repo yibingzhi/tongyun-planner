@@ -399,13 +399,13 @@ pub fn run() {
             let show_item = MenuItem::with_id(app, "show", "显示主窗口", true, None::<&str>)?;
             let toggle_widget_item = MenuItem::with_id(app, "toggle_widget", "显示/隐藏挂件", true, None::<&str>)?;
             let toggle_lock_item = MenuItem::with_id(app, "toggle_lock", "锁定/解锁挂件", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "退出 TongYun Planner", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "退出 橦云手帐", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &toggle_widget_item, &toggle_lock_item, &quit_item])?;
 
             // 构建系统托盘图标
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("TongYun Planner - 四象限待办管理")
+                .tooltip("橦云手帐 - 四象限待办管理")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| {

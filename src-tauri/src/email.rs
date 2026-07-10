@@ -17,13 +17,13 @@ pub struct SmtpConfig {
 #[tauri::command]
 pub async fn send_test_email(config: SmtpConfig) -> Result<String, String> {
     let email = Message::builder()
-        .from(format!("TongYun Planner <{}>", config.smtp_user)
+        .from(format!("橦云手帐 <{}>", config.smtp_user)
             .parse()
             .map_err(|e| format!("无效发件人地址: {}", e))?)
         .to(config.recipient_email
             .parse()
             .map_err(|e| format!("无效收件人地址: {}", e))?)
-        .subject("📧 橦云手账 · SMTP 配置测试")
+        .subject("📧 橦云手帐 · SMTP 配置测试")
         .singlepart(SinglePart::builder()
             .header(ContentType::TEXT_HTML)
             .body(r#"<!DOCTYPE html>
@@ -44,7 +44,7 @@ pub async fn send_test_email(config: SmtpConfig) -> Result<String, String> {
             邮件配置测试
           </h1>
           <p style="margin:8px 0 0;font-size:13px;color:#64748B">
-            这是一封来自 <strong style="color:#4D7C5D">橦云手账</strong> 的测试邮件
+             这是一封来自 <strong style="color:#4D7C5D">橦云手帐</strong> 的测试邮件
           </p>
         </td></tr>
 
@@ -84,7 +84,7 @@ pub async fn send_test_email(config: SmtpConfig) -> Result<String, String> {
         <tr><td style="padding:28px 40px 36px;text-align:center">
           <div style="font-size:11px;color:#B8AC9E;letter-spacing:2px">✦ ✦ ✦</div>
           <p style="margin:10px 0 0;font-size:11px;color:#B8AC9E">
-            TongYun Planner <span style="color:#C4D7B2">·</span> 橦云手账
+            TongYun Planner <span style="color:#C4D7B2">·</span> 橦云手帐
           </p>
           <p style="margin:4px 0 0;font-size:10px;color:#D5CDC4">
             你的四象限待办 · 番茄钟 · 手账本

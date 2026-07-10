@@ -22,8 +22,8 @@ import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
 import { CountdownView } from "./components/CountdownView";
 import { FlowMode } from "./components/FlowMode";
 import { HabitsView } from "./components/HabitsView";
-import { MoodView } from "./components/MoodView";
 import { GanttView } from "./components/GanttView";
+import { JournalView } from "./components/JournalView";
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -35,7 +35,7 @@ import { useCustomization } from "./hooks/useCustomization";
 import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
 import { useDebouncedPersistence } from "./hooks/useDebouncedPersistence";
-import type { Attachment } from "./types";
+import type { Attachment, JournalEntry } from "./types";
 import { useSync, subscribeDevSync } from "./hooks/useSync";
 import { PomodoroContext } from "./context/PomodoroContext";
 import { createId } from "./utils/id";
@@ -94,6 +94,13 @@ function AppInner() {
     getCurrentWebviewWindow().setTitle(t.app.title);
   }, [t.app.title]);
 
+  useEffect(() => {
+    const cfgLocale = customizationHook.customizationConfig.locale;
+    if (cfgLocale && cfgLocale !== locale) {
+      setLocale(cfgLocale);
+    }
+  }, [customizationHook.customizationConfig.locale, locale, setLocale]);
+
   const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
     safeJsonParse(localStorage.getItem("tongyun_habits") || "[]", [])
   );
@@ -109,6 +116,25 @@ function AppInner() {
   const [moodAttachments, setMoodAttachments] = useState<Record<string, Attachment[]>>(() =>
     safeJsonParse(localStorage.getItem("tongyun_mood_attachments") || "{}", {})
   );
+
+  const [journal, setJournal] = useState<JournalEntry[]>(() =>
+    safeJsonParse(localStorage.getItem("tongyun_journal") || "[]", [])
+  );
+  const handleUpsertJournal = useCallback((entry: JournalEntry) => {
+    setJournal((prev) => {
+      const idx = prev.findIndex((e) => e.id === entry.id);
+      const updated = idx >= 0 ? prev.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...prev];
+      localStorage.setItem("tongyun_journal", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+  const handleDeleteJournal = useCallback((id: string) => {
+    setJournal((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      localStorage.setItem("tongyun_journal", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const handleAddHabit = useCallback((title: string, emoji: string) => {
     const newHabit = { id: createId("habit"), title, emoji };
@@ -446,6 +472,8 @@ function AppInner() {
             tH.setCompletedTasks(completed);
             tH.saveCompleted(completed);
             nH.setStickyNotes(notes);
+            setJournal(restored.journal || []);
+            localStorage.setItem("tongyun_journal", JSON.stringify(restored.journal || []));
             cH.setCustomizationConfig(restored.customizationConfig || cH.DEFAULT_CUSTOMIZATION_CONFIG);
           } catch (e) {}
           break;
@@ -638,9 +666,11 @@ function AppInner() {
     countdownHook.setCountdowns(data.countdowns);
     setHabits(data.habits);
     setHabitLogs(data.habitLogs);
+    setJournal(data.journal || []);
     localStorage.setItem("tongyun_habits", JSON.stringify(data.habits));
     localStorage.setItem("tongyun_habit_logs", JSON.stringify(data.habitLogs));
     localStorage.setItem("tongyun_moods", JSON.stringify(data.moods));
+    localStorage.setItem("tongyun_journal", JSON.stringify(data.journal || []));
     if (data.customizationConfig) {
       customizationHook.setCustomizationConfig(data.customizationConfig);
     }
@@ -671,7 +701,7 @@ function AppInner() {
   // 现在用 diff 比对，只把真正变化的分类标记脏，sync 时只上传变化的文件，减少无谓的全量上传。
   const prevSyncDataRef = useRef<{
     tasks: Task[]; completedTasks: Task[]; stickyNotes: unknown; config: unknown;
-    pomodoroLogs: unknown; countdowns: unknown; habits: unknown; habitLogs: unknown; moods: unknown;
+    pomodoroLogs: unknown; countdowns: unknown; habits: unknown; habitLogs: unknown; moods: unknown; journal: unknown;
   } | null>(null);
 
   useEffect(() => {
@@ -682,7 +712,7 @@ function AppInner() {
         tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
         stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
         pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
-        habits, habitLogs, moods,
+        habits, habitLogs, moods, journal,
       };
       return;
     }
@@ -696,12 +726,13 @@ function AppInner() {
     if (!prev || prev.pomodoroLogs !== pomodoroHook.pomodoroLogs) changed.push("pomodoroLogs");
     if (!prev || prev.countdowns !== countdownHook.countdowns) changed.push("countdowns");
     if (!prev || prev.habits !== habits || prev.habitLogs !== habitLogs || prev.moods !== moods) changed.push("habits");
+    if (!prev || prev.journal !== journal) changed.push("journal");
 
     prevSyncDataRef.current = {
       tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
       stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
       pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
-      habits, habitLogs, moods,
+      habits, habitLogs, moods, journal,
     };
     if (changed.length === 0) return;
     bumpSyncVersion();
@@ -709,7 +740,7 @@ function AppInner() {
       bumpCategoryVersion(c);
       syncEngine.markDirty(c);
     }
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods]);
+  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, journal]);
 
   // 初始化 syncEngine 自动同步开关
   useEffect(() => {
@@ -885,9 +916,12 @@ function AppInner() {
     handleToggleHabitLog={handleToggleHabitLog}
     handleSetMood={handleSetMood}
     handleSetMoodNote={handleSetMoodNote}
-    handleSetMoodAttachments={handleSetMoodAttachments}
-    handlePinNoteToDesktop={handlePinNoteToDesktop}
-    celebrationMessage={celebrationMessage}
+        handleSetMoodAttachments={handleSetMoodAttachments}
+        handlePinNoteToDesktop={handlePinNoteToDesktop}
+        journal={journal}
+        handleUpsertJournal={handleUpsertJournal}
+        handleDeleteJournal={handleDeleteJournal}
+        celebrationMessage={celebrationMessage}
     setCelebrationMessage={setCelebrationMessage}
     syncStatus={syncStatus}
     lastBackupTime={lastBackupTime}
@@ -962,6 +996,9 @@ interface MainLayoutProps {
   handleSetMoodNote: (date: string, note: string) => void;
   handleSetMoodAttachments: (date: string, attachments: Attachment[]) => void;
   handlePinNoteToDesktop: (id: string) => void;
+  journal: JournalEntry[];
+  handleUpsertJournal: (entry: JournalEntry) => void;
+  handleDeleteJournal: (id: string) => void;
   celebrationMessage: string | null;
   setCelebrationMessage: (msg: string | null) => void;
   syncStatus: "synced" | "syncing" | "error";
@@ -987,6 +1024,7 @@ const MainLayout = React.memo(function MainLayout({
   habits, habitLogs, moods, moodNotes, moodAttachments,
   handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
   handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
+  journal, handleUpsertJournal, handleDeleteJournal,
   celebrationMessage, setCelebrationMessage,
   syncStatus, lastBackupTime,
   calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
@@ -1040,8 +1078,8 @@ const MainLayout = React.memo(function MainLayout({
                       : activeTab === "countdown" ? t.header.countdown
                       : activeTab === "news" ? t.header.news
                       : activeTab === "habits" ? (t.sidebar.habits || "习惯打卡")
-                      : activeTab === "mood" ? (t.sidebar.mood || "心情日记")
                       : activeTab === "gantt" ? "甘特图"
+                      : activeTab === "journal" ? (t.journal?.title || "日记手账")
                       : t.header.completed}
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 font-medium">
@@ -1170,8 +1208,23 @@ const MainLayout = React.memo(function MainLayout({
           {activeTab === "gantt" && (
             <GanttView tasks={tasks} onTaskClick={handleTaskClick} />
           )}
-          {activeTab === "mood" && (
-            <MoodView moods={moods} moodNotes={moodNotes} moodAttachments={moodAttachments} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} onSetMoodAttachments={handleSetMoodAttachments} />
+          {activeTab === "journal" && (
+            <JournalView
+              journal={journal}
+              onUpsert={handleUpsertJournal}
+              onDelete={handleDeleteJournal}
+              tasks={tasks}
+              habits={habits}
+              habitLogs={habitLogs}
+              moods={moods}
+              moodNotes={moodNotes}
+              moodAttachments={moodAttachments}
+              pomodoroLogs={pomodoroLogs}
+              aiConfig={customizationHook.customizationConfig}
+              onSetMood={handleSetMood}
+              onSetMoodNote={handleSetMoodNote}
+              onSetMoodAttachments={handleSetMoodAttachments}
+            />
           )}
           {activeTab === "settings" && (
             <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={alertSoundType} setAlertSoundType={setAlertSoundType} resetTasks={resetTasks} />
@@ -1204,11 +1257,12 @@ const MainLayout = React.memo(function MainLayout({
           countdownHook.countdowns, countdownHook.handleAddCountdown, countdownHook.handleDeleteCountdown,
           habits, habitLogs, moods, moodNotes, moodAttachments,
           handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
-          handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
-          calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
-          selectedCalendarDate, setSelectedCalendarDate,
-          resetTasks, handleClearCompleted,
-        ])}
+           handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
+           journal, handleUpsertJournal, handleDeleteJournal,
+           calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
+           selectedCalendarDate, setSelectedCalendarDate,
+           resetTasks, handleClearCompleted,
+         ])}
 
         {celebrationMessage && (
           <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />

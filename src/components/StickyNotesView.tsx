@@ -73,7 +73,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
     n.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
   return (
-    <div className="flex flex-col gap-4 flex-grow z-10 relative select-none">
+    <div className="flex flex-col gap-4 flex-grow z-10 relative select-none min-h-0">
       <div className="flex justify-between items-center bg-white/70 border border-[#EFEBE4] px-5 py-3 rounded-2xl shadow-sm backdrop-blur-sm">
         <div>
           <h3 className="text-xs font-bold text-[#8B6E3C] tracking-wide flex items-center gap-1.5">
@@ -107,7 +107,7 @@ export const StickyNotesView: React.FC<StickyNotesViewProps> = memo(({
       )}
 
       {filteredNotes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto max-h-[460px] pr-1 pb-4 custom-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto overflow-x-hidden flex-1 min-h-0 content-start items-start px-2 py-2 -mx-2 -my-2 custom-scrollbar">
           {filteredNotes.map((note) => {
             const theme = NOTE_COLORS[note.color as keyof typeof NOTE_COLORS] || NOTE_COLORS.tea;
             return (

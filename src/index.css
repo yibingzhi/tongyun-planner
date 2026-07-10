@@ -1005,6 +1005,19 @@ html.transparent-window body {
 .dark .hover\:border-\[\#EFEBE4\]:hover {
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
+/* 新闻视图专用边框色 #E8E0D0 暗黑适配（与原有内联 dark:border-[#4D525A] 一致） */
+.dark .border-\[\#E8E0D0\] {
+  border-color: #4D525A !important;
+}
+.dark .border-\[\#E8E0D0\]\/50 {
+  border-color: rgba(77, 82, 90, 0.5) !important;
+}
+.dark .border-\[\#E8E0D0\]\/60 {
+  border-color: rgba(77, 82, 90, 0.6) !important;
+}
+.dark .border-\[\#E8E0D0\]\/70 {
+  border-color: rgba(77, 82, 90, 0.7) !important;
+}
 .dark .hover\:border-\[\#E8E0D0\]:hover {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }

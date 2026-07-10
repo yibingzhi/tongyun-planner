@@ -137,7 +137,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
     <div className="flex gap-4 flex-grow min-h-0">
       {/* Sidebar */}
       <div className="w-full md:w-[220px] flex-shrink-0 flex flex-col gap-3 self-start md:sticky md:top-4">
-        <div className="bg-white/80/80 border border-[#E8E0D0] rounded-2xl p-3.5 backdrop-blur-sm">
+        <div className="bg-white/80 border border-[#E8E0D0] rounded-2xl p-3.5 backdrop-blur-sm">
           <span className="text-[9px] font-extrabold text-slate-300 uppercase tracking-[0.15em] block mb-2">订阅源</span>
           <div className="flex flex-col gap-1">
             {feeds.map((feed) => (
@@ -159,7 +159,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
         </div>
         <button
           onClick={() => setShowFeedManager((v) => !v)}
-          className={"text-[10px] font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer border " + (showFeedManager ? "bg-[#2D323A] dark:bg-[#4D525A] text-white border-[#2D323A]" : "bg-white/60/60 hover:bg-white border-dashed border-[#E8E0D0] text-slate-400 hover:text-[#8B6E3C]")}
+          className={"text-[10px] font-bold px-3 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer border " + (showFeedManager ? "bg-[#2D323A] dark:bg-[#4D525A] text-white border-[#2D323A]" : "bg-white/60 hover:bg-white border-dashed border-[#E8E0D0] text-slate-400 hover:text-[#8B6E3C]")}
         >
           <PlusCircle className="w-3.5 h-3.5" />
           {showFeedManager ? "完成管理" : "订阅管理"}
@@ -188,11 +188,11 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
 
         {showFeedManager ? (
           <div className="space-y-5 flex-grow max-w-xl mx-auto py-2 overflow-y-auto">
-            <div className="bg-white/70/70 border border-[#EFEBE4] p-4 rounded-xl space-y-1.5">
+            <div className="bg-white/70 border border-[#EFEBE4] p-4 rounded-xl space-y-1.5">
               <span className="text-[10px] font-bold text-[#4D7C5D] dark:text-[#6DAF7E] tracking-wider">订阅管理</span>
               <p className="text-[10px] text-slate-400 leading-relaxed">添加符合 RSS 2.0 或 Atom 规范的订阅源。应用通过 Rust 后端代理拉取，无需担心跨域限制。</p>
             </div>
-            <div className="space-y-3 bg-white/70/70 border border-[#EFEBE4] p-4 rounded-xl">
+            <div className="space-y-3 bg-white/70 border border-[#EFEBE4] p-4 rounded-xl">
               <h3 className="text-[11px] font-bold text-slate-600">添加新订阅</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -221,7 +221,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
               <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.15em] block">已订阅列表</span>
               <div className="space-y-1.5">
                 {feeds.map((feed) => (
-                  <div key={feed.id} className="bg-white/60/60 border border-[#EFEBE4]/60/60 p-3 rounded-xl flex items-center justify-between gap-3">
+                  <div key={feed.id} className="bg-white/60 border border-[#EFEBE4]/60 p-3 rounded-xl flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-[11px] font-bold text-slate-600 block truncate">{feed.name}</span>
                       <span className="text-[9px] text-slate-300 font-medium truncate block max-w-sm">{feed.url}</span>
@@ -256,7 +256,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
             {filteredArticles.map((article) => (
               <div
                 key={article.link + article.title}
-                className="group p-4 bg-white/60/60 hover:bg-white border border-[#E8E0D0]/60/60 hover:border-[#E8E0D0] rounded-xl flex flex-col justify-between gap-3 hover:shadow-sm transition-all duration-200 cursor-pointer relative"
+                className="group p-4 bg-white/60 hover:bg-white border border-[#E8E0D0]/60 hover:border-[#E8E0D0] rounded-xl flex flex-col justify-between gap-3 hover:shadow-sm transition-all duration-200 cursor-pointer relative"
               >
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleBookmark(article); }}
@@ -264,7 +264,7 @@ export const RSSView: React.FC<RSSViewProps> = ({ searchQuery, onOpenArticle, is
                     "absolute top-3 right-3 p-1.5 rounded-lg transition-all cursor-pointer " +
                   (isBookmarked(article)
                     ? "text-[#8B6E3C] dark:text-[#C4A05E] bg-[#FAF5ED] dark:bg-[#4D525A]"
-                    : "text-slate-200 hover:text-[#8B6E3C] hover:bg-[#FAF5ED]/50/50")
+                    : "text-slate-200 hover:text-[#8B6E3C] hover:bg-[#FAF5ED]/50")
                   }
                   title={isBookmarked(article) ? "取消收藏" : "收藏"}
                 >

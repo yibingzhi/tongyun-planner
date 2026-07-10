@@ -1,4 +1,4 @@
-import type { TaskCategory, TaskPriority } from "./types";
+import type { TaskCategory, TaskPriority, JournalTemplate } from "./types";
 
 export interface SelectOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -198,6 +198,57 @@ export function getDueDateCountdown(dueDateStr?: string, dueTimeStr?: string): D
       isToday: false,
     };
   }
+}
+
+/** Journal 日记/双链笔记模板与辅助函数 */
+export const JOURNAL_TEMPLATES: JournalTemplate[] = [
+  {
+    id: "blank",
+    name: "空白页",
+    content: "",
+  },
+  {
+    id: "morning",
+    name: "晨间页面",
+    content:
+      "# ☀️ 晨间页面\n\n## 今日三件要事\n- \n- \n- \n\n## 今日心情\n\n## 感恩的一件事\n- \n",
+  },
+  {
+    id: "review",
+    name: "每日复盘",
+    content:
+      "# 🌙 每日复盘\n\n## 今天完成了\n- \n\n## 没做完 / 待改进\n- \n\n## 明日计划\n- \n\n## 一句话总结\n\n",
+  },
+  {
+    id: "weekly",
+    name: "周回顾",
+    content:
+      "# 📅 周回顾\n\n## 本周亮点\n- \n\n## 本周卡点\n- \n\n## 下周重心\n- \n\n## 想记住的链接\n- [[#灵感]] \n",
+  },
+  {
+    id: "free",
+    name: "自由记录",
+    content:
+      "# 📝 自由记录\n\n",
+  },
+];
+
+/** 从 editor 文本提取 #标签 集合 */
+export function extractJournalTags(content: string): string[] {
+  const tags = new Set<string>();
+  const re = /#([\p{L}\p{N}_-]+)/gu;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    tags.add(m[1]);
+  }
+  return [...tags];
+}
+
+/** 判断某段内容是否引用了某个 linkKey（用于反向链接计算） */
+export function contentLinksTo(content: string, linkKey: string): boolean {
+  const escaped = linkKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`\\[\\[\\s*${escaped}\\s*(?:\\|[^\\]]*)?\\]\\]`, "u");
+  return re.test(content);
 }
 
 /** AI 象限分类默认 System Prompt */

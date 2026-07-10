@@ -56,9 +56,29 @@ export interface StickyNote {
   rotate: number;
 }
 
+export interface JournalEntry {
+  id: string;
+  /** Wikilink target key：日记为日期 YYYY-MM-DD，笔记为标题原文（[[key]] 引用） */
+  linkKey: string;
+  title: string;
+  content: string;       // markdown 源文，支持 [[双向链接]] 与 #标签
+  date: string;          // YYYY-MM-DD（日记 = linkKey；笔记 = 创建日期）
+  isDaily: boolean;      // 是否为日期日记（自动按日归档）
+  templateId?: string;
+  aiComment?: string;    // AI 生成的温柔评语
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface JournalTemplate {
+  id: string;
+  name: string;
+  content: string;
+}
+
 export type AlertSoundType = "beep" | "cuckoo" | "meow";
 
-export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "mood" | "settings" | "tasks" | "focus" | "archive" | "news" | "gantt";
+export type AppTab = "home" | "matrix" | "list" | "calendar" | "notes" | "analytics" | "completed" | "countdown" | "habits" | "settings" | "tasks" | "focus" | "archive" | "news" | "gantt" | "journal";
 
 export interface CountdownEvent {
   id: string;

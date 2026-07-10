@@ -23,4 +23,5 @@ export interface Translations {
   titleBar: Record<string, string>;
   common: Record<string, string>;
   notification: Record<string, string>;
+  journal: Record<string, string>;
 }

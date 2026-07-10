@@ -154,7 +154,7 @@ export const ExploreView: React.FC = React.memo(() => {
       {/* Left panel: feed list */}
       <div className="w-64 shrink-0 flex flex-col gap-3">
         {/* Add feed */}
-        <div className="rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm">
+        <div className="rounded-2xl bg-white/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-[10px] font-extrabold text-[#4D7C5D] dark:text-[#6DAF7E] uppercase tracking-wider flex items-center gap-1">
               <Rss className="w-3 h-3" /> 订阅源
@@ -194,7 +194,7 @@ export const ExploreView: React.FC = React.memo(() => {
         </div>
 
         {/* Feed list */}
-        <div className="flex-grow rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-3 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
+        <div className="flex-grow rounded-2xl bg-white/70 border border-[#EFEBE4] p-3 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
           {/* Presets */}
           <div className="mb-2">
             <h4 className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 px-1">推荐源</h4>
@@ -257,7 +257,7 @@ export const ExploreView: React.FC = React.memo(() => {
       </div>
 
       {/* Right panel: articles */}
-      <div className="flex-grow min-w-0 rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
+      <div className="flex-grow min-w-0 rounded-2xl bg-white/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
         {selectedFeed ? (
           <>
             <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] mb-3">
@@ -288,7 +288,7 @@ export const ExploreView: React.FC = React.memo(() => {
                 <div
                   key={article.id}
                   onClick={() => openLink(article.link)}
-                  className="p-3 rounded-xl bg-[#FAF8F5]/50/50 border border-[#EFEBE4] hover:bg-[#F0F5F1] hover:border-[#C4D7B2] transition-all cursor-pointer"
+                  className="p-3 rounded-xl bg-[#FAF8F5]/50 border border-[#EFEBE4] hover:bg-[#F0F5F1] hover:border-[#C4D7B2] transition-all cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-[11px] font-bold text-[#2D323A] leading-snug line-clamp-2 flex-grow">{article.title}</h3>

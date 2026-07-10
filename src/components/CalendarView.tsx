@@ -91,7 +91,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
       .catch(() => {});
   }, [calendarYear]);
 
-  // 心情便签 (使用独立 key，避免与 MoodView 的数值心情冲突)
+  // 日历心情便签 (按日期存储的便签文本，与日记手帐的心情记录相互独立)
   const [moods, setMoods] = useState<Record<string, string>>(() =>
     safeJsonParse(localStorage.getItem("tongyun_calendar_emojis") || "{}", {})
   );
@@ -287,7 +287,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     <div className="animate-fade-in-up flex flex-col gap-4 flex-grow z-10 relative select-none">
       <div className="grid grid-cols-3 gap-6 flex-grow">
         {/* 月历网格页 */}
-        <div className="col-span-2 rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm min-h-[420px]">
+        <div className="col-span-2 rounded-2xl bg-white/70 border border-[#EFEBE4] p-5 flex flex-col shadow-sm backdrop-blur-sm min-h-[420px]">
           {/* 日历导航 */}
           <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] mb-4">
             <h3 className="text-sm font-bold text-[#2D323A] flex items-center gap-1.5">

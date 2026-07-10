@@ -1515,7 +1515,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
                 {/* AI 工具集成 */}
                 {syncBackend === "webdav" && webdavUrl && webdavUser && (
-                  <div className="p-3 rounded-xl border border-[#DEEAE2] bg-[#F0F5F1]/50/50">
+                  <div className="p-3 rounded-xl border border-[#DEEAE2] bg-[#F0F5F1]/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-3.5 h-3.5 text-[#4D7C5D] dark:text-[#6DAF7E]" />
                       <span className="text-[11px] font-bold text-[#4D7C5D] dark:text-[#6DAF7E]">AI 智能体集成</span>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TongYun Planner",
+  "productName": "橦云手帐",
   "version": "0.1.0",
   "identifier": "com.tongyunplanner.app",
   "build": {

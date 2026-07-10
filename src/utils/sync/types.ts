@@ -1,4 +1,4 @@
-import type { Task, StickyNote, PomodoroLog, CountdownEvent, CustomizationConfig } from "../../types";
+import type { Task, StickyNote, PomodoroLog, CountdownEvent, CustomizationConfig, JournalEntry } from "../../types";
 
 export interface SyncData {
   version: number;
@@ -11,6 +11,7 @@ export interface SyncData {
   habits: { id: string; title: string; emoji: string }[];
   habitLogs: Record<string, string[]>;
   moods: Record<string, number>;
+  journal: JournalEntry[];
 }
 
 export type SyncBackendType = "webdav" | "supabase" | "none";
@@ -23,11 +24,12 @@ export type SyncCategory =
   | "pomodoroLogs"
   | "countdowns"
   | "habits"      // habits + habitLogs + moods bundled
+  | "journal"     // daily notes + linked notes
   | "config";     // customizationConfig
 
 export const ALL_SYNC_CATEGORIES: SyncCategory[] = [
   "tasks", "completedTasks", "stickyNotes", "pomodoroLogs",
-  "countdowns", "habits", "config",
+  "countdowns", "habits", "journal", "config",
 ];
 
 /** Remote filename for each category */
@@ -38,6 +40,7 @@ export const SYNC_CATEGORY_FILES: Record<SyncCategory, string> = {
   pomodoroLogs: "pomodoro.json",
   countdowns: "countdowns.json",
   habits: "habits.json",
+  journal: "journal.json",
   config: "config.json",
 };
 
@@ -114,6 +117,7 @@ export function getCategoryPayload(data: SyncData, cat: SyncCategory): unknown {
     case "pomodoroLogs":   return data.pomodoroLogs;
     case "countdowns":     return data.countdowns;
     case "habits":         return { habits: data.habits, habitLogs: data.habitLogs, moods: data.moods };
+    case "journal":        return data.journal;
     case "config":         return data.customizationConfig;
   }
 }
@@ -146,6 +150,9 @@ export function applyCategoryPayload(cat: SyncCategory, payload: unknown): void 
     case "config":
       if (payload) localStorage.setItem("aero_customization_config", JSON.stringify(payload));
       break;
+    case "journal":
+      localStorage.setItem("tongyun_journal", JSON.stringify(payload || []));
+      break;
   }
 }
 
@@ -173,6 +180,7 @@ export function getLocalSyncData(): SyncData {
     habits: readJson("tongyun_habits", "[]"),
     habitLogs: readJson("tongyun_habit_logs", "{}"),
     moods: readJson("tongyun_moods", "{}"),
+    journal: readJson("tongyun_journal", "[]"),
   };
 }
 
@@ -200,6 +208,7 @@ export function normalizeSyncData(raw: unknown): SyncData | null {
     habits: (obj.habits as SyncData["habits"]) || [],
     habitLogs: (obj.habitLogs as Record<string, string[]>) || {},
     moods: (obj.moods as Record<string, number>) || {},
+    journal: (obj.journal as JournalEntry[]) || [],
   };
 }
 
@@ -215,6 +224,7 @@ export function applySyncData(data: SyncData): void {
   localStorage.setItem("tongyun_habits", JSON.stringify(data.habits));
   localStorage.setItem("tongyun_habit_logs", JSON.stringify(data.habitLogs));
   localStorage.setItem("tongyun_moods", JSON.stringify(data.moods));
+  localStorage.setItem("tongyun_journal", JSON.stringify(data.journal || []));
   localStorage.setItem("tongyun_sync_version", String(data.version));
   localStorage.setItem("tongyun_last_updated", String(Date.now()));
 
