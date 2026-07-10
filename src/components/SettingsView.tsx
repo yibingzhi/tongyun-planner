@@ -1423,7 +1423,7 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                         syncEngine.setAutoSync(true, val * 1000);
                         onChange({ ...config, syncInterval: val });
                       }}
-                      className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]"
+                      className="bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2]"
                     >
                       <option value={15}>每15秒</option>
                       <option value={30}>每30秒</option>
@@ -1490,8 +1490,8 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
                     </div>
                   )}
 
-                  {storageBackend !== "local" && storageBackend !== "webdav" && !["oss", "cos"].includes(storageBackend) && (
-                    <p className="text-[10px] text-slate-400 mb-2 italic">该后端的 SDK 集成尚未完成，配置保存后即可使用</p>
+                  {storageBackend !== "local" && storageBackend !== "webdav" && (
+                    <p className="text-[10px] text-slate-400 mb-2 italic">云端后端需将 Bucket/容器设为「公共读」，公网 URL 才能真正被访问、被 AI 读取。</p>
                   )}
 
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/60 border border-[#EFEBE4]">
@@ -1515,12 +1515,12 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
 
                 {/* AI 工具集成 */}
                 {syncBackend === "webdav" && webdavUrl && webdavUser && (
-                  <div className="p-3 rounded-xl border border-[#DEEAE2] dark:border-[#4D525A] bg-[#F0F5F1]/50 dark:bg-[#3D424A]/50">
+                  <div className="p-3 rounded-xl border border-[#DEEAE2] bg-[#F0F5F1]/50/50">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-3.5 h-3.5 text-[#4D7C5D] dark:text-[#6DAF7E]" />
                       <span className="text-[11px] font-bold text-[#4D7C5D] dark:text-[#6DAF7E]">AI 智能体集成</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-2">将待办管理能力作为工具赋予你的 AI 助手，一键复制函数定义即可粘贴到 OpenAI/Claude 的 tools 参数中。</p>
+                    <p className="text-[10px] text-slate-500 mb-2">将待办管理能力作为工具赋予你的 AI 助手，一键复制函数定义即可粘贴到 OpenAI/Claude 的 tools 参数中。</p>
                     <button
                       onClick={() => {
                         const doc = `# 🎯 TongYun-List 数据管理工具集
@@ -1624,7 +1624,7 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                         navigator.clipboard.writeText(doc);
                         triggerToast("已复制 ✅ 完整技能定义，可直接粘贴给 AI", "success");
                       }}
-                      className="w-full bg-white dark:bg-[#2D323A] hover:bg-[#F5F1EA] dark:hover:bg-[#3D424A] border border-[#DEEAE2] dark:border-[#4D525A] text-[#4D7C5D] dark:text-[#6DAF7E] py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                      className="w-full bg-white hover:bg-[#F5F1EA] border border-[#DEEAE2] text-[#4D7C5D] dark:text-[#6DAF7E] py-2 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
                     >
                       <Copy className="w-3 h-3" />
                       复制 AI 工具定义

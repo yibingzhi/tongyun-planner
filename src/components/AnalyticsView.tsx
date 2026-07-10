@@ -344,7 +344,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
               <span className="text-[10px] font-bold text-[#8B6E3C] tracking-wide uppercase">AI 效率报告</span>
             </div>
             <div className="flex items-center gap-2">
-              <select value={reportType} onChange={(e) => setReportType(e.target.value as "daily" | "weekly")} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[9px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+              <select value={reportType} onChange={(e) => setReportType(e.target.value as "daily" | "weekly")} className="bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[9px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2]">
                 <option value="daily">日报</option>
                 <option value="weekly">周报</option>
               </select>
@@ -354,7 +354,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = React.memo(({
             </div>
           </div>
           {reportContent ? (
-            <div className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed prose-body [&>p]:mb-1 [&>h3]:text-xs [&>h3]:font-bold [&>h3]:text-[#4D7C5D] [&>h3]:mb-1 [&>ul]:text-[10px] [&>ul]:pl-4 [&>ul]:list-disc">
+            <div className="text-[11px] text-slate-700 leading-relaxed prose-body [&>p]:mb-1 [&>h3]:text-xs [&>h3]:font-bold [&>h3]:text-[#4D7C5D] [&>h3]:mb-1 [&>ul]:text-[10px] [&>ul]:pl-4 [&>ul]:list-disc">
               {reportContent.split('\n').map((line, i) => {
                 if (!line.trim()) return null;
                 return <p key={i}>{line.replace(/^[#*_]+/g, '')}</p>;

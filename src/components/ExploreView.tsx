@@ -154,22 +154,22 @@ export const ExploreView: React.FC = React.memo(() => {
       {/* Left panel: feed list */}
       <div className="w-64 shrink-0 flex flex-col gap-3">
         {/* Add feed */}
-        <div className="rounded-2xl bg-white/70 dark:bg-[#2D323A]/70 border border-[#EFEBE4] dark:border-[#4D525A] p-4 shadow-sm backdrop-blur-sm">
+        <div className="rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-[10px] font-extrabold text-[#4D7C5D] dark:text-[#6DAF7E] uppercase tracking-wider flex items-center gap-1">
               <Rss className="w-3 h-3" /> 订阅源
             </h3>
-            <button onClick={() => setShowProxyInput(!showProxyInput)} className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-[#3D424A] cursor-pointer text-slate-400" title="CORS 代理设置">
+            <button onClick={() => setShowProxyInput(!showProxyInput)} className="p-1 rounded-md hover:bg-slate-100 cursor-pointer text-slate-400" title="CORS 代理设置">
               <Settings2 className="w-3 h-3" />
             </button>
           </div>
           {showProxyInput && (
-            <div className="mb-2 p-2 rounded-lg bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A]">
-              <label className="text-[8px] font-bold text-slate-500 dark:text-slate-400 block mb-1">CORS 代理地址</label>
+            <div className="mb-2 p-2 rounded-lg bg-[#FAF8F5] border border-[#EFEBE4]">
+              <label className="text-[8px] font-bold text-slate-500 block mb-1">CORS 代理地址</label>
               <input
                 value={proxy}
                 onChange={(e) => setProxy(e.target.value)}
-                className="w-full text-[10px] px-2 py-1 rounded-md border border-[#EFEBE4] dark:border-[#4D525A] bg-white dark:bg-[#3D424A] outline-none focus:border-[#C4D7B2] dark:focus:border-[#6DAF7E]"
+                className="w-full text-[10px] px-2 py-1 rounded-md border border-[#EFEBE4] bg-white outline-none focus:border-[#C4D7B2]"
                 placeholder="https://api.allorigins.win/get?url="
               />
             </div>
@@ -180,7 +180,7 @@ export const ExploreView: React.FC = React.memo(() => {
               value={addUrl}
               onChange={(e) => setAddUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addUrl && addFeed(addUrl)}
-              className="flex-grow text-[10px] px-2 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A] bg-white dark:bg-[#3D424A] outline-none focus:border-[#C4D7B2] dark:focus:border-[#6DAF7E] text-slate-700 dark:text-slate-300"
+              className="flex-grow text-[10px] px-2 py-1.5 rounded-lg border border-[#EFEBE4] bg-white outline-none focus:border-[#C4D7B2] text-slate-700"
               placeholder="输入 RSS 链接..."
             />
             <button
@@ -194,10 +194,10 @@ export const ExploreView: React.FC = React.memo(() => {
         </div>
 
         {/* Feed list */}
-        <div className="flex-grow rounded-2xl bg-white/70 dark:bg-[#2D323A]/70 border border-[#EFEBE4] dark:border-[#4D525A] p-3 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
+        <div className="flex-grow rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-3 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
           {/* Presets */}
           <div className="mb-2">
-            <h4 className="text-[8px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 px-1">推荐源</h4>
+            <h4 className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 px-1">推荐源</h4>
             <div className="space-y-0.5">
               {PRESETS.map((preset) => {
                 const added = feeds.some((f) => f.url === preset.url);
@@ -206,41 +206,41 @@ export const ExploreView: React.FC = React.memo(() => {
                     key={preset.url}
                     onClick={() => added ? setSelectedFeedId(feeds.find((f) => f.url === preset.url)?.id || null) : addPreset(preset)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                      added ? "bg-[#F0F5F1] dark:bg-[#3D424A] text-[#4D7C5D] dark:text-[#6DAF7E]" : "text-slate-500 dark:text-slate-400 hover:bg-[#FAF8F5] dark:hover:bg-[#3D424A]"
+                      added ? "bg-[#F0F5F1] text-[#4D7C5D] dark:text-[#6DAF7E]" : "text-slate-500 hover:bg-[#FAF8F5]"
                     }`}
                   >
                     {preset.icon}
                     <span className="flex-grow text-left">{preset.title}</span>
                     {added && <ChevronRight className="w-2.5 h-2.5 text-[#C4D7B2] dark:text-[#6DAF7E]" />}
-                    {!added && <Plus className="w-2.5 h-2.5 text-slate-300 dark:text-slate-500" />}
+                    {!added && <Plus className="w-2.5 h-2.5 text-slate-300" />}
                   </button>
                 );
               })}
             </div>
           </div>
-          <div className="border-t border-dashed border-[#EFEBE4] dark:border-[#4D525A] my-2" />
+          <div className="border-t border-dashed border-[#EFEBE4] my-2" />
           {/* Custom feeds */}
           <div>
-            <h4 className="text-[8px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 px-1">我的订阅</h4>
+            <h4 className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 px-1">我的订阅</h4>
             {feeds.filter((f) => f.type !== "preset" || !PRESETS.some((p) => p.url === f.url)).length === 0 ? (
-              <p className="text-center py-4 text-[9px] text-slate-400 dark:text-slate-500 font-medium">点击上方推荐源或输入 RSS 链接添加</p>
+              <p className="text-center py-4 text-[9px] text-slate-400 font-medium">点击上方推荐源或输入 RSS 链接添加</p>
             ) : (
               <div className="space-y-0.5">
                 {feeds.filter((f) => f.type !== "preset" || !PRESETS.some((p) => p.url === f.url)).map((feed) => (
                   <div
                     key={feed.id}
                     className={`flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${
-                      selectedFeedId === feed.id ? "bg-[#F0F5F1] dark:bg-[#3D424A] text-[#4D7C5D] dark:text-[#6DAF7E]" : "hover:bg-[#FAF8F5] dark:hover:bg-[#3D424A] text-slate-600 dark:text-slate-400"
+                      selectedFeedId === feed.id ? "bg-[#F0F5F1] text-[#4D7C5D] dark:text-[#6DAF7E]" : "hover:bg-[#FAF8F5] text-slate-600"
                     }`}
                     onClick={() => setSelectedFeedId(feed.id)}
                   >
                     <Rss className="w-3 h-3 shrink-0" />
                     <span className="flex-grow text-[10px] font-bold truncate">{feed.title}</span>
                     {fetching[feed.id] ? (
-                      <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-400 dark:text-slate-500" />
+                      <Loader2 className="w-2.5 h-2.5 animate-spin text-slate-400" />
                     ) : (
                       <>
-                        <button onClick={(e) => { e.stopPropagation(); refreshFeed(feed); }} className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer text-slate-400 dark:text-slate-500" title="刷新">
+                        <button onClick={(e) => { e.stopPropagation(); refreshFeed(feed); }} className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-600 cursor-pointer text-slate-400" title="刷新">
                           <RefreshCw className="w-2.5 h-2.5" />
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); deleteFeed(feed.id); }} className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer text-red-300 hover:text-red-500" title="删除">
@@ -257,21 +257,21 @@ export const ExploreView: React.FC = React.memo(() => {
       </div>
 
       {/* Right panel: articles */}
-      <div className="flex-grow min-w-0 rounded-2xl bg-white/70 dark:bg-[#2D323A]/70 border border-[#EFEBE4] dark:border-[#4D525A] p-4 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
+      <div className="flex-grow min-w-0 rounded-2xl bg-white/70/70 border border-[#EFEBE4] p-4 shadow-sm backdrop-blur-sm overflow-y-auto custom-scrollbar">
         {selectedFeed ? (
           <>
-            <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] dark:border-[#4D525A] mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-[#EFEBE4] mb-3">
               <div>
-                <h2 className="text-[13px] font-bold text-[#2D323A] dark:text-[#E8E0D0]">{selectedFeed.title}</h2>
+                <h2 className="text-[13px] font-bold text-[#2D323A]">{selectedFeed.title}</h2>
                 {selectedFeed.error && <p className="text-[9px] text-red-400 font-medium mt-0.5">加载失败: {selectedFeed.error}</p>}
                 {selectedFeed.lastFetched && (
-                  <p className="text-[8px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">更新于 {new Date(selectedFeed.lastFetched).toLocaleString()}</p>
+                  <p className="text-[8px] text-slate-400 font-medium mt-0.5">更新于 {new Date(selectedFeed.lastFetched).toLocaleString()}</p>
                 )}
               </div>
               <button
                 onClick={() => refreshFeed(selectedFeed)}
                 disabled={fetching[selectedFeed.id]}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F0F5F1] dark:bg-[#3D424A] text-[#4D7C5D] dark:text-[#6DAF7E] text-[10px] font-bold hover:bg-[#DEEAE2] dark:hover:bg-[#4D525A] disabled:opacity-40 transition-all cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F0F5F1] text-[#4D7C5D] dark:text-[#6DAF7E] text-[10px] font-bold hover:bg-[#DEEAE2] disabled:opacity-40 transition-all cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${fetching[selectedFeed.id] ? "animate-spin" : ""}`} />
                 刷新
@@ -279,7 +279,7 @@ export const ExploreView: React.FC = React.memo(() => {
             </div>
             <div className="space-y-2">
               {selectedFeed.articles.length === 0 && !selectedFeed.error && (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-slate-500">
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                   <Rss className="w-8 h-8 mb-2 opacity-30" />
                   <p className="text-[11px] font-semibold">暂无文章，点击刷新获取</p>
                 </div>
@@ -288,21 +288,21 @@ export const ExploreView: React.FC = React.memo(() => {
                 <div
                   key={article.id}
                   onClick={() => openLink(article.link)}
-                  className="p-3 rounded-xl bg-[#FAF8F5]/50 dark:bg-[#3D424A]/50 border border-[#EFEBE4] dark:border-[#4D525A] hover:bg-[#F0F5F1] dark:hover:bg-[#3D424A] hover:border-[#C4D7B2] dark:hover:border-[#6DAF7E] transition-all cursor-pointer"
+                  className="p-3 rounded-xl bg-[#FAF8F5]/50/50 border border-[#EFEBE4] hover:bg-[#F0F5F1] hover:border-[#C4D7B2] transition-all cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-[11px] font-bold text-[#2D323A] dark:text-[#E8E0D0] leading-snug line-clamp-2 flex-grow">{article.title}</h3>
-                    <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-500 shrink-0 mt-0.5" />
+                    <h3 className="text-[11px] font-bold text-[#2D323A] leading-snug line-clamp-2 flex-grow">{article.title}</h3>
+                    <ExternalLink className="w-3 h-3 text-slate-300 shrink-0 mt-0.5" />
                   </div>
                   {article.description && (
-                    <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">{article.description}</p>
+                    <p className="text-[9px] text-slate-500 mt-1 leading-relaxed line-clamp-2">{article.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[8px] text-slate-400 dark:text-slate-500 font-medium">{article.sourceTitle}</span>
+                    <span className="text-[8px] text-slate-400 font-medium">{article.sourceTitle}</span>
                     {article.pubDate && (
                       <>
-                        <span className="text-[8px] text-slate-300 dark:text-slate-500">·</span>
-                        <span className="text-[8px] text-slate-400 dark:text-slate-500 font-medium">{fmtDate(article.pubDate)}</span>
+                        <span className="text-[8px] text-slate-300">·</span>
+                        <span className="text-[8px] text-slate-400 font-medium">{fmtDate(article.pubDate)}</span>
                       </>
                     )}
                   </div>
@@ -311,7 +311,7 @@ export const ExploreView: React.FC = React.memo(() => {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-slate-400 dark:text-slate-500">
+          <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-slate-400">
             <Compass className="w-12 h-12 mb-3 opacity-20" />
             <p className="text-xs font-bold mb-1">视野</p>
             <p className="text-[10px] font-medium opacity-60">选择一个订阅源或添加 RSS 链接以查看内容</p>

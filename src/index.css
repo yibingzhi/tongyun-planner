@@ -1782,10 +1782,18 @@ select:focus {
 
 /* 精致 focus ring — 无障碍必需 */
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid #4D7C5D;
   outline-offset: 2px;
   border-radius: 6px;
+}
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark [role="button"]:focus-visible,
+.dark [tabindex]:focus-visible {
+  outline-color: #9BB5CF;
 }
 
 /* 全局字体渲染优化 */

@@ -139,16 +139,16 @@ export const TrendingView: React.FC = () => {
     <div className="flex-grow flex flex-col animate-[fadeIn_0.3s_ease-out]">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-slate-300 dark:text-slate-500" />
-          <span className="text-[13px] font-bold text-[#2D323A] dark:text-[#E8E0D0]">今日热议</span>
-          <span className="text-[9px] text-slate-300 dark:text-slate-500 font-medium">
+          <TrendingUp className="w-4 h-4 text-slate-300" />
+          <span className="text-[13px] font-bold text-[#2D323A]">今日热议</span>
+          <span className="text-[9px] text-slate-300 font-medium">
             {loadingPlatforms.size > 0 ? `加载中 ${loadingPlatforms.size}/${PLATFORMS.length} ...` : `${PLATFORMS.length} 个平台`}
           </span>
         </div>
         <button
           onClick={() => fetchAllPlatforms(true)}
           disabled={loadingPlatforms.size > 0}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-white/70 dark:bg-[#2D323A]/70 hover:bg-white dark:hover:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] transition-all cursor-pointer"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-white/70/70 hover:bg-white border border-[#EFEBE4] transition-all cursor-pointer"
         >
           <RefreshCw className={"w-3 h-3 " + (loadingPlatforms.size > 0 ? "animate-spin" : "")} />
           全部刷新
@@ -164,10 +164,10 @@ export const TrendingView: React.FC = () => {
           return (
             <div
               key={platform.key}
-              className="bg-white/60 dark:bg-[#2D323A]/60 border border-[#E8E0D0]/70 dark:border-[#4D525A]/70 rounded-xl hover:border-[#E8E0D0] dark:hover:border-[#6DAF7E]/50 hover:shadow-sm transition-all overflow-hidden flex flex-col"
+              className="bg-white/60/60 border border-[#E8E0D0]/70/70 rounded-xl hover:border-[#E8E0D0] hover:shadow-sm transition-all overflow-hidden flex flex-col"
             >
               {/* Card header */}
-              <div className={"flex items-center justify-between px-3.5 py-2.5 border-b border-[#E8E0D0]/50 dark:border-[#4D525A]/50 " + platform.color.split(" ").slice(0, 2).join(" ")}>
+              <div className={"flex items-center justify-between px-3.5 py-2.5 border-b border-[#E8E0D0]/50/50 " + platform.color.split(" ").slice(0, 2).join(" ")}>
                 <span className="text-[10px] font-black tracking-wide">{platform.label}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); retryPlatform(platform.key); }}
@@ -182,7 +182,7 @@ export const TrendingView: React.FC = () => {
               <div className="flex-grow px-1 py-1">
                 {error ? (
                   <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500">{error}</span>
+                    <span className="text-[9px] text-slate-400">{error}</span>
                     <button onClick={() => retryPlatform(platform.key)} className="text-[9px] text-[#8B6E3C] dark:text-[#C4A05E] font-bold hover:underline cursor-pointer">重试</button>
                   </div>
                 ) : isLoading ? (
@@ -192,7 +192,7 @@ export const TrendingView: React.FC = () => {
                     ))}
                   </div>
                 ) : items.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-6 text-slate-300 dark:text-slate-500">
+                  <div className="flex flex-col items-center justify-center py-6 text-slate-300">
                     <span className="text-[9px] font-medium">暂无数据</span>
                   </div>
                 ) : (
@@ -201,12 +201,12 @@ export const TrendingView: React.FC = () => {
                       <button
                         key={item.url}
                         onClick={() => openExternal(item.url)}
-                        className="group flex items-start gap-2 px-2.5 py-2 rounded-lg hover:bg-white/80 dark:hover:bg-[#3D424A]/80 transition-all text-left cursor-pointer"
+                        className="group flex items-start gap-2 px-2.5 py-2 rounded-lg hover:bg-white/80/80 transition-all text-left cursor-pointer"
                       >
-                        <span className={"w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[8px] font-bold mt-[1px] " + (idx < 3 ? "bg-[#2D323A] dark:bg-[#4D525A] text-white" : "bg-slate-50 dark:bg-[#3D424A] text-slate-400 dark:text-slate-500")}>
+                        <span className={"w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[8px] font-bold mt-[1px] " + (idx < 3 ? "bg-[#2D323A] dark:bg-[#4D525A] text-white" : "bg-slate-50 text-slate-400")}>
                           {idx + 1}
                         </span>
-                        <span className="min-w-0 flex-grow text-[11px] text-slate-700 dark:text-slate-300 leading-snug group-hover:text-[#A34E36] dark:group-hover:text-[#D4785E] transition-colors line-clamp-2">
+                        <span className="min-w-0 flex-grow text-[11px] text-slate-700 leading-snug group-hover:text-[#A34E36] transition-colors line-clamp-2">
                           {item.title}
                         </span>
                       </button>

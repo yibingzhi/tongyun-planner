@@ -125,12 +125,12 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
     };
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setShowRepeatModal(false)}>
-        <div className="bg-white dark:bg-[#2D323A] rounded-2xl shadow-xl border border-[#EFEBE4] dark:border-[#3D424A] p-5 w-72 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
-          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-4">自定义重复</h3>
+        <div className="bg-white rounded-2xl shadow-xl border border-[#EFEBE4] p-5 w-72 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-xs font-bold text-slate-700 mb-4">自定义重复</h3>
           {/* Frequency */}
           <div className="flex gap-2 mb-3">
             {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map(f => (
-              <button key={f} onClick={() => setRepeatFreq(f)} className={`flex-1 text-[10px] font-bold py-2 rounded-xl border transition-all cursor-pointer ${repeatFreq === f ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] dark:bg-[#3D424A] text-slate-600 dark:text-slate-300 border-[#EFEBE4] dark:border-[#4D525A] hover:border-[#C4D7B2]'}`}>
+              <button key={f} onClick={() => setRepeatFreq(f)} className={`flex-1 text-[10px] font-bold py-2 rounded-xl border transition-all cursor-pointer ${repeatFreq === f ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] text-slate-600 border-[#EFEBE4] hover:border-[#C4D7B2]'}`}>
                 {f === 'DAILY' ? '每天' : f === 'WEEKLY' ? '每周' : '每月'}
               </button>
             ))}
@@ -138,14 +138,14 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
           {/* Interval */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] text-slate-500 font-medium">每</span>
-            <input type="number" min={1} max={99} value={repeatInterval} onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value) || 1))} className="w-14 bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold text-center focus:outline-none focus:border-[#C4D7B2]" />
+            <input type="number" min={1} max={99} value={repeatInterval} onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value) || 1))} className="w-14 bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold text-center focus:outline-none focus:border-[#C4D7B2]" />
             <span className="text-[10px] text-slate-500 font-medium">{freqLabel}</span>
           </div>
           {/* Weekly day picker */}
           {repeatFreq === 'WEEKLY' && (
             <div className="flex gap-1 mb-3">
               {DAYS.map((d, i) => (
-                <button key={d} onClick={() => setRepeatByDay(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])} className={`w-8 h-8 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${repeatByDay.includes(i) ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] dark:bg-[#3D424A] text-slate-500 dark:text-slate-300 border-[#EFEBE4] dark:border-[#4D525A] hover:border-[#C4D7B2]'}`}>
+                <button key={d} onClick={() => setRepeatByDay(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])} className={`w-8 h-8 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${repeatByDay.includes(i) ? 'bg-[#4D7C5D] text-white border-[#4D7C5D]' : 'bg-[#FAF8F5] text-slate-500 border-[#EFEBE4] hover:border-[#C4D7B2]'}`}>
                   {d}
                 </button>
               ))}
@@ -154,7 +154,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
           {/* Monthly position */}
           {repeatFreq === 'MONTHLY' && (
             <div className="flex items-center gap-2 mb-3">
-              <select value={repeatBySetPos ?? 1} onChange={(e) => setRepeatBySetPos(parseInt(e.target.value))} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+              <select value={repeatBySetPos ?? 1} onChange={(e) => setRepeatBySetPos(parseInt(e.target.value))} className="bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2]">
                 <option value={1}>第一个</option>
                 <option value={2}>第二个</option>
                 <option value={3}>第三个</option>
@@ -162,13 +162,13 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
                 <option value={-1}>最后一个</option>
               </select>
               <span className="text-[10px] text-slate-500 font-medium">周</span>
-              <select value={repeatByDay?.[0] ?? 1} onChange={(e) => setRepeatByDay([parseInt(e.target.value)])} className="bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 font-bold focus:outline-none focus:border-[#C4D7B2]">
+              <select value={repeatByDay?.[0] ?? 1} onChange={(e) => setRepeatByDay([parseInt(e.target.value)])} className="bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 font-bold focus:outline-none focus:border-[#C4D7B2]">
                 {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
               </select>
             </div>
           )}
-          <div className="flex gap-2 justify-end pt-2 border-t border-[#EFEBE4] dark:border-[#3D424A]">
-            <button onClick={() => setShowRepeatModal(false)} className="text-[10px] px-3 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A] text-slate-500 dark:text-slate-300 hover:bg-[#FAF8F5] dark:hover:bg-[#3D424A] transition-colors cursor-pointer font-bold">取消</button>
+          <div className="flex gap-2 justify-end pt-2 border-t border-[#EFEBE4]">
+            <button onClick={() => setShowRepeatModal(false)} className="text-[10px] px-3 py-1.5 rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] transition-colors cursor-pointer font-bold">取消</button>
             <button onClick={handleConfirm} className="text-[10px] px-3 py-1.5 rounded-lg bg-[#4D7C5D] text-white font-bold hover:bg-[#3F684C] transition-colors cursor-pointer">确定</button>
           </div>
         </div>
@@ -228,7 +228,7 @@ const NLPDateInput: React.FC<{ onParse: (date?: string, time?: string) => void }
         <Zap className="w-3 h-3" />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-30 bg-white dark:bg-[#2D323A] border border-[#EFEBE4] dark:border-[#3D424A] rounded-xl shadow-lg p-2 animate-fade-in-up min-w-[200px]">
+        <div className="absolute top-full left-0 mt-1 z-30 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-2 animate-fade-in-up min-w-[200px]">
           <div className="flex items-center gap-1.5">
             <input
               ref={inputRef}
@@ -237,7 +237,7 @@ const NLPDateInput: React.FC<{ onParse: (date?: string, time?: string) => void }
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); if (e.key === "Escape") setOpen(false); }}
               placeholder="明天下午3点 / 下周五"
-              className="flex-grow bg-[#FAF8F5] dark:bg-[#3D424A] border border-[#EFEBE4] dark:border-[#4D525A] px-2 py-1 rounded-lg text-[10px] text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2]"
+              className="flex-grow bg-[#FAF8F5] border border-[#EFEBE4] px-2 py-1 rounded-lg text-[10px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#C4D7B2]"
             />
             <button
               type="button"

@@ -42,6 +42,7 @@ export const MoodView: React.FC<MoodViewProps> = React.memo(({ moods, moodNotes,
   const [noteText, setNoteText] = useState(todayNote);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [imgUrls, setImgUrls] = useState<Record<string, string>>({});
   const blobUrls = useRef<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -223,6 +224,9 @@ export const MoodView: React.FC<MoodViewProps> = React.memo(({ moods, moodNotes,
               <Image className="w-5 h-5" />
             )}
           </button>
+          {uploadError && (
+            <p className="text-[9px] text-red-500 mt-1 w-full">{uploadError}</p>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -232,6 +236,7 @@ export const MoodView: React.FC<MoodViewProps> = React.memo(({ moods, moodNotes,
               const file = e.target.files?.[0];
               if (!file) return;
               setUploading(true);
+              setUploadError(null);
               try {
                 const buffer = await file.arrayBuffer();
                 const bytes = new Uint8Array(buffer);
@@ -246,6 +251,7 @@ export const MoodView: React.FC<MoodViewProps> = React.memo(({ moods, moodNotes,
                 }
               } catch (err: any) {
                 console.error("Upload failed", err);
+                setUploadError(err?.message ? `上传失败：${err.message}` : "上传失败，请检查存储后端配置");
               } finally {
                 setUploading(false);
                 e.target.value = "";
