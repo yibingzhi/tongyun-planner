@@ -1,8 +1,10 @@
 import type { Article } from "./types";
 
+const TAG_RE = /<[^>]*>/g;
+const parser = new DOMParser();
+
 export function parseRSSXML(xmlText: string): Article[] {
   try {
-    const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
 
     let items = doc.querySelectorAll("item");
@@ -13,7 +15,7 @@ export function parseRSSXML(xmlText: string): Article[] {
         const pubDateRaw = item.querySelector("pubDate")?.textContent || "";
         const author = item.querySelector("author")?.textContent || item.querySelector("creator")?.textContent || "";
         let description = item.querySelector("description")?.textContent || "";
-        description = description.replace(/<[^>]*>/g, "").slice(0, 200) + (description.length > 200 ? "..." : "");
+        description = description.replace(TAG_RE, "").slice(0, 200) + (description.length > 200 ? "..." : "");
         const content = item.querySelector("encoded")?.textContent || item.querySelector("description")?.textContent || "";
         return {
           title,
@@ -21,7 +23,7 @@ export function parseRSSXML(xmlText: string): Article[] {
           pubDate: pubDateRaw ? new Date(pubDateRaw).toLocaleDateString("zh-CN") : "",
           author,
           description,
-          content: content.replace(/<[^>]*>/g, ""),
+          content: content.replace(TAG_RE, ""),
         };
       });
     }
@@ -41,8 +43,8 @@ export function parseRSSXML(xmlText: string): Article[] {
           link,
           pubDate: pubDateRaw ? new Date(pubDateRaw).toLocaleDateString("zh-CN") : "",
           author,
-          description: summary.replace(/<[^>]*>/g, "").slice(0, 200),
-          content: content.replace(/<[^>]*>/g, ""),
+          description: summary.replace(TAG_RE, "").slice(0, 200),
+          content: content.replace(TAG_RE, ""),
         };
       });
     }

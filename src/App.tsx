@@ -34,14 +34,16 @@ import { useCountdown } from "./hooks/useCountdown";
 import { useCustomization } from "./hooks/useCustomization";
 import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
+import { useDebouncedPersistence } from "./hooks/useDebouncedPersistence";
 import type { Attachment } from "./types";
 import { useSync, subscribeDevSync } from "./hooks/useSync";
+import { PomodoroContext } from "./context/PomodoroContext";
 import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
 import { storage } from "./utils/unifiedStorage";
 import { syncEngine } from "./utils/sync/engine";
-import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, ALL_SYNC_CATEGORIES, type SyncData } from "./utils/sync/types";
+import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, type SyncCategory, type SyncData } from "./utils/sync/types";
 
 function AppInner() {
   const { t, setLocale, locale } = useTranslation();
@@ -460,16 +462,17 @@ function AppInner() {
   }, []);
 
   // ============ State Persistence (#2) ============
-  // 之前有 6 个「状态一变就写 localStorage」的 effect，与 useTasks 内部持久化重叠。
-  // 现在 tasks/completedTasks 由 useTasks 内部 debounce 落盘并同步写 localStorage，
-  // 这层只保留：其它非任务型状态（便签、番茄日志、倒计时、配置）的 localStorage 缓存。
-  useEffect(() => { if (isHydrated) localStorage.setItem("aero_sticky_notes", JSON.stringify(notesHook.stickyNotes)); }, [isHydrated, notesHook.stickyNotes]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("aero_customization_config", JSON.stringify(customizationHook.customizationConfig)); }, [isHydrated, customizationHook.customizationConfig]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("aero_pomodoro_logs", JSON.stringify(pomodoroHook.pomodoroLogs)); }, [isHydrated, pomodoroHook.pomodoroLogs]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_countdowns", JSON.stringify(countdownHook.countdowns)); }, [isHydrated, countdownHook.countdowns]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_moods", JSON.stringify(moods)); }, [isHydrated, moods]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_mood_notes", JSON.stringify(moodNotes)); }, [isHydrated, moodNotes]);
-  useEffect(() => { if (isHydrated) localStorage.setItem("tongyun_mood_attachments", JSON.stringify(moodAttachments)); }, [isHydrated, moodAttachments]);
+  // 之前有 6 个「状态一变就写 localStorage」的 effect，与 useTasks 内部持久化重叠，
+  // 且 moodAttachments 可能含 base64 图片，每次变更全量 JSON.stringify + 写磁盘会卡顿。
+  // 现在统一改为 debounce 写入：isHydrated 后才启用，250ms 合并多次变更为一次落盘。
+  useDebouncedPersistence(notesHook.stickyNotes, "aero_sticky_notes", 250, isHydrated);
+  useDebouncedPersistence(customizationHook.customizationConfig, "aero_customization_config", 250, isHydrated);
+  useDebouncedPersistence(pomodoroHook.pomodoroLogs, "aero_pomodoro_logs", 250, isHydrated);
+  useDebouncedPersistence(countdownHook.countdowns, "tongyun_countdowns", 250, isHydrated);
+  useDebouncedPersistence(moods, "tongyun_moods", 250, isHydrated);
+  useDebouncedPersistence(moodNotes, "tongyun_mood_notes", 250, isHydrated);
+  // 附件类数据可能很大（base64 图片），用更长 debounce 进一步降低写入频率
+  useDebouncedPersistence(moodAttachments, "tongyun_mood_attachments", 600, isHydrated);
 
   // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
   // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
@@ -663,14 +666,50 @@ function AppInner() {
     });
   }, []);
 
-  // 数据变更 → 标记脏 + 递增版本号
+  // ============ 数据变更 → 按分类标记脏 + 递增版本号 ============
+  // 之前 markDirty() 无参会把所有分类都标记脏，导致「改一处心情 emoji 也全量上传所有分类文件」。
+  // 现在用 diff 比对，只把真正变化的分类标记脏，sync 时只上传变化的文件，减少无谓的全量上传。
+  const prevSyncDataRef = useRef<{
+    tasks: Task[]; completedTasks: Task[]; stickyNotes: unknown; config: unknown;
+    pomodoroLogs: unknown; countdowns: unknown; habits: unknown; habitLogs: unknown; moods: unknown;
+  } | null>(null);
+
   useEffect(() => {
     if (isFirstLoad.current) return;
-    if (isRestoringRef.current) { isRestoringRef.current = false; return; }
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      prevSyncDataRef.current = {
+        tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
+        stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
+        pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
+        habits, habitLogs, moods,
+      };
+      return;
+    }
+
+    const prev = prevSyncDataRef.current;
+    const changed: SyncCategory[] = [];
+    if (!prev || prev.tasks !== tasksHook.tasks) changed.push("tasks");
+    if (!prev || prev.completedTasks !== tasksHook.completedTasks) changed.push("completedTasks");
+    if (!prev || prev.stickyNotes !== notesHook.stickyNotes) changed.push("stickyNotes");
+    if (!prev || prev.config !== customizationHook.customizationConfig) changed.push("config");
+    if (!prev || prev.pomodoroLogs !== pomodoroHook.pomodoroLogs) changed.push("pomodoroLogs");
+    if (!prev || prev.countdowns !== countdownHook.countdowns) changed.push("countdowns");
+    if (!prev || prev.habits !== habits || prev.habitLogs !== habitLogs || prev.moods !== moods) changed.push("habits");
+
+    prevSyncDataRef.current = {
+      tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
+      stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
+      pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
+      habits, habitLogs, moods,
+    };
+    if (changed.length === 0) return;
     bumpSyncVersion();
-    bumpCategoryVersion(...ALL_SYNC_CATEGORIES);
-    syncEngine.markDirty();
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, moodNotes, moodAttachments]);
+    for (const c of changed) {
+      bumpCategoryVersion(c);
+      syncEngine.markDirty(c);
+    }
+  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods]);
 
   // 初始化 syncEngine 自动同步开关
   useEffect(() => {
@@ -800,7 +839,9 @@ function AppInner() {
     );
   }
 
-  return <MainLayout
+  return (
+    <PomodoroContext.Provider value={pomodoroHook}>
+      <MainLayout
     flowMode={flowMode}
     setFlowMode={setFlowMode}
     activeTab={activeTab}
@@ -831,7 +872,6 @@ function AppInner() {
     detailTaskId={tasksHook.detailTaskId}
     notesHook={notesHook}
     countdownHook={countdownHook}
-    pomodoroHook={pomodoroHook}
     widgetHook={widgetHook}
     aiHook={aiHook}
     customizationHook={customizationHook}
@@ -861,8 +901,14 @@ function AppInner() {
     setCommandPaletteOpen={setCommandPaletteOpen}
     windowLabel={windowLabel}
     resetTasks={tasksHook.resetTasks}
+    pomodoroHandleStartFocus={pomodoroHook.handleStartFocus}
+    pomodoroLogs={pomodoroHook.pomodoroLogs}
+    alertSoundType={pomodoroHook.alertSoundType}
+    setAlertSoundType={pomodoroHook.setAlertSoundType}
     handleClearCompleted={tasksHook.handleClearCompleted}
-  />;
+      />
+    </PomodoroContext.Provider>
+  );
 }
 
 // Memoized main layout — only re-renders when view-relevant state changes
@@ -894,7 +940,13 @@ interface MainLayoutProps {
   detailTaskId: string | null;
   notesHook: ReturnType<typeof useStickyNotes>;
   countdownHook: ReturnType<typeof useCountdown>;
-  pomodoroHook: ReturnType<typeof usePomodoro>;
+  // 仅传递「跨秒级 tick 稳定」的 pomodoro 派生字段（函数/日志/音效类型），
+  // 避免把整个每帧变化的 pomodoroHook 传给 MainLayout 导致其随每秒 tick 重渲染。
+  // 实时倒计时由 Sidebar 通过 PomodoroContext 自行消费。
+  pomodoroHandleStartFocus: ReturnType<typeof usePomodoro>["handleStartFocus"];
+  pomodoroLogs: ReturnType<typeof usePomodoro>["pomodoroLogs"];
+  alertSoundType: ReturnType<typeof usePomodoro>["alertSoundType"];
+  setAlertSoundType: ReturnType<typeof usePomodoro>["setAlertSoundType"];
   widgetHook: ReturnType<typeof useWidget>;
   aiHook: ReturnType<typeof useAI>;
   customizationHook: ReturnType<typeof useCustomization>;
@@ -931,7 +983,7 @@ const MainLayout = React.memo(function MainLayout({
   handleSaveNotes, handleUpdateTags, handleEditTask, handleUndoComplete,
   handleToggleFavorite, handleTogglePin, handleAddTaskWithAI, handleConfirmAiTasks,
   expandedNoteId, setExpandedNoteId, editingNotes, setEditingNotes, detailTaskId,
-  notesHook, countdownHook, pomodoroHook, widgetHook, aiHook, customizationHook,
+  notesHook, countdownHook, widgetHook, aiHook, customizationHook, pomodoroHandleStartFocus, pomodoroLogs, alertSoundType, setAlertSoundType,
   habits, habitLogs, moods, moodNotes, moodAttachments,
   handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
   handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
@@ -947,9 +999,9 @@ const MainLayout = React.memo(function MainLayout({
       {flowMode ? (
         <FlowMode
           tasks={tasks}
+          pomodoroLogs={pomodoroLogs}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
-          pomodoroLogs={pomodoroHook.pomodoroLogs}
         />
       ) : (
         <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${fontFamily || "sans"}`}>
@@ -964,35 +1016,10 @@ const MainLayout = React.memo(function MainLayout({
           stickyNotesCount={notesHook.stickyNotes.length}
           countdownCount={countdownHook.countdowns.length}
           habitsCount={habits.length}
-          pomodoroIsActive={pomodoroHook.pomodoroIsActive}
-          setPomodoroIsActive={pomodoroHook.setPomodoroIsActive}
-          pomodoroIsBreak={pomodoroHook.pomodoroIsBreak}
-          pomodoroSessionCount={pomodoroHook.pomodoroSessionCount}
-          pomodoroTimeLeft={pomodoroHook.pomodoroTimeLeft}
-          setPomodoroTimeLeft={pomodoroHook.setPomodoroTimeLeft}
-          focusDuration={pomodoroHook.focusDuration}
-          setFocusDuration={pomodoroHook.setFocusDuration}
-          breakDuration={pomodoroHook.breakDuration}
-          setBreakDuration={pomodoroHook.setBreakDuration}
-          alertSoundType={pomodoroHook.alertSoundType}
-          setAlertSoundType={pomodoroHook.setAlertSoundType}
-          syncPomodoro={pomodoroHook.syncPomodoro}
-          isPlayingNoise={pomodoroHook.isPlayingNoise}
-          setIsPlayingNoise={pomodoroHook.setIsPlayingNoise}
-          selectedNoiseType={pomodoroHook.selectedNoiseType}
-          setSelectedNoiseType={pomodoroHook.setSelectedNoiseType}
-          noiseVolume={pomodoroHook.noiseVolume}
-          setNoiseVolume={pomodoroHook.setNoiseVolume}
-          startNoise={pomodoroHook.startNoise}
-          stopNoise={pomodoroHook.stopNoise}
           handleToggleWidget={widgetHook.handleToggleWidget}
           handleToggleWidgetLock={widgetHook.handleToggleWidgetLock}
           isWidgetLocked={widgetHook.isWidgetLocked}
           resetTasks={resetTasks}
-          pomodoroTaskId={pomodoroHook.pomodoroTaskId}
-          pomodoroTaskTitle={pomodoroHook.pomodoroTaskTitle}
-          setPomodoroTaskId={pomodoroHook.setPomodoroTaskId}
-          setPomodoroTaskTitle={pomodoroHook.setPomodoroTaskTitle}
           syncStatus={syncStatus}
           lastBackupTime={lastBackupTime}
           onEnterFlowMode={() => setFlowMode(true)}
@@ -1114,10 +1141,10 @@ const MainLayout = React.memo(function MainLayout({
             <DashboardView tasks={tasks} completedTasks={completedTasks} handleComplete={wrappedHandleComplete} onTaskClick={handleTaskClick} config={customizationHook.customizationConfig} />
           )}
           {activeTab === "matrix" && (
-            <MatrixView tasks={tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
+            <MatrixView tasks={tasks} handleComplete={wrappedHandleComplete} qColors={customizationHook.customizationConfig.qColors} handleStartFocus={pomodoroHandleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} />
           )}
           {activeTab === "list" && (
-            <ListView tasks={tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={handleDeleteTask} expandedNoteId={expandedNoteId} setExpandedNoteId={setExpandedNoteId} editingNotes={editingNotes} setEditingNotes={setEditingNotes} handleSaveNotes={handleSaveNotes} handleStartFocus={pomodoroHook.handleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} />
+            <ListView tasks={tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={handleDeleteTask} expandedNoteId={expandedNoteId} setExpandedNoteId={setExpandedNoteId} editingNotes={editingNotes} setEditingNotes={setEditingNotes} handleSaveNotes={handleSaveNotes} handleStartFocus={pomodoroHandleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "calendar" && (
             <CalendarView tasks={tasks} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
@@ -1129,7 +1156,7 @@ const MainLayout = React.memo(function MainLayout({
             <NewsView config={customizationHook.customizationConfig} />
           )}
           {activeTab === "analytics" && (
-            <AnalyticsView pomodoroLogs={pomodoroHook.pomodoroLogs} tasks={tasks} completedTasks={completedTasks} />
+            <AnalyticsView pomodoroLogs={pomodoroLogs} tasks={tasks} completedTasks={completedTasks} />
           )}
           {activeTab === "completed" && (
             <CompletedView completedTasks={completedTasks} handleClearCompleted={handleClearCompleted} handleUndoComplete={handleUndoComplete} handleDeleteTask={handleDeleteTask} />
@@ -1147,7 +1174,7 @@ const MainLayout = React.memo(function MainLayout({
             <MoodView moods={moods} moodNotes={moodNotes} moodAttachments={moodAttachments} onSetMood={handleSetMood} onSetMoodNote={handleSetMoodNote} onSetMoodAttachments={handleSetMoodAttachments} />
           )}
           {activeTab === "settings" && (
-            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={pomodoroHook.alertSoundType} setAlertSoundType={pomodoroHook.setAlertSoundType} resetTasks={resetTasks} />
+            <SettingsView config={customizationHook.customizationConfig} onChange={customizationHook.handleConfigChange} alertSoundType={alertSoundType} setAlertSoundType={setAlertSoundType} resetTasks={resetTasks} />
           )}
         </main>
         ), [
@@ -1169,8 +1196,8 @@ const MainLayout = React.memo(function MainLayout({
           aiHook.searchQuery, aiHook.setSearchQuery,
           aiHook.categoryFilter, aiHook.setCategoryFilter,
           aiHook.tagFilter, aiHook.setTagFilter,
-          pomodoroHook.handleStartFocus, pomodoroHook.pomodoroLogs,
-          pomodoroHook.alertSoundType, pomodoroHook.setAlertSoundType,
+          pomodoroHandleStartFocus, pomodoroLogs,
+          alertSoundType, setAlertSoundType,
           customizationHook.customizationConfig, customizationHook.handleConfigChange,
           notesHook.stickyNotes, notesHook.handleAddNote,
           notesHook.handleEditNoteText, notesHook.handleChangeNoteColor, notesHook.handleDeleteNote,
@@ -1196,7 +1223,7 @@ const MainLayout = React.memo(function MainLayout({
             ? (id: string, updates: Partial<Task>) => handleEditTask(id, updates)
             : handleEditTask;
           return (
-            <TaskDetailModal task={task} onClose={handleCloseDetail} onToggleSubtask={handleToggleSubtask} onAddSubtask={handleAddSubtask} onSaveNotes={handleSaveNotes} onUpdateTags={handleUpdateTags} onEditTask={editHandler} allTasks={tasks} />
+            <TaskDetailModal key={task.id} task={task} onClose={handleCloseDetail} onToggleSubtask={handleToggleSubtask} onAddSubtask={handleAddSubtask} onSaveNotes={handleSaveNotes} onUpdateTags={handleUpdateTags} onEditTask={editHandler} allTasks={tasks} />
           );
         })()}
       </div>
@@ -1211,7 +1238,7 @@ const MainLayout = React.memo(function MainLayout({
         onTaskClick={(task) => { handleTaskClick(task); setCommandPaletteOpen(false); }}
         onNavigate={(tab) => { setActiveTab(tab); setFlowMode(false); }}
         onCreateTask={() => {}}
-        onStartFocus={pomodoroHook.handleStartFocus}
+        onStartFocus={pomodoroHandleStartFocus}
         onToggleWidget={widgetHook.handleToggleWidget}
         onToggleWidgetLock={() => widgetHook.handleToggleWidgetLock()}
         onEnterFlowMode={() => setFlowMode(true)}

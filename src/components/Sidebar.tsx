@@ -23,6 +23,7 @@ import {
 import type { AppTab, AlertSoundType } from "../types";
 import { audioEngine } from "../utils/audioEngine";
 import { useTranslation } from "../i18n/LanguageContext";
+import { usePomodoroContext } from "../context/PomodoroContext";
 import logo from "../assets/logo.png";
 
 interface SidebarProps {
@@ -37,46 +38,7 @@ interface SidebarProps {
   syncStatus: "synced" | "syncing" | "error";
   lastBackupTime: number | null;
 
-  // 番茄钟状态与控制
-  pomodoroIsActive: boolean;
-  setPomodoroIsActive: React.Dispatch<React.SetStateAction<boolean>>;
-  pomodoroIsBreak: boolean;
-  pomodoroSessionCount: number;
-  pomodoroTimeLeft: number;
-  setPomodoroTimeLeft: React.Dispatch<React.SetStateAction<number>>;
-  focusDuration: number;
-  setFocusDuration: React.Dispatch<React.SetStateAction<number>>;
-  breakDuration: number;
-  setBreakDuration: React.Dispatch<React.SetStateAction<number>>;
-  alertSoundType: AlertSoundType;
-  setAlertSoundType: React.Dispatch<React.SetStateAction<AlertSoundType>>;
-  syncPomodoro: (
-    active: boolean,
-    timeLeft: number,
-    isBreak: boolean,
-    fDur: number,
-    bDur: number,
-    session: number,
-    tId?: string | null,
-    tTitle?: string | null
-  ) => void;
-
-  pomodoroTaskId: string | null;
-  pomodoroTaskTitle: string | null;
-  setPomodoroTaskId: React.Dispatch<React.SetStateAction<string | null>>;
-  setPomodoroTaskTitle: React.Dispatch<React.SetStateAction<string | null>>;
-
-  // 白噪音状态与控制
-  isPlayingNoise: boolean;
-  setIsPlayingNoise: React.Dispatch<React.SetStateAction<boolean>>;
-  selectedNoiseType: string;
-  setSelectedNoiseType: React.Dispatch<React.SetStateAction<string>>;
-  noiseVolume: number;
-  setNoiseVolume: React.Dispatch<React.SetStateAction<number>>;
-  startNoise: (type: string, volume: number) => void;
-  stopNoise: () => void;
-
-  // 挂件控制与全局重置
+  // 挂件控制与全局重置（番茄钟/白噪音状态改由 PomodoroContext 提供，避免每秒 tick 触发整树重渲染）
   handleToggleWidget: () => Promise<void>;
   handleToggleWidgetLock: (forceState?: boolean) => Promise<void>;
   isWidgetLocked: boolean;
@@ -101,37 +63,39 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   habitsCount,
   syncStatus,
   lastBackupTime,
-  pomodoroIsActive,
-  setPomodoroIsActive,
-  pomodoroIsBreak,
-  pomodoroSessionCount,
-  pomodoroTimeLeft,
-  setPomodoroTimeLeft,
-  focusDuration,
-  setFocusDuration,
-  breakDuration,
-  setBreakDuration,
-  alertSoundType,
-  setAlertSoundType,
-  syncPomodoro,
-  isPlayingNoise,
-  setIsPlayingNoise,
-  selectedNoiseType,
-  setSelectedNoiseType,
-  noiseVolume,
-  setNoiseVolume,
-  startNoise,
-  stopNoise,
   handleToggleWidget,
   handleToggleWidgetLock,
   isWidgetLocked,
   resetTasks,
-  pomodoroTaskId,
-  pomodoroTaskTitle,
-  setPomodoroTaskId,
-  setPomodoroTaskTitle,
   onEnterFlowMode,
 }) => {
+  const {
+    pomodoroIsActive,
+    setPomodoroIsActive,
+    pomodoroIsBreak,
+    pomodoroSessionCount,
+    pomodoroTimeLeft,
+    setPomodoroTimeLeft,
+    focusDuration,
+    setFocusDuration,
+    breakDuration,
+    setBreakDuration,
+    alertSoundType,
+    setAlertSoundType,
+    syncPomodoro,
+    pomodoroTaskId,
+    pomodoroTaskTitle,
+    setPomodoroTaskId,
+    setPomodoroTaskTitle,
+    isPlayingNoise,
+    setIsPlayingNoise,
+    selectedNoiseType,
+    setSelectedNoiseType,
+    noiseVolume,
+    setNoiseVolume,
+    startNoise,
+    stopNoise,
+  } = usePomodoroContext();
   const { t } = useTranslation();
   const s = t.sidebar;
   const [hasWebdavUrl] = useState(() => !!localStorage.getItem("tongyun_webdav_url"));

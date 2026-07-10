@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Plus, Trash2, X, Check, CalendarDays } from "lucide-react";
 import type { CountdownEvent } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -47,7 +47,7 @@ export const CountdownView: React.FC<CountdownViewProps> = React.memo(({
   const [newEmoji, setNewEmoji] = useState("🎯");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const sorted = [...countdowns].sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+  const sorted = useMemo(() => [...countdowns].sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime()), [countdowns]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

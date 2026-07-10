@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Plus, Calendar, Flag, Repeat, Zap } from "lucide-react";
-import type { Task, RepeatType, TimeBlock } from "../types";
-import { PRIORITY_OPTIONS } from "../constants";
+import type { Task, RepeatType, TimeBlock, TaskPriority } from "../types";
+import { PRIORITY_OPTIONS, PRIORITY_LEVELS } from "../constants";
 import { CustomSelect } from "./CustomSelect";
 import { useTranslation } from "../i18n/LanguageContext";
 import { getLocalDateString } from "../utils/date";
@@ -18,6 +18,7 @@ interface QuickAddTaskProps {
     dueTime?: string;
     repeat?: RepeatType;
     tags?: string[];
+    priority?: Task["priority"];
   }) => void;
   timeBlocks?: TimeBlock[];
   onAddTimeBlock?: (block: TimeBlock) => void;
@@ -51,6 +52,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
   const [repeatBySetPos, setRepeatBySetPos] = useState<number | undefined>(undefined);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
   
   // Track focus to expand extra options (date, priority, etc.) in non-compact mode
   const [isFocused, setIsFocused] = useState(false);
@@ -95,6 +97,7 @@ export const QuickAddTask: React.FC<QuickAddTaskProps> = React.memo(({
       dueTime: dueTime || undefined,
       repeat: repeat !== "none" ? repeat : undefined,
       tags: tags.length > 0 ? tags : undefined,
+      priority,
     });
 
     // Reset fields except date, category, and repeat for ease of adding multiple
@@ -369,6 +372,18 @@ const NLPDateInput: React.FC<{ onParse: (date?: string, time?: string) => void }
                     onChange={setCategory}
                     options={PRIORITY_OPTIONS}
                     className="w-40 text-[10px]"
+                    dropdownAlign="top"
+                  />
+                </div>
+
+                {/* Priority Selector */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-400 font-medium">{tc.priority}</span>
+                  <CustomSelect
+                    value={priority}
+                    onChange={(v) => setPriority(v as TaskPriority)}
+                    options={PRIORITY_LEVELS}
+                    className="w-24 text-[10px]"
                     dropdownAlign="top"
                   />
                 </div>

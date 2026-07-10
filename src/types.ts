@@ -6,6 +6,8 @@ export type TaskCategory =
 
 export type RepeatType = "daily" | "weekly" | "monthly" | "none" | string;
 
+export type TaskPriority = "high" | "medium" | "low";
+
 export interface SubTask {
   id: string;
   title: string;
@@ -32,6 +34,7 @@ export interface Task {
   isFavorite?: boolean;
   isPinned?: boolean;
   repeat?: RepeatType;
+  priority?: TaskPriority;
   subtasks?: SubTask[];
   tags?: string[];
   dependsOn?: string[];  // task IDs that must be completed first

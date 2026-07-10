@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search, Heart, Calendar, Clock, Check, Layers3, Maximize2, Minimize2, Repeat, ListTodo } from "lucide-react";
 import type { Task, TaskCategory } from "../types";
-import { PLANNER_COLORS, getDueDateCountdown } from "../constants";
+import { PLANNER_COLORS, getDueDateCountdown, PRIORITY_META } from "../constants";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
 
@@ -278,6 +278,15 @@ export const MatrixView: React.FC<MatrixViewProps> = React.memo(({
                               {tag}
                             </span>
                           ))}
+                          {task.priority && PRIORITY_META[task.priority] && (
+                            <span
+                              title={`${tc.priority}: ${t.taskCard["priority" + (task.priority.charAt(0).toUpperCase() + task.priority.slice(1)) as "priorityHigh"]}`}
+                              className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border border-[#EFEBE4] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${PRIORITY_META[task.priority].text}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_META[task.priority].dot}`} />
+                              {PRIORITY_META[task.priority].label}
+                            </span>
+                          )}
                         </div>
                       </div>
                       

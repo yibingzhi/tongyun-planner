@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Check, Plus, ListTodo, Calendar, Flag, Repeat, Tag, Zap, Link2, Unlink, Paperclip, File, Trash2, Upload, Download, ExternalLink, RefreshCw } from "lucide-react";
-import type { Task, Attachment } from "../types";
+import type { Task, Attachment, TaskPriority } from "../types";
 import { useTranslation } from "../i18n/LanguageContext";
 import { parseNaturalDate, formatNaturalPreview } from "../utils/dateParser";
 import { storageManager, getAttachmentPath } from "../utils/storage";
+import { PRIORITY_LEVELS } from "../constants";
+import { CustomSelect } from "./CustomSelect";
 
 interface TaskDetailModalProps {
   task: Task;
@@ -34,6 +36,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
   const [tagInput, setTagInput] = useState("");
   const [editDueDate, setEditDueDate] = useState(task.dueDate || "");
   const [editDueTime, setEditDueTime] = useState(task.dueTime || "");
+  const [priority, setPriority] = useState<TaskPriority>(task.priority || "medium");
   const [attachments, setAttachments] = useState<Attachment[]>(task.attachments || []);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -154,6 +157,16 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = React.memo(({
                 task.category === "urgent-not-important" ? t.matrix.urgentNotImportant :
                 t.matrix.notUrgentNotImportant
               }</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] dark:bg-[#3D424A] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A]">
+              <span className="font-bold uppercase tracking-wider">{tc.priority}</span>
+              <CustomSelect
+                value={priority}
+                onChange={(v) => { setPriority(v as TaskPriority); onEditTask(task.id, { priority: v as TaskPriority }); }}
+                options={PRIORITY_LEVELS}
+                className="w-20 text-[10px]"
+                dropdownAlign="top"
+              />
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium bg-[#FAF8F5] dark:bg-[#3D424A] px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] dark:border-[#4D525A]">
               <Calendar className="w-3 h-3" />

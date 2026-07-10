@@ -253,8 +253,9 @@ export function useTasks() {
     isExplicit?: boolean;
     repeat?: RepeatType;
     tags?: string[];
+    priority?: Task["priority"];
   }) => {
-    const { title, description, notes, category, dueDate, dueTime, repeat, tags } = taskData;
+    const { title, description, notes, category, dueDate, dueTime, repeat, tags, priority } = taskData;
     const taskId = createId("task");
     const initialCategory = category;
 
@@ -268,6 +269,7 @@ export function useTasks() {
       dueTime: dueTime || undefined,
       repeat: repeat || undefined,
       tags: tags || undefined,
+      priority: priority || undefined,
     };
 
     setTasks((prev) => {

@@ -1,4 +1,4 @@
-import type { TaskCategory } from "./types";
+import type { TaskCategory, TaskPriority } from "./types";
 
 export interface SelectOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -11,6 +11,18 @@ export const PRIORITY_OPTIONS: SelectOption<TaskCategory>[] = [
   { value: "urgent-not-important", label: "III. 紧急不重要" },
   { value: "not-urgent-not-important", label: "IV. 不重要不紧急" },
 ];
+
+export const PRIORITY_LEVELS: SelectOption<TaskPriority>[] = [
+  { value: "high", label: "🔴 高" },
+  { value: "medium", label: "🟡 中" },
+  { value: "low", label: "🟢 低" },
+];
+
+export const PRIORITY_META: Record<TaskPriority, { label: string; dot: string; text: string }> = {
+  high: { label: "高", dot: "bg-[#E8A0BF]", text: "text-[#A34E36]" },
+  medium: { label: "中", dot: "bg-[#F0D58A]", text: "text-[#8B6E3C]" },
+  low: { label: "低", dot: "bg-[#C4D7B2]", text: "text-[#4D7C5D]" },
+};
 
 export const FILTER_OPTIONS: SelectOption<TaskCategory | "all">[] = [
   { value: "all", label: "所有象限" },

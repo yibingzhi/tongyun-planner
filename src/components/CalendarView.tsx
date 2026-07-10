@@ -116,7 +116,7 @@ export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
     localStorage.setItem("tongyun_timeblocks", JSON.stringify(timeBlocks));
   }, [timeBlocks]);
 
-  const selectedDateBlocks = timeBlocks.filter(b => b.date === selectedCalendarDate).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const selectedDateBlocks = useMemo(() => timeBlocks.filter(b => b.date === selectedCalendarDate).sort((a, b) => a.startTime.localeCompare(b.startTime)), [timeBlocks, selectedCalendarDate]);
 
   const addTimeBlock = () => {
     if (!newBlockTitle.trim()) return;

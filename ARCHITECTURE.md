@@ -96,6 +96,26 @@ fn my_command(param: String) -> Result<String, String> {
 }
 ```
 
+## 数据存储 vs 数据同步
+
+项目中存在两层看似重叠、实则职责不同的存储抽象，请勿混淆：
+
+- **`src/utils/storage/` —— 本地/附件存储后端（StorageManager）**
+  - 负责"数据落在哪里"：支持 `local`（浏览器 localStorage / Tauri Store）、`webdav`、`oss`、`cos`、`supabase` 多种后端。
+  - 主要用于**附件**（图片/文件）的上传、下载、公开 URL 生成（`getAttachmentPath` / `uploadFile` / `getFileUrl`）。
+  - `storageManager.setBackend()` 切换的是附件的落盘位置。
+
+- **`src/utils/sync/` —— 跨设备同步引擎（SyncEngine）**
+  - 负责"多设备之间如何保持一致"：支持 `webdav`、`supabase` 两种同步后端。
+  - 以**分类增量 + manifest 版本比较**方式推送/拉取完整业务数据（任务、便签、习惯等），处理冲突。
+  - `syncEngine.setBackend()` 切换的是跨设备同步通道。
+
+> 注意：两层都支持 `webdav` / `supabase`，但**用途不同**——前者是附件存储位置，后者是数据同步通道，二者在 `SettingsView` 中是独立的两组配置，互不影响。修改其中一组不会自动改写另一组。
+
+## 快捷键
+
+- **Cmd / Ctrl + K**：打开命令面板（全局；在 `App.tsx` 中监听 `keydown`，调用 `CommandPalette`）。命令面板内可快速切换视图、新建任务、启动专注等。
+
 ## 数据模型
 
 ### 任务 (Task)
@@ -106,9 +126,16 @@ interface Task {
   description?: string;
   notes?: string;
   category: TaskCategory;
-  dueDate?: string;
+  dueDate?: string;        // YYYY-MM-DD
+  dueTime?: string;        // HH:mm
   isFavorite?: boolean;
   isPinned?: boolean;
+  repeat?: RepeatType;     // 重复规则（含 rrule 字符串）
+  priority?: "high" | "medium" | "low";
+  subtasks?: SubTask[];
+  tags?: string[];
+  dependsOn?: string[];    // 前置任务 ID
+  attachments?: Attachment[];
 }
 ```
 
@@ -206,23 +233,6 @@ Tauri 提供了插件系统，可以扩展应用功能：
 - 字体样式
 - 背景图案
 - 界面布局
-
-## 测试策略
-
-### 单元测试
-- React 组件测试
-- 工具函数测试
-- 类型检查
-
-### 集成测试
-- 组件交互测试
-- API 调用测试
-- 数据流测试
-
-### 端到端测试
-- 用户流程测试
-- 跨平台测试
-- 性能测试
 
 ## 部署
 

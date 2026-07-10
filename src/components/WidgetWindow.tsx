@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
   BookOpen,
@@ -324,30 +324,34 @@ export const WidgetWindow: React.FC<WidgetWindowProps> = ({
     }
   };
 
-  const urgentTasks = tasks.filter((t) => t.category === "urgent-important");
+  const urgentTasks = useMemo(() => tasks.filter((t) => t.category === "urgent-important"), [tasks]);
   const displayTask = urgentTasks[0] || tasks[0];
-  const focusTask = pomodoroTaskId ? tasks.find(t => t.id === pomodoroTaskId) || completedTasks.find(t => t.id === pomodoroTaskId) : undefined;
+  const focusTask = useMemo(() => pomodoroTaskId ? tasks.find(t => t.id === pomodoroTaskId) || completedTasks.find(t => t.id === pomodoroTaskId) : undefined, [pomodoroTaskId, tasks, completedTasks]);
 
   // 专注统计
-  const todayStr = getLocalDateString();
-  const todayLogs = pomodoroLogs.filter((log) => {
-    const logDate = getLocalDateString(new Date(log.timestamp));
-    return logDate === todayStr && !log.taskId?.startsWith("break");
-  });
+  const todayLogs = useMemo(() => {
+    const todayStr = getLocalDateString();
+    return pomodoroLogs.filter((log) => {
+      const logDate = getLocalDateString(new Date(log.timestamp));
+      return logDate === todayStr && !log.taskId?.startsWith("break");
+    });
+  }, [pomodoroLogs]);
   const todayPomodoros = todayLogs.length;
   const todayFocusMinutes = todayLogs.reduce((acc, log) => acc + log.duration, 0);
 
   // 到期任务提醒
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueTasks = tasks.filter((t) => {
-    if (!t.dueDate) return false;
-    const parts = t.dueDate.split("-");
-    if (parts.length !== 3) return false;
-    const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    due.setHours(0, 0, 0, 0);
-    return due.getTime() <= today.getTime();
-  });
+  const dueTasks = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return tasks.filter((t) => {
+      if (!t.dueDate) return false;
+      const parts = t.dueDate.split("-");
+      if (parts.length !== 3) return false;
+      const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      due.setHours(0, 0, 0, 0);
+      return due.getTime() <= today.getTime();
+    });
+  }, [tasks]);
   const dueCount = dueTasks.length;
 
   // 到期任务系统提醒（仅首次挂载时发送；放在 dueCount/dueTasks 声明之后以避免 TDZ）

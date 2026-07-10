@@ -1674,6 +1674,30 @@ category: \`urgent-important\` \`important-not-urgent\` \`urgent-not-important\`
                   {s.snapshotExport || "导出快照"}
                 </button>
                 <button
+                  onClick={() => {
+                    const tasks: any[] = safeJsonParse(localStorage.getItem("aero_todos"), []);
+                    const headers = ["title", "description", "category", "priority", "dueDate", "dueTime", "repeat", "tags", "notes"];
+                    const escape = (v: any) => {
+                      const s = v == null ? "" : Array.isArray(v) ? v.join("|") : String(v);
+                      return `"${s.replace(/"/g, '""')}"`;
+                    };
+                    const rows = tasks.map((t) => headers.map((h) => escape((t as any)[h])).join(","));
+                    const csv = "﻿" + [headers.join(","), ...rows].join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `tongyun-tasks-${new Date().toISOString().slice(0, 10)}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    triggerToast(s.exportTasksCsvDone || "任务 CSV 已导出 ✅", "success");
+                  }}
+                  className="flex-1 bg-[#8B6E3C] hover:bg-[#74592F] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {s.exportTasksCsv || "导出任务 CSV"}
+                </button>
+                <button
                   onClick={() => document.getElementById("snapshot-file-input")?.click()}
                   className="flex-1 bg-[#B2C8DF] hover:bg-[#9BB5CF] text-white py-2.5 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1.5 cursor-pointer hover:scale-105 transition-all shadow-xs"
                 >

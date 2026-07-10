@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin, Repeat, ListTodo } from "lucide-react";
 import type { Task } from "../types";
-import { FILTER_OPTIONS, getDueDateCountdown } from "../constants";
+import { FILTER_OPTIONS, getDueDateCountdown, PRIORITY_META } from "../constants";
 import { CustomSelect } from "./CustomSelect";
 import { QuickAddTask } from "./QuickAddTask";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -175,6 +175,15 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                         >{task.title}</h4>
                         {task.isFavorite && (
                           <span title={lv.starred} className="flex-shrink-0 flex items-center"><Heart className="w-3 h-3 text-[#E8A0BF] fill-[#E8A0BF]" /></span>
+                        )}
+                        {task.priority && PRIORITY_META[task.priority] && (
+                          <span
+                            title={`${tc.priority}: ${t.taskCard["priority" + (task.priority.charAt(0).toUpperCase() + task.priority.slice(1)) as "priorityHigh"]}`}
+                            className={`text-[8.5px] px-1.5 py-0.5 rounded-lg border border-[#EFEBE4] font-bold flex items-center gap-1 flex-shrink-0 whitespace-nowrap ${PRIORITY_META[task.priority].text}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_META[task.priority].dot}`} />
+                            {PRIORITY_META[task.priority].label}
+                          </span>
                         )}
                         <span
                           className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "../i18n/LanguageContext";
 import { Sparkles, History, Circle, CheckCircle2, ListTodo, CloudSun, CalendarDays, Award, Clock, PenLine, TrendingUp, RefreshCw } from "lucide-react";
 import type { Task, CustomizationConfig } from "../types";
@@ -80,7 +80,7 @@ export const DashboardView: React.FC<DashboardViewProps> = React.memo(({
 
   const greeting = `${d[greetKey]}${nickname ? `, ${nickname}` : ""}!`;
 
-  const todayTasks = tasks.filter((t) => t.dueDate === today);
+  const todayTasks = useMemo(() => tasks.filter((t) => t.dueDate === today), [tasks, today]);
   const totalCount = tasks.length + completedTasks.length;
   const progressPct = totalCount === 0 ? 0 : Math.round((completedTasks.length / totalCount) * 100);
 
