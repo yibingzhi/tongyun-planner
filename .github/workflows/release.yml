@@ -8,8 +8,8 @@ on:
 
 # 全局环境变量：请在此配置你的码云（Gitee）信息
 env:
-  GITEE_OWNER: 'your_gitee_username' # ⚠️ 请在此处修改为你的码云用户名或组织空间名
-  GITEE_REPO: 'tongyun-planner'      # ⚠️ 请在此处修改为你的码云仓库路径名
+  GITEE_OWNER: 'yibingzhi'           # 码云用户名或组织空间名
+  GITEE_REPO: 'tong-yun-planner'     # 码云仓库路径名
 
 jobs:
   build-apps:
@@ -46,7 +46,7 @@ jobs:
         run: npm ci
 
       - name: Build Application
-        uses: tauri-apps/tauri-action@v2
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
