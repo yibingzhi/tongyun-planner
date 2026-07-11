@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { Search, Check, Trash2, FileEdit, Clock, Heart, Calendar, Pin, Repeat, ListTodo } from "lucide-react";
 import type { Task } from "../types";
 import { FILTER_OPTIONS, getDueDateCountdown, PRIORITY_META } from "../constants";
@@ -62,6 +62,15 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
   const tc = t.taskCard;
   // Local state to filter only starred tasks
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  // 依赖未完成时的轻提示（handleComplete 内部对 dependsOn 是静默拦截，这里补上反馈）
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+  };
 
   const tagOptions = useMemo(() => {
     const allTags = [...new Set(tasks.flatMap((t) => t.tags || []))];
@@ -159,10 +168,24 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
                 <div className="px-4 py-2.5 flex justify-between items-center gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-grow">
                     <button
-                      onClick={() => handleComplete(task.id)}
-                      className="w-4.5 h-4.5 rounded-full border border-slate-300 hover:border-[#4D7C5D] hover:bg-[#F0F5F1] flex items-center justify-center transition-all flex-shrink-0 group/btn cursor-pointer"
+                      onClick={() => {
+                        if (task.dependsOn && task.dependsOn.length > 0) {
+                          const pending = task.dependsOn.filter((depId) => tasks.some((t) => t.id === depId));
+                          if (pending.length > 0) {
+                            const names = pending
+                              .map((id) => tasks.find((t) => t.id === id)?.title)
+                              .filter(Boolean)
+                              .join("、");
+                            showToast(`${tc.dependsBlocked}${names ? "：" + names : ""}`);
+                            return;
+                          }
+                        }
+                        handleComplete(task.id);
+                      }}
+                      title={tc.complete}
+                      className="w-5 h-5 rounded-full border border-slate-300 hover:border-[#4D7C5D] hover:bg-[#F0F5F1] flex items-center justify-center transition-all flex-shrink-0 group/btn cursor-pointer"
                     >
-                      <Check className="w-3 h-3 text-[#4D7C5D] opacity-0 group-hover/btn:opacity-100 transition-opacity" />
+                      <Check className="w-3 h-3 text-[#4D7C5D] opacity-60 group-hover/btn:opacity-100 transition-opacity" />
                     </button>
                     <div className="min-w-0 flex-grow">
                       <div className="flex items-center gap-2 min-w-0">
@@ -337,6 +360,12 @@ export const ListView: React.FC<ListViewProps> = React.memo(({
         <div className="text-center py-16 flex flex-col items-center gap-3">
           <Check className="w-10 h-10 text-[#EFEBE4]" />
           <p className="text-xs text-slate-400 font-bold">{lv.noTasks}</p>
+        </div>
+      )}
+
+      {toast && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl bg-[#3F684C] text-white text-xs font-bold shadow-lg animate-fade-in-up whitespace-nowrap">
+          {toast}
         </div>
       )}
     </div>

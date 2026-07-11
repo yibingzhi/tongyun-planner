@@ -14,7 +14,6 @@
 > | `widget.png` | 桌面小组件 |
 > | `pomodoro.png` | 番茄钟 + 白噪音 |
 > | `settings.png` | 个性化设置 |
-> | `flow-mode.png` | 心流模式 |
 > | `list-view.png` | 列表视图 |
 > | `journal.png` | 翻页日记本（手账） |
 > | `news.png` | 资讯中心 |

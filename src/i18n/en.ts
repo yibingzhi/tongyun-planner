@@ -117,6 +117,8 @@ const en: Translations = {
     startFocus: "Start focus on this task",
     focus: "Focus",
     repeat: "Repeat",
+    complete: "Complete",
+    dependsBlocked: "Complete the prerequisite task first",
     repeatNone: "No repeat",
     repeatDaily: "Daily",
     repeatWeekly: "Weekly",

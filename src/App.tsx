@@ -44,7 +44,7 @@ import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
 import { storage } from "./utils/unifiedStorage";
 import { syncEngine } from "./utils/sync/engine";
-import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, type SyncCategory, type SyncData } from "./utils/sync/types";
+import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, dedupeActiveTasks, type SyncCategory, type SyncData } from "./utils/sync/types";
 
 function AppInner() {
   return (
@@ -57,6 +57,8 @@ function AppInner() {
 function AppBody() {
   const { t, setLocale, locale } = useTranslation();
   const tasksHook = useTasks();
+  const tasksRef = useRef(tasksHook.tasks);
+  tasksRef.current = tasksHook.tasks;
   const pomodoroHook = usePomodoro();
   const notesHook = useStickyNotes();
   const countdownHook = useCountdown();
@@ -95,7 +97,7 @@ function AppBody() {
 
   useEffect(() => {
     document.title = t.app.title;
-    getCurrentWebviewWindow().setTitle(t.app.title);
+    try { getCurrentWebviewWindow().setTitle(t.app.title); } catch { /* 非 Tauri 环境忽略 */ }
   }, [t.app.title]);
 
   useEffect(() => {
@@ -109,13 +111,11 @@ function AppBody() {
 
   // 全局开关：是否把每一天的日记加入当日待办 → 同步生成/移除关联任务
   const journalTodoTitle = useCallback((entry: JournalEntry) => {
-    const firstLine = entry.content.split("\n").map((l) => l.trim()).find((l) => l.length > 0);
-    if (firstLine) return firstLine.length > 40 ? firstLine.slice(0, 40) + "…" : firstLine;
     return `日记 ${entry.date}`;
   }, []);
 
   useEffect(() => {
-    const currentTasks = tasksHook.tasks;
+    const currentTasks = tasksRef.current;
     for (const entry of journal) {
       if (!entry.isDaily) continue;
       const existing = currentTasks.find((t) => t.journalId === entry.id);
@@ -143,7 +143,7 @@ function AppBody() {
         tasksHook.handleDeleteTask(existing.id);
       }
     }
-  }, [journal, tasksHook.tasks, journalAddTodo]);
+  }, [journal, journalAddTodo]);
 
   // ============ handler ref 转发 (#4) ============
   // initStore 的 useEffect 依赖为 []，但需要在跨窗口 listener 里调用最新的 hook 函数。
@@ -265,6 +265,8 @@ function AppBody() {
           resolvedTasks = safeJsonParse<Task[]>(localTasks, storedTasks || handlersRef.current.tasksHook.INITIAL_TASKS);
           resolvedCompleted = safeJsonParse<Task[]>(localCompleted, storedCompleted || []);
         }
+        // 已完成任务不应出现在活动列表（修复「点完成又出现在列表」的云端 pull 回写问题）
+        resolvedTasks = dedupeActiveTasks(resolvedTasks, resolvedCompleted);
 
         handlersRef.current.tasksHook.setTasks(resolvedTasks);
         handlersRef.current.tasksHook.setCompletedTasks(resolvedCompleted);
@@ -284,8 +286,8 @@ function AppBody() {
       } catch (e) {
         console.warn("Store 加载失败，回退到 localStorage", e);
         const local = localStorage.getItem("aero_todos");
-        handlersRef.current.tasksHook.setTasks(safeJsonParse(local, handlersRef.current.tasksHook.INITIAL_TASKS));
         const localCompleted = localStorage.getItem("aero_completed_todos");
+        handlersRef.current.tasksHook.setTasks(dedupeActiveTasks(safeJsonParse<Task[]>(local, handlersRef.current.tasksHook.INITIAL_TASKS), safeJsonParse<Task[]>(localCompleted, [])));
         handlersRef.current.tasksHook.setCompletedTasks(safeJsonParse(localCompleted, []));
       } finally {
         setIsHydrated(true);
@@ -660,8 +662,9 @@ function AppBody() {
   // ============ 云端同步（统一走 syncEngine）============
   const applySyncDataToState = useCallback((data: SyncData) => {
     isRestoringRef.current = true;
-    tasksHook.setTasks(data.tasks);
-    tasksHook.saveTasks(data.tasks);
+    const tasks = dedupeActiveTasks(data.tasks, data.completedTasks);
+    tasksHook.setTasks(tasks);
+    tasksHook.saveTasks(tasks);
     tasksHook.setCompletedTasks(data.completedTasks);
     tasksHook.saveCompleted(data.completedTasks);
     notesHook.setStickyNotes(data.stickyNotes);

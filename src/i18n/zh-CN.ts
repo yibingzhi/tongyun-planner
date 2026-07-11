@@ -117,6 +117,8 @@ const zhCN: Translations = {
     startFocus: "开始专注该任务",
     focus: "专注",
     repeat: "重复",
+    complete: "完成",
+    dependsBlocked: "请先完成前置任务",
     repeatNone: "不重复",
     repeatDaily: "每天",
     repeatWeekly: "每周",

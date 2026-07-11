@@ -295,17 +295,7 @@
 > **截图位置：** 点击侧边栏底部"设置"  
 > **建议文件名：** `screenshots/settings.png`
 
-### 9. 心流模式
-截取 `FlowMode` 组件，展示：
-- 全屏沉浸式专注界面
-- 居中显示当前任务
-- 底部任务进度条
-- 专注热力图浮层（可选）
-
-> **截图位置：** 点击侧边栏"心流模式"按钮  
-> **建议文件名：** `screenshots/flow-mode.png`
-
-### 10. 列表视图
+### 9. 列表视图
 截取 `ListView` 组件，展示：
 - 扁平的任务列表
 - 搜索栏和分类/标签筛选下拉框
@@ -314,7 +304,7 @@
 > **截图位置：** 点击侧边栏"任务"→"列表"  
 > **建议文件名：** `screenshots/list-view.png`
 
-### 11. 翻页日记本（手账）
+### 10. 翻页日记本（手账）
 截取 `JournalView` 组件，展示：
 - 纸张质感的一页日记，含书脊装订阴影与横格
 - 顶部日期滑条（有日记的日子点亮圆点）
@@ -325,7 +315,7 @@
 > **截图位置：** 点击侧边栏"日记"（或手账入口）  
 > **建议文件名：** `screenshots/journal.png`
 
-### 12. 资讯中心
+### 11. 资讯中心
 截取 `NewsView` 组件，展示：
 - 顶部视图切换（热榜 / RSS / GitHub / 视野 / 稍后读）
 - 报纸风格阅读列表或某篇文章的阅读器界面
@@ -344,10 +334,10 @@
 | ![仪表盘](screenshots/dashboard.png) | ![四象限](screenshots/matrix-view.png) | ![日历](screenshots/calendar-view.png) |
 | **专注分析** | **桌面小组件** | **便签墙** |
 | ![专注分析](screenshots/analytics.png) | ![小组件](screenshots/widget.png) | ![便签](screenshots/sticky-notes.png) |
-| **番茄专注** | **个性化设置** | **心流模式** |
-| ![番茄钟](screenshots/pomodoro.png) | ![设置](screenshots/settings.png) | ![心流](screenshots/flow-mode.png) |
-| **翻页日记本** | **资讯中心** | **列表视图** |
-| ![日记](screenshots/journal.png) | ![资讯](screenshots/news.png) | ![列表](screenshots/list-view.png) |
+| **番茄专注** | **个性化设置** | **列表视图** |
+| ![番茄钟](screenshots/pomodoro.png) | ![设置](screenshots/settings.png) | ![列表](screenshots/list-view.png) |
+| **翻页日记本** | **资讯中心** |  |
+| ![日记](screenshots/journal.png) | ![资讯](screenshots/news.png) |  |
 ```
 
 ---

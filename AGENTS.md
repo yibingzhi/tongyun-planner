@@ -227,3 +227,61 @@
 ### 待办（继续打磨）
 - 滑条可自动滚动定位当前天到可视区（scrollIntoView）
 - 超范围日期（早于 60 天前）可通过翻页箭头到达，但滑条不显示；可加「跳到最早一篇」快捷
+
+## Session 9 (2026-07-11)
+
+### 背景
+用户反馈：任务点击「完成」后，仍会出现在待办列表里（疑似云端同步把已完成任务又写回活动列表）。
+
+### 根因
+本地完成逻辑 `useTasks.handleComplete` 是对的（从 `tasks` 移除、移入 `completedTasks`）。
+但 WebDAV 云端同步 `syncWebDAV` 采用按时间戳的 LWW：`pull()` 在 `push()` 之前执行，当远端
+`tasks.json` 因多窗口/多端或时钟偏差而带更高版本号时，会把仍含该任务的远端数据写回
+`aero_todos`，导致「完成」的任务又出现在活动列表。
+
+### 完成项（修复）
+- 新增 `dedupeActiveTasks(tasks, completed)`：剔除已存在于 `completed` 的任务 id
+- `src/utils/sync/types.ts` 的 `getLocalSyncData()` 统一去重（供 pull / push / SYNC_APPLIED_EVENT 复用）
+- `App.tsx` 的 `applySyncDataToState`（SYNC_APPLIED_EVENT 的中心消费者）去重
+- `App.tsx` 启动 hydration 两路分支（store / localStorage 回退）均去重
+
+### 关键决策
+- 在「数据源」层去重而非仅渲染层：保证进度统计、云推送都不含重复，且无论脏数据如何进入
+  localStorage 都不会再现「已完成却仍在列表」的观感
+- 不改动完成/撤销的核心状态机，避免引入回归
+
+### 相关文件
+- `src/utils/sync/types.ts`
+- `src/App.tsx`
+
+### 验证
+- `npm run typecheck` 零报错
+
+## Session 10 (2026-07-11)
+
+### 背景
+延续 Session 9：「完成没反应、删都删不掉」。用户确认无云同步、单窗口、普通任务，并怀疑「本地数据不对」。上一轮 Session 9 的云端 LWW 去重不适用（用户没开云）。
+
+### 根因
+`src/App.tsx:117-146` 的「日记自动加入待办」同步 effect 依赖数组含 `tasksHook.tasks`，导致**每次任务状态变化（删除/完成）都会重跑该 effect**。当「日记自动加入待办」开关（`tongyun_journal_add_todo`，默认 false）开启时，effect 发现某日记对应的任务不存在（被删/被完成移走）→ 立即 `handleAddTask` 重建 → 表现就是「删都删不掉、完成弹回」。这是对用户全部症状唯一能自洽的**本地**（非云）机制。
+
+### 完成项（修复）
+- 新增 `tasksRef = useRef(tasksHook.tasks)`（`App.tsx:60`），render 期持续同步
+- effect 内部 `const currentTasks = tasksRef.current`（不再读闭包里的 `tasksHook.tasks`）
+- effect 依赖从 `[journal, tasksHook.tasks, journalAddTodo]` 改为 `[journal, journalAddTodo]`：effect 只在「日记变化 / 开关切换」时跑，不再因「任务增删改」重跑，从而删除/完成日记任务后不会被重建
+- `useRef` 已在 `App.tsx:1` 导入（无需新增）
+
+### 验证
+- `npm run typecheck` 零报错
+- Playwright（dev server :1420，注入 Tauri stub）实测：开启 `journalAddTodo` + 一篇 isDaily 日记 → 自动生成任务；删除该任务后 `aero_todos` 中对应条数归 0 并稳定（不再回弹到 1/2）。修复前会回弹重建
+
+### 关键决策
+- 不动 `handleComplete`/`handleDeleteTask` 状态机，仅在「数据源触发条件」层修复，避免回归
+- dev 下 React StrictMode 会让该 effect 在挂载时双跑、产生一条重复日记任务（仅开发期伪影，生产构建单跑）；测试中以「删除全部卡片后计数是否回弹」判定，最终稳定为 0 即修复成立
+
+### 相关文件
+- `src/App.tsx`
+
+### 给用户的确认建议
+- 若症状仍存在，请在「设置 → 日记 → 日记自动加入待办」确认该开关状态；本修复保证：即便开启，删除/完成的日记任务也不会再自动复活
+- 普通（非日记生成）任务本就与 effect 无关，删除/完成逻辑此前已验证正常

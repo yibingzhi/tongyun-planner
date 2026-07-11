@@ -165,11 +165,22 @@ function readJson<T>(key: string, fallback: string): T {
   }
 }
 
+/** 从活动任务列表里剔除已存在于 completed 中的任务，保证「已完成」不会重复出现在待办里 */
+export function dedupeActiveTasks(tasks: Task[], completed: Task[]): Task[] {
+  if (!completed || completed.length === 0) return tasks;
+  const doneIds = new Set(completed.map(t => t.id));
+  return tasks.filter(t => !doneIds.has(t.id));
+}
+
 export function getLocalSyncData(): SyncData {
+  const completedTasks = readJson<Task[]>("aero_completed_todos", "[]");
+  // 已完成任务绝不应当出现在活动列表里：云端 pull 可能因时间戳 LWW 把已完成的任务
+  // 重新写回 aero_todos，导致「点完成又出现在列表」。这里统一去重。
+  const tasks = dedupeActiveTasks(readJson<Task[]>("aero_todos", "[]"), completedTasks);
   return {
     version: getLocalSyncVersion(),
-    tasks: readJson("aero_todos", "[]"),
-    completedTasks: readJson("aero_completed_todos", "[]"),
+    tasks,
+    completedTasks,
     stickyNotes: readJson("aero_sticky_notes", "[]"),
     pomodoroLogs: readJson("aero_pomodoro_logs", "[]"),
     countdowns: readJson("tongyun_countdowns", "[]"),
