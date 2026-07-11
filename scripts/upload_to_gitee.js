@@ -26,6 +26,7 @@ async function run() {
       body: JSON.stringify({
         access_token: token,
         tag_name: tag,
+        target_commitish: process.env.GITEE_TARGET_COMMITISH || 'master',
         name: releaseName,
         body: body || 'Release generated automatically by CI.',
         prerelease: false
