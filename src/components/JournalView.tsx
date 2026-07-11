@@ -7,6 +7,7 @@ import { getLocalDateString } from "../utils/date";
 import { useTranslation } from "../i18n/LanguageContext";
 import { storageManager, getAttachmentPath } from "../utils/storage";
 import { callAI } from "../utils/aiEngine";
+import { usePersonal } from "../context/PersonalContext";
 
 /** 「暖评」内置默认系统提示词：先深度思考，再写一段克制而真诚的温暖回应 */
 export function buildDefaultCommentPrompt(lang: string): string {
@@ -210,25 +211,18 @@ function MoodPanel({ date, mood, note, attachments, moods, onSetMood, onSetMoodN
 }
 
 interface JournalViewProps {
-  journal: JournalEntry[];
-  onUpsert: (entry: JournalEntry) => void;
-  onDelete: (id: string) => void;
-  addTodoEnabled: boolean;
-  onToggleAddTodo: (value: boolean) => void;
   tasks: Task[];
-  habits: { id: string; title: string; emoji: string }[];
-  habitLogs: Record<string, string[]>;
-  moods: Record<string, number>;
-  moodNotes: Record<string, string>;
-  moodAttachments: Record<string, Attachment[]>;
   pomodoroLogs: { id: string; timestamp: number; duration: number }[];
   aiConfig: CustomizationConfig;
-  onSetMood: (date: string, mood: number) => void;
-  onSetMoodNote: (date: string, note: string) => void;
-  onSetMoodAttachments: (date: string, attachments: Attachment[]) => void;
 }
 
-export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitLogs, moods, moodNotes, moodAttachments, pomodoroLogs, aiConfig, onSetMood, onSetMoodNote, onSetMoodAttachments, addTodoEnabled, onToggleAddTodo }: JournalViewProps) {
+export function JournalView({ tasks, pomodoroLogs, aiConfig }: JournalViewProps) {
+  const {
+    journal, handleUpsertJournal: onUpsert, handleDeleteJournal: onDelete,
+    journalAddTodo: addTodoEnabled, handleToggleJournalAddTodo: onToggleAddTodo,
+    habits, habitLogs, moods, moodNotes, moodAttachments,
+    handleSetMood: onSetMood, handleSetMoodNote: onSetMoodNote, handleSetMoodAttachments: onSetMoodAttachments,
+  } = usePersonal();
   const { t, locale } = useTranslation();
   const j = t.journal as Record<string, string>;
   const today = getLocalDateString();

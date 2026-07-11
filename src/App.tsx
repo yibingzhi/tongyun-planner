@@ -35,9 +35,10 @@ import { useCustomization } from "./hooks/useCustomization";
 import { useAI } from "./hooks/useAI";
 import { useWidget } from "./hooks/useWidget";
 import { useDebouncedPersistence } from "./hooks/useDebouncedPersistence";
-import type { Attachment, JournalEntry } from "./types";
+import type { JournalEntry } from "./types";
 import { useSync, subscribeDevSync } from "./hooks/useSync";
 import { PomodoroContext } from "./context/PomodoroContext";
+import { PersonalProvider, usePersonal } from "./context/PersonalContext";
 import { createId } from "./utils/id";
 import { getLocalDateString } from "./utils/date";
 import { safeJsonParse } from "./utils/json";
@@ -46,6 +47,14 @@ import { syncEngine } from "./utils/sync/engine";
 import { SYNC_APPLIED_EVENT, bumpSyncVersion, bumpCategoryVersion, type SyncCategory, type SyncData } from "./utils/sync/types";
 
 function AppInner() {
+  return (
+    <PersonalProvider>
+      <AppBody />
+    </PersonalProvider>
+  );
+}
+
+function AppBody() {
   const { t, setLocale, locale } = useTranslation();
   const tasksHook = useTasks();
   const pomodoroHook = usePomodoro();
@@ -66,11 +75,6 @@ function AppInner() {
   const isRestoringRef = useRef(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
-  const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(
-    getLocalDateString()
-  );
   const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<AppTab>("home");
@@ -101,97 +105,7 @@ function AppInner() {
     }
   }, [customizationHook.customizationConfig.locale, locale, setLocale]);
 
-  const [habits, setHabits] = useState<{ id: string; title: string; emoji: string }[]>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_habits") || "[]", [])
-  );
-  const [habitLogs, setHabitLogs] = useState<Record<string, string[]>>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_habit_logs") || "{}", {})
-  );
-  const [moods, setMoods] = useState<Record<string, number>>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_moods") || "{}", {})
-  );
-  const [moodNotes, setMoodNotes] = useState<Record<string, string>>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_mood_notes") || "{}", {})
-  );
-  const [moodAttachments, setMoodAttachments] = useState<Record<string, Attachment[]>>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_mood_attachments") || "{}", {})
-  );
-
-  const [journal, setJournal] = useState<JournalEntry[]>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_journal") || "[]", [])
-  );
-  const [journalAddTodo, setJournalAddTodo] = useState<boolean>(() =>
-    safeJsonParse(localStorage.getItem("tongyun_journal_add_todo") || "false", false)
-  );
-  const handleToggleJournalAddTodo = useCallback((value: boolean) => {
-    setJournalAddTodo(value);
-    localStorage.setItem("tongyun_journal_add_todo", JSON.stringify(value));
-  }, []);
-  const handleUpsertJournal = useCallback((entry: JournalEntry) => {
-    setJournal((prev) => {
-      const idx = prev.findIndex((e) => e.id === entry.id);
-      const updated = idx >= 0 ? prev.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...prev];
-      localStorage.setItem("tongyun_journal", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-  const handleDeleteJournal = useCallback((id: string) => {
-    setJournal((prev) => {
-      const updated = prev.filter((e) => e.id !== id);
-      localStorage.setItem("tongyun_journal", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleAddHabit = useCallback((title: string, emoji: string) => {
-    const newHabit = { id: createId("habit"), title, emoji };
-    setHabits((prev) => {
-      const updated = [...prev, newHabit];
-      localStorage.setItem("tongyun_habits", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleDeleteHabit = useCallback((id: string) => {
-    setHabits((prev) => {
-      const updated = prev.filter((h) => h.id !== id);
-      localStorage.setItem("tongyun_habits", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleToggleHabitLog = useCallback((habitId: string, date: string) => {
-    setHabitLogs((prev) => {
-      const dayLogs = prev[date] || [];
-      const updated = { ...prev, [date]: dayLogs.includes(habitId) ? dayLogs.filter((id) => id !== habitId) : [...dayLogs, habitId] };
-      localStorage.setItem("tongyun_habit_logs", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleSetMood = useCallback((date: string, mood: number) => {
-    setMoods((prev) => {
-      const updated = { ...prev, [date]: mood };
-      localStorage.setItem("tongyun_moods", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleSetMoodNote = useCallback((date: string, note: string) => {
-    setMoodNotes((prev) => {
-      const updated = { ...prev, [date]: note };
-      localStorage.setItem("tongyun_mood_notes", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
-
-  const handleSetMoodAttachments = useCallback((date: string, attachments: Attachment[]) => {
-    setMoodAttachments((prev) => {
-      const updated = { ...prev, [date]: attachments };
-      localStorage.setItem("tongyun_mood_attachments", JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
+  const { journal, journalAddTodo, handleUpsertJournal, setJournal, setHabits, setHabitLogs } = usePersonal();
 
   // 全局开关：是否把每一天的日记加入当日待办 → 同步生成/移除关联任务
   const journalTodoTitle = useCallback((entry: JournalEntry) => {
@@ -542,10 +456,6 @@ function AppInner() {
   useDebouncedPersistence(customizationHook.customizationConfig, "aero_customization_config", 250, isHydrated);
   useDebouncedPersistence(pomodoroHook.pomodoroLogs, "aero_pomodoro_logs", 250, isHydrated);
   useDebouncedPersistence(countdownHook.countdowns, "tongyun_countdowns", 250, isHydrated);
-  useDebouncedPersistence(moods, "tongyun_moods", 250, isHydrated);
-  useDebouncedPersistence(moodNotes, "tongyun_mood_notes", 250, isHydrated);
-  // 附件类数据可能很大（base64 图片），用更长 debounce 进一步降低写入频率
-  useDebouncedPersistence(moodAttachments, "tongyun_mood_attachments", 600, isHydrated);
 
   // ============ Pomodoro Timer Effect (stable interval, ref-based state machine) ============
   // 用 ref 转发"随时可能变"的字段。effect 依赖只保留 active + endTime，避免每次
@@ -794,7 +704,7 @@ function AppInner() {
   // 现在用 diff 比对，只把真正变化的分类标记脏，sync 时只上传变化的文件，减少无谓的全量上传。
   const prevSyncDataRef = useRef<{
     tasks: Task[]; completedTasks: Task[]; stickyNotes: unknown; config: unknown;
-    pomodoroLogs: unknown; countdowns: unknown; habits: unknown; habitLogs: unknown; moods: unknown; journal: unknown;
+    pomodoroLogs: unknown; countdowns: unknown;
   } | null>(null);
 
   useEffect(() => {
@@ -805,7 +715,6 @@ function AppInner() {
         tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
         stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
         pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
-        habits, habitLogs, moods, journal,
       };
       return;
     }
@@ -818,14 +727,11 @@ function AppInner() {
     if (!prev || prev.config !== customizationHook.customizationConfig) changed.push("config");
     if (!prev || prev.pomodoroLogs !== pomodoroHook.pomodoroLogs) changed.push("pomodoroLogs");
     if (!prev || prev.countdowns !== countdownHook.countdowns) changed.push("countdowns");
-    if (!prev || prev.habits !== habits || prev.habitLogs !== habitLogs || prev.moods !== moods) changed.push("habits");
-    if (!prev || prev.journal !== journal) changed.push("journal");
 
     prevSyncDataRef.current = {
       tasks: tasksHook.tasks, completedTasks: tasksHook.completedTasks,
       stickyNotes: notesHook.stickyNotes, config: customizationHook.customizationConfig,
       pomodoroLogs: pomodoroHook.pomodoroLogs, countdowns: countdownHook.countdowns,
-      habits, habitLogs, moods, journal,
     };
     if (changed.length === 0) return;
     bumpSyncVersion();
@@ -833,7 +739,7 @@ function AppInner() {
       bumpCategoryVersion(c);
       syncEngine.markDirty(c);
     }
-  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns, habits, habitLogs, moods, journal]);
+  }, [tasksHook.tasks, tasksHook.completedTasks, notesHook.stickyNotes, customizationHook.customizationConfig, pomodoroHook.pomodoroLogs, countdownHook.countdowns]);
 
   // 初始化 syncEngine 自动同步开关
   useEffect(() => {
@@ -1027,33 +933,11 @@ function AppInner() {
     widgetHook={widgetHook}
     aiHook={aiHook}
     customizationHook={customizationHook}
-    habits={habits}
-    habitLogs={habitLogs}
-    moods={moods}
-    moodNotes={moodNotes}
-    moodAttachments={moodAttachments}
-    handleAddHabit={handleAddHabit}
-    handleDeleteHabit={handleDeleteHabit}
-    handleToggleHabitLog={handleToggleHabitLog}
-    handleSetMood={handleSetMood}
-    handleSetMoodNote={handleSetMoodNote}
-        handleSetMoodAttachments={handleSetMoodAttachments}
         handlePinNoteToDesktop={handlePinNoteToDesktop}
-        journal={journal}
-        handleUpsertJournal={handleUpsertJournal}
-        handleDeleteJournal={handleDeleteJournal}
-        journalAddTodo={journalAddTodo}
-        handleToggleJournalAddTodo={handleToggleJournalAddTodo}
         celebrationMessage={celebrationMessage}
     setCelebrationMessage={setCelebrationMessage}
     syncStatus={syncStatus}
     lastBackupTime={lastBackupTime}
-    calendarYear={calendarYear}
-    setCalendarYear={setCalendarYear}
-    calendarMonth={calendarMonth}
-    setCalendarMonth={setCalendarMonth}
-    selectedCalendarDate={selectedCalendarDate}
-    setSelectedCalendarDate={setSelectedCalendarDate}
     commandPaletteOpen={commandPaletteOpen}
     setCommandPaletteOpen={setCommandPaletteOpen}
     windowLabel={windowLabel}
@@ -1109,30 +993,11 @@ interface MainLayoutProps {
   widgetHook: ReturnType<typeof useWidget>;
   aiHook: ReturnType<typeof useAI>;
   customizationHook: ReturnType<typeof useCustomization>;
-  habits: { id: string; title: string; emoji: string }[];
-  habitLogs: Record<string, string[]>;
-  moods: Record<string, number>;
-  moodNotes: Record<string, string>;
-  moodAttachments: Record<string, Attachment[]>;
-  handleAddHabit: (title: string, emoji: string) => void;
-  handleDeleteHabit: (id: string) => void;
-  handleToggleHabitLog: (habitId: string, date: string) => void;
-  handleSetMood: (date: string, mood: number) => void;
-  handleSetMoodNote: (date: string, note: string) => void;
-  handleSetMoodAttachments: (date: string, attachments: Attachment[]) => void;
   handlePinNoteToDesktop: (id: string) => void;
-  journal: JournalEntry[];
-  handleUpsertJournal: (entry: JournalEntry) => void;
-  handleDeleteJournal: (id: string) => void;
-  journalAddTodo: boolean;
-  handleToggleJournalAddTodo: (value: boolean) => void;
   celebrationMessage: string | null;
   setCelebrationMessage: (msg: string | null) => void;
   syncStatus: "synced" | "syncing" | "error";
   lastBackupTime: number | null;
-  calendarYear: number; setCalendarYear: React.Dispatch<React.SetStateAction<number>>;
-  calendarMonth: number; setCalendarMonth: React.Dispatch<React.SetStateAction<number>>;
-  selectedCalendarDate: string; setSelectedCalendarDate: (d: string) => void;
   commandPaletteOpen: boolean; setCommandPaletteOpen: (v: boolean) => void;
   windowLabel: string;
   resetTasks: () => void;
@@ -1150,19 +1015,14 @@ const MainLayout = React.memo(function MainLayout({
   handleToggleFavorite, handleTogglePin, handleAddTaskWithAI, handleConfirmAiTasks,
   expandedNoteId, setExpandedNoteId, editingNotes, setEditingNotes, detailTaskId,
   notesHook, countdownHook, widgetHook, aiHook, customizationHook, pomodoroHandleStartFocus, pomodoroLogs, alertSoundType, setAlertSoundType,
-  habits, habitLogs, moods, moodNotes, moodAttachments,
-  handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
-  handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
-  journal, handleUpsertJournal, handleDeleteJournal,
-  journalAddTodo, handleToggleJournalAddTodo,
+  handlePinNoteToDesktop,
   celebrationMessage, setCelebrationMessage,
   syncStatus, lastBackupTime,
-  calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
-  selectedCalendarDate, setSelectedCalendarDate,
   commandPaletteOpen, setCommandPaletteOpen, windowLabel,
   resetTasks, handleClearCompleted,
   onNewsSaveTask, onNewsSaveJournal,
 }: MainLayoutProps) {
+  const { habits } = usePersonal();
   return (
     <>
       {flowMode ? (
@@ -1316,7 +1176,7 @@ const MainLayout = React.memo(function MainLayout({
             <ListView tasks={tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={handleDeleteTask} expandedNoteId={expandedNoteId} setExpandedNoteId={setExpandedNoteId} editingNotes={editingNotes} setEditingNotes={setEditingNotes} handleSaveNotes={handleSaveNotes} handleStartFocus={pomodoroHandleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "calendar" && (
-            <CalendarView tasks={tasks} moods={moods} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
+            <CalendarView tasks={tasks} handleComplete={wrappedHandleComplete} handleAddTask={handleAddTaskWithAI} />
           )}
           {activeTab === "notes" && (
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
@@ -1338,29 +1198,16 @@ const MainLayout = React.memo(function MainLayout({
             <CountdownView countdowns={countdownHook.countdowns} handleAddCountdown={countdownHook.handleAddCountdown} handleDeleteCountdown={countdownHook.handleDeleteCountdown} />
           )}
           {activeTab === "habits" && (
-            <HabitsView habits={habits} habitLogs={habitLogs} onAddHabit={handleAddHabit} onDeleteHabit={handleDeleteHabit} onToggleLog={handleToggleHabitLog} />
+            <HabitsView />
           )}
           {activeTab === "gantt" && (
             <GanttView tasks={tasks} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "journal" && (
             <JournalView
-              journal={journal}
-              onUpsert={handleUpsertJournal}
-              onDelete={handleDeleteJournal}
-              addTodoEnabled={journalAddTodo}
-              onToggleAddTodo={handleToggleJournalAddTodo}
               tasks={tasks}
-              habits={habits}
-              habitLogs={habitLogs}
-              moods={moods}
-              moodNotes={moodNotes}
-              moodAttachments={moodAttachments}
               pomodoroLogs={pomodoroLogs}
               aiConfig={customizationHook.customizationConfig}
-              onSetMood={handleSetMood}
-              onSetMoodNote={handleSetMoodNote}
-              onSetMoodAttachments={handleSetMoodAttachments}
             />
           )}
           {activeTab === "settings" && (
@@ -1375,7 +1222,6 @@ const MainLayout = React.memo(function MainLayout({
           handleSaveNotes, handleUpdateTags, handleEditTask, handleUndoComplete,
           handleToggleFavorite, handleTogglePin,
           handleAddTaskWithAI, handleConfirmAiTasks,
-          moodAttachments, handleSetMoodAttachments,
           expandedNoteId, setExpandedNoteId, editingNotes, setEditingNotes,
           detailTaskId,
           aiHook.showAiInbox, aiHook.setShowAiInbox,
@@ -1392,15 +1238,9 @@ const MainLayout = React.memo(function MainLayout({
           notesHook.stickyNotes, notesHook.handleAddNote,
           notesHook.handleEditNoteText, notesHook.handleChangeNoteColor, notesHook.handleDeleteNote,
           countdownHook.countdowns, countdownHook.handleAddCountdown, countdownHook.handleDeleteCountdown,
-          habits, habitLogs, moods, moodNotes, moodAttachments,
-          handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
-           handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
-           journal, handleUpsertJournal, handleDeleteJournal,
-           journalAddTodo, handleToggleJournalAddTodo,
-           calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
-           selectedCalendarDate, setSelectedCalendarDate,
-           resetTasks, handleClearCompleted,
-         ])}
+          handlePinNoteToDesktop,
+          resetTasks, handleClearCompleted,
+        ])}
 
         {celebrationMessage && (
           <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />
@@ -1475,7 +1315,7 @@ function App() {
   const savedLocale = localStorage.getItem("tongyun_locale") as "zh-CN" | "en" | null;
   return (
     <LanguageProvider initialLocale={savedLocale || "zh-CN"}>
-      <AppErrorBoundary>
+        <AppErrorBoundary>
         <AppInner />
       </AppErrorBoundary>
     </LanguageProvider>

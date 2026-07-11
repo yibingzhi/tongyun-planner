@@ -1,30 +1,12 @@
 import React, { useState } from "react";
 import { Plus, Flame, Circle, CheckCircle2, Trash2 } from "lucide-react";
 import { getLocalDateString } from "../utils/date";
-
-interface Habit {
-  id: string;
-  title: string;
-  emoji: string;
-}
-
-interface HabitsViewProps {
-  habits: Habit[];
-  habitLogs: Record<string, string[]>;
-  onAddHabit: (title: string, emoji: string) => void;
-  onDeleteHabit: (id: string) => void;
-  onToggleLog: (habitId: string, date: string) => void;
-}
+import { usePersonal } from "../context/PersonalContext";
 
 const HABIT_EMOJIS = ["💪", "📖", "🧘", "🏃", "💧", "🥗", "🌙", "☀️", "🎯", "✍️", "🎨", "🧠"];
 
-export const HabitsView: React.FC<HabitsViewProps> = React.memo(({
-  habits,
-  habitLogs,
-  onAddHabit,
-  onDeleteHabit,
-  onToggleLog,
-}) => {
+export const HabitsView: React.FC = React.memo(() => {
+  const { habits, habitLogs, handleAddHabit: onAddHabit, handleDeleteHabit: onDeleteHabit, handleToggleHabitLog: onToggleLog } = usePersonal();
   const today = getLocalDateString();
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState("");

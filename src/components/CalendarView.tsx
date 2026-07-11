@@ -7,6 +7,7 @@ import LunarLib from "lunar-javascript";
 import { getLocalDateString } from "../utils/date";
 import { safeJsonParse } from "../utils/json";
 import { createId } from "../utils/id";
+import { usePersonal } from "../context/PersonalContext";
 
 const FIXED_FESTIVALS: Record<string, string> = {
   "01-01": "元旦",
@@ -17,15 +18,7 @@ const FIXED_FESTIVALS: Record<string, string> = {
 
 interface CalendarViewProps {
   tasks: Task[];
-  /** 心情直接取自日记手账（按日期的 1-5 分值），无需在日历里单独记录 */
-  moods: Record<string, number>;
   handleComplete: (id: string) => void;
-  calendarYear: number;
-  setCalendarYear: React.Dispatch<React.SetStateAction<number>>;
-  calendarMonth: number;
-  setCalendarMonth: React.Dispatch<React.SetStateAction<number>>;
-  selectedCalendarDate: string;
-  setSelectedCalendarDate: (date: string) => void;
   handleAddTask: (taskData: {
     title: string;
     description: string;
@@ -39,16 +32,10 @@ interface CalendarViewProps {
 
 export const CalendarView: React.FC<CalendarViewProps> = React.memo(({
   tasks,
-  moods,
   handleComplete,
-  calendarYear,
-  setCalendarYear,
-  calendarMonth,
-  setCalendarMonth,
-  selectedCalendarDate,
-  setSelectedCalendarDate,
   handleAddTask,
 }) => {
+  const { moods, calendarYear, setCalendarYear, calendarMonth, setCalendarMonth, selectedCalendarDate, setSelectedCalendarDate } = usePersonal();
   const { t } = useTranslation(); const cv = t.calendarView; const m = t.matrix;
   // Pre-group tasks by due date using useMemo to convert O(N) filters to O(1) lookups
   const tasksByDueDate = useMemo(() => {
