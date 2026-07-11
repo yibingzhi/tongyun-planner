@@ -16,5 +16,7 @@
 > | `settings.png` | 个性化设置 |
 > | `flow-mode.png` | 心流模式 |
 > | `list-view.png` | 列表视图 |
+> | `journal.png` | 翻页日记本（手账） |
+> | `news.png` | 资讯中心 |
 
 截图后可在 `README.md` 末尾的「相册布局」表格中引用这些文件。
