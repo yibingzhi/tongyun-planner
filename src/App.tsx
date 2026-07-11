@@ -11,19 +11,25 @@ import { ListView } from "./components/ListView";
 import { TaskDetailModal } from "./components/TaskDetailModal";
 import { CalendarView } from "./components/CalendarView";
 import { StickyNotesView } from "./components/StickyNotesView";
-import { NewsView } from "./components/NewsView";
+const NewsView = React.lazy(() => import("./components/NewsView").then((m) => ({ default: m.NewsView })));
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
-import { AnalyticsView } from "./components/AnalyticsView";
-import { CompletedView } from "./components/CompletedView";
-import { WidgetWindow } from "./components/WidgetWindow";
+const AnalyticsView = React.lazy(() => import("./components/AnalyticsView").then((m) => ({ default: m.AnalyticsView })));
+const CompletedView = React.lazy(() => import("./components/CompletedView").then((m) => ({ default: m.CompletedView })));
+const WidgetWindow = React.lazy(() => import("./components/WidgetWindow").then((m) => ({ default: m.WidgetWindow })));
 import { CommandPalette } from "./components/CommandPalette";
-import { SettingsView } from "./components/SettingsView";
+const SettingsView = React.lazy(() => import("./components/SettingsView").then((m) => ({ default: m.SettingsView })));
 import { FloatingNoteWindow } from "./components/FloatingNoteWindow";
-import { CountdownView } from "./components/CountdownView";
-import { FlowMode } from "./components/FlowMode";
-import { HabitsView } from "./components/HabitsView";
-import { GanttView } from "./components/GanttView";
-import { JournalView } from "./components/JournalView";
+const CountdownView = React.lazy(() => import("./components/CountdownView").then((m) => ({ default: m.CountdownView })));
+const FlowMode = React.lazy(() => import("./components/FlowMode").then((m) => ({ default: m.FlowMode })));
+const HabitsView = React.lazy(() => import("./components/HabitsView").then((m) => ({ default: m.HabitsView })));
+const GanttView = React.lazy(() => import("./components/GanttView").then((m) => ({ default: m.GanttView })));
+const JournalView = React.lazy(() => import("./components/JournalView").then((m) => ({ default: m.JournalView })));
+
+const viewFallback = (
+  <div className="flex-grow flex items-center justify-center text-slate-400 text-sm py-20">
+    <span className="animate-pulse">…</span>
+  </div>
+);
 import { audioEngine } from "./utils/audioEngine";
 import { Sparkles } from "lucide-react";
 import { LanguageProvider, useTranslation } from "./i18n/LanguageContext";
@@ -858,6 +864,7 @@ function AppBody() {
 
   if (windowLabel === "widget") {
     return (
+      <React.Suspense fallback={<div className="w-full h-screen bg-[#FAFAF8]" />}>
       <WidgetWindow
         tasks={tasksHook.tasks}
         completedTasks={tasksHook.completedTasks}
@@ -897,6 +904,7 @@ function AppBody() {
         onClearCelebration={() => setCelebrationMessage(null)}
         handleUndoComplete={tasksHook.handleUndoComplete}
       />
+      </React.Suspense>
     );
   }
 
@@ -1029,12 +1037,14 @@ const MainLayout = React.memo(function MainLayout({
   return (
     <>
       {flowMode ? (
+        <React.Suspense fallback={viewFallback}>
         <FlowMode
           tasks={tasks}
           pomodoroLogs={pomodoroLogs}
           handleComplete={wrappedHandleComplete}
           onExit={() => setFlowMode(false)}
         />
+        </React.Suspense>
       ) : (
         <div className={`w-full h-full min-h-screen bg-[#FAFAF8] text-[#2D323A] flex flex-col select-none overflow-hidden relative theme-font-${fontFamily || "sans"}`}>
       <TitleBar />
@@ -1056,6 +1066,7 @@ const MainLayout = React.memo(function MainLayout({
           lastBackupTime={lastBackupTime}
           onEnterFlowMode={() => setFlowMode(true)}
         />
+        <React.Suspense fallback={viewFallback}>
         {useMemo(() => (
         <main className="flex-grow p-6 overflow-y-auto flex flex-col gap-5 z-10 relative custom-scrollbar min-h-0">
           {activeTab !== "home" && (
@@ -1244,6 +1255,7 @@ const MainLayout = React.memo(function MainLayout({
           handlePinNoteToDesktop,
           resetTasks, handleClearCompleted,
         ])}
+        </React.Suspense>
 
         {celebrationMessage && (
           <CelebrationOverlay message={celebrationMessage} onDone={() => setCelebrationMessage(null)} />
