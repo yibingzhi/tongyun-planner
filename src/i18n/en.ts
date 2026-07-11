@@ -576,6 +576,16 @@ const en: Translations = {
     emptyContent: "Write something first, so AI can reply ~",
     save: "Save",
     cancel: "Cancel",
+    tags: "Tags",
+    allTags: "All tags",
+    clearTag: "Clear filter",
+    exportCurrent: "Export",
+    exportAll: "Export All",
+    noTags: "No tags yet (write #tag in the body)",
+    prevDay: "Previous day",
+    goToday: "Today",
+    futureDay: "A future day",
+    diaryPlaceholder: "Write something about today…",
   },
 };
 

@@ -576,6 +576,16 @@ const zhCN: Translations = {
     emptyContent: "先写点什么，AI 才好回应你～",
     save: "保存",
     cancel: "取消",
+    tags: "标签",
+    allTags: "全部标签",
+    clearTag: "清除筛选",
+    exportCurrent: "导出此篇",
+    exportAll: "导出全部日记",
+    noTags: "还没有标签（在正文里写 #标签 试试）",
+    prevDay: "前一天",
+    goToday: "今天",
+    futureDay: "未来的日子",
+    diaryPlaceholder: "写点什么，记下今天…",
   },
 };
 

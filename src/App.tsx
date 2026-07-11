@@ -613,6 +613,54 @@ function AppInner() {
     return () => { audioEngine.close(); };
   }, []);
 
+  // ============ 任务到期系统通知（智能规划 C 补全）============
+  // 每分钟扫描：今日到期、有具体时间、未完成的任务；到期时刻与到期前 15 分钟各提醒一次。
+  // 仅 main 窗口触发，避免 widget/便签等多窗口重复弹通知；用 ref Set 防止同一任务重复通知。
+  const notifiedDueRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (windowLabelRef.current !== "main") return;
+
+    const REMIND_BEFORE = 15 * 60 * 1000;
+    const check = () => {
+      const now = new Date();
+      const todayStr = getLocalDateString(now);
+      const nowTs = now.getTime();
+      const isZh = locale === "zh-CN";
+      for (const task of tasksHook.tasks) {
+        if (task.dueDate !== todayStr || !task.dueTime) continue;
+        if (tasksHook.completedTasks.some((c) => c.id === task.id)) continue;
+        const [h, m] = task.dueTime.split(":").map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) continue;
+        const dueTs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0).getTime();
+        let notify = false;
+        let body = "";
+        if (nowTs >= dueTs && nowTs <= dueTs + 60 * 60 * 1000) {
+          notify = true;
+          body = isZh ? `已到截止时间 ${task.dueTime}` : `Due at ${task.dueTime}`;
+        } else if (nowTs >= dueTs - REMIND_BEFORE && nowTs < dueTs) {
+          notify = true;
+          const mins = Math.max(1, Math.round((dueTs - nowTs) / 60000));
+          body = isZh
+            ? (mins <= 1 ? `即将在 ${task.dueTime} 截止` : `还有 ${mins} 分钟（${task.dueTime}）截止`)
+            : (mins <= 1 ? `Due at ${task.dueTime}` : `${mins} min left (due ${task.dueTime})`);
+        }
+        if (notify && !notifiedDueRef.current.has(task.id)) {
+          notifiedDueRef.current.add(task.id);
+          try {
+            new Notification(isZh ? "⏰ 任务提醒" : "⏰ Task Reminder", {
+              body: `${task.title}\n${body}`,
+            });
+          } catch { /* ignore */ }
+        }
+      }
+    };
+    check();
+    const timer = setInterval(check, 60 * 1000);
+    return () => clearInterval(timer);
+  }, [isHydrated, locale, tasksHook.tasks, tasksHook.completedTasks]);
+
   // ============ AI Confirm Tasks ============
   const handleConfirmAiTasks = useCallback(() => {
     if (aiHook.aiPreviewTasks.length === 0) return;

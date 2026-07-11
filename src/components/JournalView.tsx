@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
-import { BookOpen, CalendarDays, StickyNote as NoteIcon, Plus, Trash2, Search, Link2, ListChecks, Image as ImageIcon, X, SmilePlus, Heading2, Bold, Italic, List, CheckSquare, Code, Link as LinkIcon, Sparkles } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { BookOpen, StickyNote as NoteIcon, Trash2, Search, ListChecks, Image as ImageIcon, X, SmilePlus, Tag as TagIcon, ChevronLeft, ChevronRight, Sparkles, Plus } from "lucide-react";
 import type { JournalEntry, Task, Attachment, CustomizationConfig } from "../types";
-import { JOURNAL_TEMPLATES, extractJournalTags, contentLinksTo } from "../constants";
-import { JournalMarkdown } from "../utils/journalMarkdown";
+import { extractJournalTags } from "../constants";
 import { createId } from "../utils/id";
 import { getLocalDateString } from "../utils/date";
 import { useTranslation } from "../i18n/LanguageContext";
@@ -191,20 +190,6 @@ function MoodPanel({ date, mood, note, attachments, moods, onSetMood, onSetMoodN
   );
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function ToolbarButton({ title, onClick, children }: { title: string; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-[#F0F5F1] hover:text-[#4D7C5D] hover:border-[#C4D7B2] transition-colors cursor-pointer"
-    >
-      {children}
-    </button>
-  );
-}
-
 interface JournalViewProps {
   journal: JournalEntry[];
   onUpsert: (entry: JournalEntry) => void;
@@ -227,39 +212,52 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
   const j = t.journal as Record<string, string>;
   const today = getLocalDateString();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"diary" | "note">("diary");
+  const [currentDate, setCurrentDate] = useState<string>(today);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [showPreview, setShowPreview] = useState(true);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [tagOpen, setTagOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
 
-  const selected = useMemo(
-    () => journal.find((e) => e.id === selectedId) || null,
-    [journal, selectedId]
+  const dailyEntryMap = useMemo(() => {
+    const m = new Map<string, JournalEntry>();
+    journal.forEach((e) => { if (e.isDaily) m.set(e.date, e); });
+    return m;
+  }, [journal]);
+
+  const notes = useMemo(
+    () => journal.filter((e) => !e.isDaily).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)),
+    [journal]
   );
-  const activeMoodDate = selected?.isDaily ? selected.date : today;
+
+  const selected = useMemo(() => {
+    if (mode === "diary") return dailyEntryMap.get(currentDate) || null;
+    return notes.find((n) => n.id === selectedNoteId) || null;
+  }, [mode, currentDate, dailyEntryMap, notes, selectedNoteId]);
+
+  const viewDate = mode === "diary" ? currentDate : (selected?.date || today);
+  const activeMoodDate = viewDate;
 
   // 本地草稿，避免每次按键都触发父级重渲染造成的光标跳动
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
-  const [draftTemplate, setDraftTemplate] = useState<string>("blank");
 
   useEffect(() => {
-    if (selected) {
-      setDraftTitle(selected.title);
-      setDraftContent(selected.content);
-      setDraftTemplate(selected.templateId || "blank");
-    }
+    setDraftTitle(selected?.title || "");
+    setDraftContent(selected?.content || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selected]);
 
   const commit = useCallback((patch: Partial<JournalEntry>) => {
     const base = selected || ({
       id: createId("journal"),
-      linkKey: today,
-      title: today,
+      linkKey: viewDate,
+      title: viewDate,
       content: "",
-      date: today,
-      isDaily: true,
+      date: viewDate,
+      isDaily: mode === "diary",
       createdAt: Date.now(),
     } as JournalEntry);
     const next: JournalEntry = {
@@ -268,7 +266,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
       updatedAt: Date.now(),
     };
     onUpsert(next);
-  }, [selected, onUpsert, today]);
+  }, [selected, onUpsert, viewDate, mode]);
 
   const handleContentChange = (v: string) => {
     setDraftContent(v);
@@ -279,41 +277,8 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
     const linkKey = selected?.isDaily ? selected.linkKey : v.trim() || createId("journal");
     commit({ title: v, linkKey });
   };
-  const applyTemplate = (id: string) => {
-    const tpl = JOURNAL_TEMPLATES.find((x) => x.id === id);
-    if (!tpl) return;
-    setDraftTemplate(id);
-    setDraftContent(tpl.content);
-    commit({ templateId: id, content: tpl.content });
-  };
 
-  const ensureEntry = useCallback((linkKey: string): JournalEntry => {
-    const existing = journal.find((e) => e.linkKey === linkKey);
-    if (existing) return existing;
-    const isDaily = DATE_RE.test(linkKey);
-    const entry: JournalEntry = {
-      id: createId("journal"),
-      linkKey,
-      title: isDaily ? linkKey : linkKey,
-      content: "",
-      date: isDaily ? linkKey : today,
-      isDaily,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    onUpsert(entry);
-    return entry;
-  }, [journal, onUpsert, today]);
-
-  const navigateToLink = (linkKey: string) => {
-    const entry = ensureEntry(linkKey);
-    setSelectedId(entry.id);
-  };
-
-  const newDaily = () => {
-    const entry = ensureEntry(today);
-    setSelectedId(entry.id);
-  };
+  const newDaily = () => { setMode("diary"); setCurrentDate(today); };
   const newNote = () => {
     const title = window.prompt(j.newNoteTitle || "笔记标题", "")?.trim();
     if (!title) return;
@@ -321,56 +286,32 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
       id: createId("journal"),
       linkKey: title,
       title,
-      content: `# ${title}\n\n`,
+      content: "",
       date: today,
       isDaily: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
     onUpsert(entry);
-    setSelectedId(entry.id);
+    setMode("note");
+    setSelectedNoteId(entry.id);
   };
+
+  const shiftDate = (delta: number) => {
+    const [y, m, d] = currentDate.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + delta);
+    setCurrentDate(getLocalDateString(dt));
+  };
+  const goToday = () => setCurrentDate(today);
 
   const insertLine = (text: string) => {
-    const next = draftContent ? `${draftContent}\n- ${text}` : `- ${text}`;
+    const next = draftContent ? `${draftContent}\n${text}` : text;
     handleContentChange(next);
   };
 
-  // 工具栏：在光标处插入 markdown 语法
-  const insertAtCursor = useCallback((before: string, after = "", placeholder = "") => {
-    const ta = textareaRef.current;
-    const full = draftContent;
-    const start = ta ? ta.selectionStart : full.length;
-    const end = ta ? ta.selectionEnd : full.length;
-    const sel = full.slice(start, end) || placeholder;
-    const next = full.slice(0, start) + before + sel + after + full.slice(end);
-    handleContentChange(next);
-    requestAnimationFrame(() => {
-      if (!ta) return;
-      ta.focus();
-      const pos = start + before.length + sel.length;
-      ta.setSelectionRange(pos, pos);
-    });
-  }, [draftContent, handleContentChange]);
-
-  // 预览里勾选待办 → 翻转源文本中第 idx 个 - [ ] / - [x]
-  const handleToggleTodo = useCallback((idx: number) => {
-    const lines = draftContent.split("\n");
-    let count = -1;
-    const next = lines.map((line) => {
-      if (/^\s*[-*]\s+\[( |x|X)\]\s/.test(line)) {
-        count++;
-        if (count === idx) {
-          return line.replace(/^(\s*[-*]\s+\[)( |x|X)(\])/, (_m, p1, p2, p3) => p1 + (p2 === " " ? "x" : " ") + p3);
-        }
-      }
-      return line;
-    });
-    handleContentChange(next.join("\n"));
-  }, [draftContent, handleContentChange]);
-
-  const todaysFocus = useMemo(() => {
-    const start = new Date(today + "T00:00:00").getTime();
+  const viewFocus = useMemo(() => {
+    const start = new Date(viewDate + "T00:00:00").getTime();
     const end = start + 86400000;
     let minutes = 0;
     let count = 0;
@@ -378,7 +319,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
       if (log.timestamp >= start && log.timestamp < end) { minutes += log.duration || 0; count++; }
     }
     return { minutes, count };
-  }, [pomodoroLogs, today]);
+  }, [pomodoroLogs, viewDate]);
 
   // 温柔的 AI 评语
   const [aiLoading, setAiLoading] = useState(false);
@@ -399,298 +340,387 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
     }
   }, [aiConfig, draftContent, commit, locale, j]);
 
+  // 顶部日期滑条：过去 60 天 ~ 未来 7 天
+  const dateStrip = useMemo(() => {
+    const days: string[] = [];
+    const start = new Date(today + "T00:00:00");
+    start.setDate(start.getDate() - 60);
+    const end = new Date(today + "T00:00:00");
+    end.setDate(end.getDate() + 7);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(getLocalDateString(d));
+    }
+    return days;
+  }, [today]);
 
-  const dailyNotes = useMemo(
-    () => journal.filter((e) => e.isDaily).sort((a, b) => (a.date < b.date ? 1 : -1)),
-    [journal]
-  );
-  const notes = useMemo(
-    () => journal.filter((e) => !e.isDaily).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)),
-    [journal]
-  );
-
-  const filteredDaily = useMemo(() => {
-    if (!search) return dailyNotes;
-    const q = search.toLowerCase();
-    return dailyNotes.filter((e) => e.content.toLowerCase().includes(q) || e.title.toLowerCase().includes(q));
-  }, [dailyNotes, search]);
   const filteredNotes = useMemo(() => {
-    if (!search) return notes;
-    const q = search.toLowerCase();
-    return notes.filter((e) => e.content.toLowerCase().includes(q) || e.title.toLowerCase().includes(q));
-  }, [notes, search]);
+    let list = notes;
+    if (activeTag) list = list.filter((e) => extractJournalTags(e.content).includes(activeTag));
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((e) => e.content.toLowerCase().includes(q) || e.title.toLowerCase().includes(q));
+    }
+    return list;
+  }, [notes, search, activeTag]);
 
-  const backlinks = useMemo(() => {
-    if (!selected) return [];
-    return journal.filter((e) => e.id !== selected.id && contentLinksTo(e.content, selected.linkKey));
-  }, [journal, selected]);
+  // 全部日记/笔记中出现过的标签（去重排序），用于侧栏标签筛选
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    journal.forEach((e) => extractJournalTags(e.content).forEach((tag) => set.add(tag)));
+    return [...set].sort((a, b) => a.localeCompare(b, locale === "zh-CN" ? "zh" : "en"));
+  }, [journal, locale]);
 
-  const todaysTasks = useMemo(
-    () => tasks.filter((task) => task.dueDate === today),
-    [tasks, today]
+  const viewTasks = useMemo(
+    () => tasks.filter((task) => task.dueDate === viewDate),
+    [tasks, viewDate]
   );
-  const todaysHabits = habitLogs[today] || [];
+  const viewHabits = habitLogs[viewDate] || [];
 
   const tags = useMemo(() => extractJournalTags(draftContent), [draftContent]);
 
+  // 农历（装饰，动态加载 lunar-javascript，失败则忽略）
+  const [lunarText, setLunarText] = useState("");
+  useEffect(() => {
+    if (mode !== "diary") { setLunarText(""); return; }
+    let cancelled = false;
+    import("lunar-javascript").then((mod: any) => {
+      try {
+        const Solar = mod.Solar || (mod.default && mod.default.Solar);
+        if (!Solar) return;
+        const d = new Date(currentDate + "T00:00:00");
+        const lunar = Solar.fromDate(d).getLunar();
+        if (!cancelled) setLunarText(`${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`);
+      } catch { /* ignore */ }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentDate, mode]);
+
+  const weekdayNames = locale === "zh-CN" ? ["日", "一", "二", "三", "四", "五", "六"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const fmtDate = (ds: string) => {
+    const [y, m, d] = ds.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const wd = weekdayNames[dt.getDay()];
+    return locale === "zh-CN"
+      ? { big: `${m}月${d}日`, small: `星期${wd}${lunarText ? " · 农历" + lunarText : ""}` }
+      : { big: `${m}/${d}`, small: `${wd}${lunarText ? " · " + lunarText : ""}` };
+  };
+  const headerDate = fmtDate(currentDate);
+  const isFuture = currentDate > today;
+  const isToday = currentDate === today;
+
+  // 编辑器主体（纯文字书写，无 Markdown 噪声）
+  const editorInner = (
+    <>
+      <div className="flex items-center gap-2 flex-wrap">
+        {mode === "note" && (
+          <input
+            value={draftTitle}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder={j.titlePlaceholder}
+            className="flex-grow min-w-[160px] bg-transparent text-lg font-bold text-[#2D323A] focus:outline-none placeholder-slate-300 border-b border-transparent focus:border-[#EFEBE4] transition-colors"
+          />
+        )}
+        {selected && (
+          <button
+            onClick={() => { onDelete(selected.id); if (mode === "diary") setCurrentDate(currentDate); else setSelectedNoteId(null); }}
+            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#F5DFDB] text-[#A34E36] hover:bg-[#FCF2F0] cursor-pointer transition-colors flex items-center gap-1"
+          >
+            <Trash2 className="w-3.5 h-3.5" />{j.delete}
+          </button>
+        )}
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <span key={tag} className="text-[10px] text-[#8B6E3C] bg-[#8B6E3C]/10 rounded-full px-2 py-0.5 font-medium">#{tag}</span>
+          ))}
+        </div>
+      )}
+
+      <textarea
+        ref={textareaRef}
+        value={draftContent}
+        onChange={(e) => handleContentChange(e.target.value)}
+        placeholder={mode === "diary" ? (j.diaryPlaceholder || "写点什么，记下今天…") : "写点什么…"}
+        className="flex-grow min-h-0 w-full resize-none rounded-xl p-4 text-[14px] leading-relaxed text-slate-700 font-serif focus:outline-none focus:border-[#4D7C5D] custom-scrollbar bg-transparent border-transparent"
+        style={mode === "diary" ? { lineHeight: "32px", backgroundImage: "repeating-linear-gradient(transparent, transparent 31px, #ECE4D2 32px)", backgroundAttachment: "local" } : undefined}
+        spellCheck={false}
+      />
+
+      <div className="rounded-xl bg-gradient-to-br from-[#F0F5F1] to-[#FCEFF4] border border-[#E4EEE6] p-4">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#E8A0BF] mb-2">
+          <Sparkles className="w-3.5 h-3.5" />{j.aiCommentTitle || "AI 的温柔回应"}
+        </div>
+        {selected?.aiComment ? (
+          <>
+            <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap">{selected.aiComment}</p>
+            <button onClick={generateAiComment} disabled={aiLoading} className="mt-2 text-[10px] text-[#4D7C5D] hover:underline disabled:opacity-40 cursor-pointer">
+              {aiLoading ? "..." : (j.regenerate || "重新生成")}
+            </button>
+          </>
+        ) : (
+          <button onClick={generateAiComment} disabled={aiLoading} className="text-[11px] font-semibold px-3 py-2 rounded-lg bg-white border border-[#E4EEE6] text-[#4D7C5D] hover:bg-[#EAF1EC] transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />{aiLoading ? (j.aiThinking || "正在温柔回应...") : (j.aiGenerate || "完成今天，听听 AI 的温柔回应")}
+          </button>
+        )}
+        {aiError && <p className="text-[10px] text-red-500 mt-2">{aiError}</p>}
+      </div>
+      {selected && (
+        <div className="text-[10px] text-slate-400 text-right">
+          {j.updatedAt} {new Date(selected.updatedAt).toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+        </div>
+      )}
+    </>
+  );
+
   return (
-    <div className="flex flex-grow min-h-0 gap-4">
-      {/* 左：日记/笔记列表 */}
-      <aside className="w-60 flex-shrink-0 flex flex-col gap-3 border-r border-[#EFEBE4] pr-3">
-        <div className="flex gap-2">
+    <div className="flex flex-col gap-3 h-full min-h-0">
+      {/* 顶部：模式 + 日期滑条 + 工具 */}
+      <header className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex gap-1.5">
           <button
             onClick={newDaily}
-            className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-white bg-[#4D7C5D] hover:bg-[#3F684C] rounded-xl py-2 cursor-pointer transition-colors"
+            className={`flex items-center gap-1 text-[11px] font-bold rounded-xl px-3 py-1.5 cursor-pointer transition-colors ${
+              mode === "diary" ? "text-white bg-[#4D7C5D] hover:bg-[#3F684C]" : "text-[#4D7C5D] bg-[#F0F5F1] hover:bg-[#E4EEE6] border border-[#C4D7B2]"
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />{j.newDaily}
+            <BookOpen className="w-3.5 h-3.5" />{j.dailyNotes}
           </button>
           <button
             onClick={newNote}
-            className="flex-1 flex items-center justify-center gap-1 text-[11px] font-bold text-[#4D7C5D] bg-[#F0F5F1] hover:bg-[#E4EEE6] border border-[#C4D7B2] rounded-xl py-2 cursor-pointer transition-colors"
+            className={`flex items-center gap-1 text-[11px] font-bold rounded-xl px-3 py-1.5 cursor-pointer transition-colors ${
+              mode === "note" ? "text-white bg-[#4D7C5D] hover:bg-[#3F684C]" : "text-[#4D7C5D] bg-[#F0F5F1] hover:bg-[#E4EEE6] border border-[#C4D7B2]"
+            }`}
           >
-            <NoteIcon className="w-3.5 h-3.5" />{j.newNote}
+            <NoteIcon className="w-3.5 h-3.5" />{j.notes}
           </button>
         </div>
 
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={j.search}
-            className="w-full bg-white border border-[#EFEBE4] pl-8 pr-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
-          />
-        </div>
-
-        <div className="flex-grow overflow-y-auto custom-scrollbar space-y-4">
-          <div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              <CalendarDays className="w-3.5 h-3.5" />{j.dailyNotes}
-            </div>
-            <div className="space-y-1">
-              {filteredDaily.map((e) => (
-                <button
-                  key={e.id}
-                  onClick={() => setSelectedId(e.id)}
-                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[12px] transition-colors cursor-pointer ${
-                    selectedId === e.id ? "bg-[#F0F5F1] text-[#4D7C5D] font-semibold" : "text-slate-600 hover:bg-white/60"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate">{e.title || e.date}</span>
-                    {e.content.trim() && <span className="w-1.5 h-1.5 rounded-full bg-[#C4D7B2] flex-shrink-0" />}
-                  </div>
-                </button>
-              ))}
-              {filteredDaily.length === 0 && <div className="text-[11px] text-slate-300 px-1">{j.empty}</div>}
-            </div>
-          </div>
-
-          {filteredNotes.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                <NoteIcon className="w-3.5 h-3.5" />{j.notes}
-              </div>
-              <div className="space-y-1">
-                {filteredNotes.map((e) => (
-                  <button
-                    key={e.id}
-                    onClick={() => setSelectedId(e.id)}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[12px] transition-colors cursor-pointer ${
-                      selectedId === e.id ? "bg-[#F0F5F1] text-[#4D7C5D] font-semibold" : "text-slate-600 hover:bg-white/60"
-                    }`}
-                  >
-                    <span className="truncate block">{e.title || "(无标题)"}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* 中：编辑器 */}
-      <section className="flex-grow min-w-0 flex flex-col gap-3">
-        {!selected ? (
-          <div className="flex-grow flex flex-col items-center justify-center text-slate-400 gap-3 select-none">
-            <BookOpen className="w-12 h-12 opacity-40" />
-            <p className="text-sm font-medium">{j.noEntry}</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 flex-wrap">
-              {selected.isDaily && (
-                <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-[#F0F5F1] text-[#4D7C5D] flex items-center gap-1">
-                  <CalendarDays className="w-3 h-3" />{selected.date}
-                </span>
-              )}
-              <input
-                value={draftTitle}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                placeholder={j.titlePlaceholder}
-                className="flex-grow min-w-[160px] bg-transparent text-lg font-bold text-[#2D323A] focus:outline-none placeholder-slate-300 border-b border-transparent focus:border-[#EFEBE4] transition-colors"
-              />
-              <select
-                value={draftTemplate}
-                onChange={(e) => applyTemplate(e.target.value)}
-                className="bg-white border border-[#EFEBE4] px-2 py-1 rounded-lg text-[11px] font-medium text-slate-600 focus:outline-none focus:border-[#4D7C5D]"
-                title={j.template}
-              >
-                {JOURNAL_TEMPLATES.map((tpl) => (
-                  <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setShowPreview((p) => !p)}
-                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-white cursor-pointer transition-colors"
-              >
-                {showPreview ? j.write : j.preview}
-              </button>
-              <button
-                onClick={() => { onDelete(selected.id); setSelectedId(null); }}
-                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#F5DFDB] text-[#A34E36] hover:bg-[#FCF2F0] cursor-pointer transition-colors flex items-center gap-1"
-              >
-                <Trash2 className="w-3.5 h-3.5" />{j.delete}
-              </button>
-            </div>
-
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <span key={tag} className="text-[10px] text-[#8B6E3C] bg-[#8B6E3C]/10 rounded-full px-2 py-0.5 font-medium">#{tag}</span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-1 flex-wrap">
-              <ToolbarButton title={j.tbHeading || "标题"} onClick={() => insertAtCursor("## ", "", "标题")}><Heading2 className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbBold || "加粗"} onClick={() => insertAtCursor("**", "**", "加粗")}><Bold className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbItalic || "斜体"} onClick={() => insertAtCursor("*", "*", "斜体")}><Italic className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbList || "列表"} onClick={() => insertAtCursor("\n- ", "", "项目")}><List className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbTodo || "待办"} onClick={() => insertAtCursor("\n- [ ] ", "", "待办")}><CheckSquare className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbCode || "代码"} onClick={() => insertAtCursor("`", "`", "代码")}><Code className="w-3.5 h-3.5" /></ToolbarButton>
-              <ToolbarButton title={j.tbLink || "链接"} onClick={() => insertAtCursor("[[", "]]", "链接")}><LinkIcon className="w-3.5 h-3.5" /></ToolbarButton>
-            </div>
-
-            <div className={`flex-grow min-h-0 grid gap-3 ${showPreview ? "grid-cols-2" : "grid-cols-1"}`}>
-              <textarea
-                ref={textareaRef}
-                value={draftContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder={"# 标题\n\n- 支持 **加粗** *斜体* `代码`\n- 双向链接 [[2026-07-10]] 或 [[笔记标题]]\n- 标签 #灵感"}
-                className="w-full h-full resize-none bg-white border border-[#EFEBE4] rounded-xl p-4 text-[13px] leading-relaxed text-slate-700 font-mono focus:outline-none focus:border-[#4D7C5D] custom-scrollbar"
-                spellCheck={false}
-              />
-              {showPreview && (
-                <div className="h-full overflow-y-auto custom-scrollbar bg-[#FAF8F5]/60 border border-[#EFEBE4] rounded-xl p-4">
-                  <JournalMarkdown content={draftContent} onLink={navigateToLink} onToggleTodo={handleToggleTodo} />
-                </div>
-              )}
-            </div>
-            <div className="rounded-xl bg-gradient-to-br from-[#F0F5F1] to-[#FCEFF4] border border-[#E4EEE6] p-4">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#E8A0BF] mb-2">
-                <Sparkles className="w-3.5 h-3.5" />{j.aiCommentTitle || "AI 的温柔回应"}
-              </div>
-              {selected.aiComment ? (
-                <>
-                  <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap">{selected.aiComment}</p>
-                  <button onClick={generateAiComment} disabled={aiLoading} className="mt-2 text-[10px] text-[#4D7C5D] hover:underline disabled:opacity-40 cursor-pointer">
-                    {aiLoading ? "..." : (j.regenerate || "重新生成")}
-                  </button>
-                </>
-              ) : (
-                <button onClick={generateAiComment} disabled={aiLoading} className="text-[11px] font-semibold px-3 py-2 rounded-lg bg-white border border-[#E4EEE6] text-[#4D7C5D] hover:bg-[#EAF1EC] transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />{aiLoading ? (j.aiThinking || "正在温柔回应...") : (j.aiGenerate || "完成今天，听听 AI 的温柔回应")}
-                </button>
-              )}
-              {aiError && <p className="text-[10px] text-red-500 mt-2">{aiError}</p>}
-            </div>
-            <div className="text-[10px] text-slate-400 text-right">
-              {j.updatedAt} {new Date(selected.updatedAt).toLocaleString([], { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* 右：今日关联 + 反向链接 */}
-      <aside className="w-56 flex-shrink-0 flex flex-col gap-4 border-l border-[#EFEBE4] pl-3 overflow-y-auto custom-scrollbar">
-        <MoodPanel
-          date={activeMoodDate}
-          mood={moods[activeMoodDate]}
-          note={moodNotes[activeMoodDate] || ""}
-          attachments={moodAttachments[activeMoodDate] || []}
-          moods={moods}
-          onSetMood={onSetMood}
-          onSetMoodNote={onSetMoodNote}
-          onSetMoodAttachments={onSetMoodAttachments}
-        />
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#4D7C5D] mb-2">
-            <ListChecks className="w-3.5 h-3.5" />{j.todayLinks}
-          </div>
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{j.todayTasks}</div>
-          <div className="space-y-1 mb-3">
-            {todaysTasks.length === 0 && <div className="text-[11px] text-slate-300">{j.noTasks}</div>}
-            {todaysTasks.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => insertLine(task.title)}
-                className="w-full text-left text-[11px] text-slate-600 bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] rounded-lg px-2 py-1.5 cursor-pointer transition-colors truncate"
-                title={task.title}
-              >
-                {task.title}
-              </button>
-            ))}
-          </div>
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{j.todayHabits}</div>
-          <div className="space-y-1">
-            {habits.length === 0 && <div className="text-[11px] text-slate-300">{j.noHabits}</div>}
-            {habits.map((h) => {
-              const done = todaysHabits.includes(h.id);
+        {mode === "diary" && (
+          <div ref={stripRef} className="flex-1 overflow-x-auto custom-scrollbar flex items-center gap-1.5 pb-1">
+            {dateStrip.map((ds) => {
+              const [y, m, d] = ds.split("-").map(Number);
+              const wd = weekdayNames[new Date(y, m - 1, d).getDay()];
+              const has = dailyEntryMap.has(ds);
+              const active = ds === currentDate;
               return (
                 <button
-                  key={h.id}
-                  onClick={() => insertLine(`${h.emoji} ${h.title}`)}
-                  className={`w-full text-left text-[11px] rounded-lg px-2 py-1.5 cursor-pointer transition-colors border ${
-                    done ? "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D]" : "bg-white border-[#EFEBE4] text-slate-600 hover:border-[#4D7C5D]"
+                  key={ds}
+                  onClick={() => setCurrentDate(ds)}
+                  className={`flex-shrink-0 flex flex-col items-center px-2.5 py-1 rounded-xl transition-colors cursor-pointer border ${
+                    active
+                      ? "bg-[#4D7C5D] text-white border-[#4D7C5D]"
+                      : has
+                        ? "bg-[#F0F5F1] text-[#4D7C5D] border-[#C4D7B2] hover:bg-[#E4EEE6]"
+                        : "bg-white text-slate-400 border-[#EFEBE4] hover:bg-[#FAF8F5]"
                   }`}
+                  title={ds}
                 >
-                  {h.emoji} {h.title} {done && "✓"}
+                  <span className="text-[11px] font-bold leading-none">{m}/{d}</span>
+                  <span className="text-[9px] mt-0.5 leading-none">{wd}</span>
+                  {has && <span className={`w-1 h-1 rounded-full mt-1 ${active ? "bg-white" : "bg-[#C4D7B2]"}`} />}
                 </button>
               );
             })}
           </div>
-          {todaysFocus.count > 0 && (
-            <button
-              onClick={() => insertLine(`🍅 专注 ${todaysFocus.minutes} 分钟（${todaysFocus.count} 个番茄）`)}
-              className="w-full text-left text-[11px] text-[#A64424] bg-[#FBECE5] border border-[#F6DCD2] hover:border-[#E57C58] rounded-lg px-2 py-1.5 cursor-pointer transition-colors mt-2"
-              title={j.insertFocus || "插入到日记"}
-            >
-              🍅 {j.todayFocus || "今日专注"}：{todaysFocus.minutes} 分钟 · {todaysFocus.count} 个番茄
-            </button>
-          )}
-        </div>
+        )}
 
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#4D7C5D] mb-2">
-            <Link2 className="w-3.5 h-3.5" />{j.backlinks}
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0 relative">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={j.search}
+              className="w-36 bg-white border border-[#EFEBE4] pl-8 pr-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D]"
+            />
           </div>
-          <div className="space-y-1">
-            {backlinks.length === 0 && <div className="text-[11px] text-slate-300">{j.noBacklinks}</div>}
-            {backlinks.map((e) => (
+          {allTags.length > 0 && (
+            <div className="relative">
               <button
-                key={e.id}
-                onClick={() => setSelectedId(e.id)}
-                className="w-full text-left text-[11px] text-slate-600 bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] rounded-lg px-2 py-1.5 cursor-pointer transition-colors truncate"
-                title={e.title}
+                onClick={() => setTagOpen((v) => !v)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-colors cursor-pointer ${
+                  tagOpen || activeTag ? "border-[#8B6E3C] text-[#8B6E3C] bg-[#8B6E3C]/10" : "border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5]"
+                }`}
+                title={j.tags}
               >
-                {e.isDaily ? <CalendarDays className="w-3 h-3 inline mr-1" /> : <NoteIcon className="w-3 h-3 inline mr-1" />}
-                {e.title || e.date}
+                <TagIcon className="w-3.5 h-3.5" />
               </button>
-            ))}
-          </div>
+              {tagOpen && (
+                <div className="absolute right-0 top-10 z-20 w-56 bg-white border border-[#EFEBE4] rounded-xl shadow-lg p-3 space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {allTags.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => setActiveTag((prev) => (prev === tag ? null : tag))}
+                        className={`text-[10px] rounded-full px-2 py-0.5 font-medium transition-colors cursor-pointer border ${
+                          activeTag === tag ? "bg-[#8B6E3C] text-white border-[#8B6E3C]" : "text-[#8B6E3C] bg-[#8B6E3C]/10 border-transparent hover:bg-[#8B6E3C]/20"
+                        }`}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                  {activeTag && (
+                    <button onClick={() => setActiveTag(null)} className="text-[10px] text-slate-400 hover:text-slate-600">{j.clearTag} ✕</button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            onClick={mode === "diary" ? newDaily : newNote}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#4D7C5D] hover:bg-[#3F684C] text-white cursor-pointer transition-colors"
+            title={mode === "diary" ? j.newDaily : j.newNote}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
-      </aside>
+      </header>
+
+      {/* 主体：日记本 + 右侧关联 */}
+      <div className="flex flex-grow min-h-0 gap-4">
+        <section className="flex-grow min-w-0 flex flex-col gap-3">
+          {mode === "diary" ? (
+            <div className="flex-grow min-h-0 flex flex-col rounded-2xl overflow-hidden bg-[#FCFBF7] shadow-[0_2px_14px_rgba(120,100,70,0.10)] border border-[#ECE3D2] relative">
+              {/* 书脊 */}
+              <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-[#EFE7D6] via-[#E7DCC6] to-[#EFE7D6]" />
+              <div className="absolute left-2 top-0 bottom-0 w-px bg-[#D9CDB4]/70" />
+              <div className="pl-6 pr-5 py-4 flex flex-col gap-3 h-full min-h-0">
+                {/* 页眉：大日期 + 翻页 */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => shiftDate(-1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#E5D9C2] text-[#8B6E3C] hover:bg-[#F3ECDF] cursor-pointer transition-colors"
+                    title={j.prevDay || "前一天"}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="flex-grow text-center">
+                    <div className="text-2xl font-bold text-[#5A4A33] font-serif tracking-tight">{headerDate.big}</div>
+                    <div className="text-[10px] text-[#9A8866] mt-0.5">{headerDate.small}</div>
+                  </div>
+                  <button
+                    onClick={() => shiftDate(1)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#E5D9C2] text-[#8B6E3C] hover:bg-[#F3ECDF] cursor-pointer transition-colors"
+                    title={j.prevDay || "后一天"}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-center gap-2 -mt-1">
+                  {moods[currentDate] !== undefined && (
+                    <span className="text-lg leading-none">{MOOD_EMOJIS[moods[currentDate] - 1]?.emoji}</span>
+                  )}
+                  {!isToday && (
+                    <button
+                      onClick={goToday}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-[#F0F5F1] text-[#4D7C5D] hover:bg-[#E4EEE6] cursor-pointer border border-[#C4D7B2]"
+                    >
+                      {j.goToday}
+                    </button>
+                  )}
+                  {isFuture && <span className="text-[10px] text-slate-400">· {j.futureDay}</span>}
+                </div>
+
+                {editorInner}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-grow min-h-0 flex flex-col gap-3">
+              {!selected ? (
+                <div className="flex-grow min-h-0 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {filteredNotes.map((e) => (
+                    <button
+                      key={e.id}
+                      onClick={() => { setSelectedNoteId(e.id); }}
+                      className="text-left p-3 rounded-xl bg-[#FCFBF7] border border-[#ECE3D2] hover:border-[#4D7C5D] shadow-[0_2px_10px_rgba(120,100,70,0.08)] cursor-pointer transition-colors min-h-[88px] flex flex-col"
+                    >
+                      <span className="text-[13px] font-bold text-[#2D323A] truncate">{e.title || "(无标题)"}</span>
+                      <span className="text-[10px] text-slate-400 mt-1 line-clamp-3 flex-grow overflow-hidden">{e.content.replace(/[#*`\[\]]/g, "").slice(0, 80)}</span>
+                    </button>
+                  ))}
+                  {filteredNotes.length === 0 && (
+                    <div className="col-span-full flex flex-col items-center justify-center text-slate-400 gap-3 select-none h-full">
+                      <BookOpen className="w-12 h-12 opacity-40" />
+                      <p className="text-sm font-medium">{j.noEntry}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-grow min-h-0 flex flex-col rounded-2xl overflow-hidden bg-[#FCFBF7] shadow-[0_2px_14px_rgba(120,100,70,0.10)] border border-[#ECE3D2] relative">
+                  <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-[#EFE7D6] via-[#E7DCC6] to-[#EFE7D6]" />
+                  <div className="absolute left-2 top-0 bottom-0 w-px bg-[#D9CDB4]/70" />
+                  <div className="pl-6 pr-5 py-4 flex flex-col gap-3 h-full min-h-0">
+                    {editorInner}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* 右：今日关联 */}
+        <aside className="w-56 flex-shrink-0 flex flex-col gap-4 border-l border-[#EFEBE4] pl-3 overflow-y-auto custom-scrollbar">
+          <MoodPanel
+            date={activeMoodDate}
+            mood={moods[activeMoodDate]}
+            note={moodNotes[activeMoodDate] || ""}
+            attachments={moodAttachments[activeMoodDate] || []}
+            moods={moods}
+            onSetMood={onSetMood}
+            onSetMoodNote={onSetMoodNote}
+            onSetMoodAttachments={onSetMoodAttachments}
+          />
+          <div>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#4D7C5D] mb-2">
+              <ListChecks className="w-3.5 h-3.5" />{j.todayLinks}
+            </div>
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{j.todayTasks}</div>
+            <div className="space-y-1 mb-3">
+              {viewTasks.length === 0 && <div className="text-[11px] text-slate-300">{j.noTasks}</div>}
+              {viewTasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => insertLine(task.title)}
+                  className="w-full text-left text-[11px] text-slate-600 bg-white border border-[#EFEBE4] hover:border-[#4D7C5D] rounded-lg px-2 py-1.5 cursor-pointer transition-colors truncate"
+                  title={task.title}
+                >
+                  {task.title}
+                </button>
+              ))}
+            </div>
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">{j.todayHabits}</div>
+            <div className="space-y-1">
+              {habits.length === 0 && <div className="text-[11px] text-slate-300">{j.noHabits}</div>}
+              {habits.map((h) => {
+                const done = viewHabits.includes(h.id);
+                return (
+                  <button
+                    key={h.id}
+                    onClick={() => insertLine(`${h.emoji} ${h.title}`)}
+                    className={`w-full text-left text-[11px] rounded-lg px-2 py-1.5 cursor-pointer transition-colors border ${
+                      done ? "bg-[#F0F5F1] border-[#C4D7B2] text-[#4D7C5D]" : "bg-white border-[#EFEBE4] text-slate-600 hover:border-[#4D7C5D]"
+                    }`}
+                  >
+                    {h.emoji} {h.title} {done && "✓"}
+                  </button>
+                );
+              })}
+            </div>
+            {viewFocus.count > 0 && (
+              <button
+                onClick={() => insertLine(`🍅 专注 ${viewFocus.minutes} 分钟（${viewFocus.count} 个番茄）`)}
+                className="w-full text-left text-[11px] text-[#A64424] bg-[#FBECE5] border border-[#F6DCD2] hover:border-[#E57C58] rounded-lg px-2 py-1.5 cursor-pointer transition-colors mt-2"
+                title={j.insertFocus || "插入到日记"}
+              >
+                🍅 {j.todayFocus || "今日专注"}：{viewFocus.minutes} 分钟 · {viewFocus.count} 个番茄
+              </button>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -83,3 +83,147 @@
 - B 依赖 Tauri 桌面 API：需确认 `src-tauri` 已启用 clipboard-plugin / global-shortcut 或监听系统剪贴板变更
 - 监听复制事件 → 弹出「存为任务 / 便签 / 日记」轻量窗或面板
 - 便签写入走 `useStickyNotes`（notesHook）；任务/日记复用 A 中已建 handler 思路
+
+## Session 4 (2026-07-10)
+
+### 背景
+路线图 D（日记延续）第一阶段：补齐「#标签浏览」与「单篇/整本 Markdown 导出」。此前日记已支持 Markdown 正文、双向链接、标签提取（`extractJournalTags`），但无标签筛选入口，也无导出能力。
+
+### 完成项（Feature D 补全）
+- **标签浏览**：左侧栏搜索框下方新增标签云，自动聚合所有日记/笔记正文中的 `#标签`（去重排序，按 locale 排序）
+  - 点击标签 → `activeTag` 筛选日记与笔记列表；再次点击或「清除筛选」取消
+  - 标题区顶部新增「导出此篇」按钮（Download 图标）→ 当前选中条目导出为 `journal-{date|title}.md`
+- **整本导出**：右侧栏顶部新增「导出全部日记」按钮 → 按 `updatedAt` 降序合并所有条目为一个 `tongyun-journal-all-{date}.md`，条目间以 `---` 分隔，含元数据与 AI 评语
+- 新增模块级工具函数 `entryToMarkdown(entry)` / `downloadMarkdown(filename, content)`（Blob + a.download）
+- i18n：zh-CN / en 各增补 `tags / allTags / clearTag / exportCurrent / exportAll / noTags`
+
+### 关键决策
+- 标签筛选复用语义：`extractJournalTags` 仅认 `#中文英文数字_-`，与正文编辑器保持一致，避免两套解析逻辑
+- 导出纯前端实现（无需 Tauri 权限），浏览器直接下载 `.md`，零后端依赖
+- 整本导出按更新时间排序而非日期，使笔记与日记混排时顺序更合理
+
+### 相关文件
+- `src/components/JournalView.tsx`
+- `src/i18n/zh-CN.ts`
+- `src/i18n/en.ts`
+
+### 验证
+- `npm run typecheck` 通过（仅预存的 `ali-oss` 第三方依赖缺失报错，与本次无关）
+
+### 待办（继续推进）
+- D 还可做：标签固定侧栏分组视图、按年/月归档导出、导出为 PDF/HTML
+- E 生活向（轻量记账 + 本地语音备忘）尚未开始
+- B 全局剪贴板捕获仍待做（见 Session 3 待办）
+
+## Session 5 (2026-07-10)
+
+### 背景
+路线图 C（智能规划）：经扫描发现「智能日计划编排」**已实现**——Dashboard 已有「AI 今日建议」卡片（`generateDailySuggestion` + 当日缓存，DashboardView:544-571），进入 Dashboard 自动生成、可手动重生成。C 真正缺失的仅为**任务到期系统通知**（此前只有番茄钟通知，无任务到期提醒）。用户确认不做 E（轻量记账）。
+
+### 完成项（Feature C 补全）
+- **任务到期系统通知**：`App.tsx` 新增每分钟扫描 effect
+  - 条件：今日到期（dueDate===today）且有具体时间（dueTime）、未完成任务
+  - 触发：到期前 15 分钟「即将截止」提醒 + 到期时刻起 1 小时内「已到截止时间」提醒
+  - 仅 `main` 窗口触发（`windowLabelRef`），避免 widget/便签多窗口重复弹通知
+  - `notifiedDueRef` Set 防止同一任务重复通知；依赖 Notification.permission==="granted"
+  - 文案随 locale（zh-CN / en）切换
+
+### 关键决策
+- 复用启动期已 `requestPermission()` 的 Notification 权限（App.tsx:234），无需新增授权流程
+- 到期通知走桌面系统通知（非 EmailConfig 邮件提醒，邮件提醒为独立未实现项）
+- 扫描窗口用「到期前 15min ~ 到期后 1h」，平衡及时性与不打扰
+- 智能日计划编排（AI 今日建议）确认已存在，无需重复实现
+
+### 相关文件
+- `src/App.tsx`
+
+### 验证
+- `npm run typecheck` 通过（零报错）
+
+### 待办（下一步）
+- B 全局剪贴板捕获仍待做（桌面端专属，需 Tauri 原生剪贴板监听 + Rust 构建）
+- C 还可做：任务到期前提醒时间可配置化（接入设置项）、通知点击聚焦/完成任务
+
+## Session 6 (2026-07-10)
+
+### 背景
+用户反馈日记页「还是不好，应该跟日记本一样」——原实现是笔记工具范式（左侧列表 + 中间 Markdown 编辑器 + 双链），缺真实日记本的沉浸感与翻页仪式感。经确认方向为「翻页日记本」。
+
+### 完成项（JournalView 重构为翻页日记本）
+- **双模式**：日记（按日期翻页）/ 随记（笔记），左侧目录切换
+- **翻页交互**：每日一页 + 左右翻页箭头（严格 ±1 天，含空白页）+ 回到今天按钮 + 未来日标记
+- **纸张质感**：暖纸色 `#FCFBF7`、书脊装订阴影/渐变、衬线大日期标题、textarea 淡横线背景（lineHeight 32px 近似对齐）
+- **页眉**：大日期 + 星期 + 农历（`lunar-javascript` 动态导入，失败忽略，已验证返回「五月廿六」）+ 当日心情 emoji
+- **关联区改为跟随当前翻页日期**（任务/习惯/番茄按 viewDate 过滤，而非固定 today）
+- 保留：搜索、`#标签` 筛选、Markdown 工具栏、双向链接、AI 评语、单篇/整本导出
+- i18n：zh-CN / en 各增补 `prevDay / goToday / futureDay / diaryPlaceholder`
+- 编辑器主体抽为 `editorInner` 片段，日记/随记复用同一张「纸」，仅 diary 多书脊+翻页
+
+### 关键决策
+- 翻页严格 ±1 天，空白页输入即懒创建 daily 条目（`commit` 默认 linkKey/date=viewDate），避免预建空条目污染列表
+- 笔记作为「随记」独立模式，复用同一纸张编辑器
+- 农历用动态 `import("lunar-javascript")` + try/catch，不影响主流程
+
+### 相关文件
+- `src/components/JournalView.tsx`
+- `src/i18n/zh-CN.ts`
+- `src/i18n/en.ts`
+
+### 验证
+- `npm run typecheck` 零报错
+- `lunar-javascript` API 已验证（`Solar.fromDate(...).getLunar().getMonthInChinese()+"月"+getDayInChinese()` → 五月廿六）
+
+### 待办（继续打磨）
+- 纸张横线与预览区/不同字号的对齐可进一步精调
+- 翻页动画（page-flip 过渡）可加 framer-motion
+- 双链/标签在翻页本子里可做得更「手帐」化（贴纸、手绘感）
+
+## Session 7 (2026-07-10)
+
+### 背景
+用户反馈：日记本里不应有 Markdown 格式（工具栏、双栏预览、`#`/`[[ ]]` 语法），「就写个日记啊，要氛围就行」。决定把日记书写精简为**纯文字、所见即所得**。
+
+### 完成项（去 Markdown 化）
+- 移除 Markdown 工具栏（标题/加粗/斜体/列表/待办/代码/链接按钮）、双栏实时预览、模板下拉
+- 移除双向链接（`[[ ]]`）与反向链接区（依赖 JournalMarkdown 渲染）；`JournalMarkdown`/`contentLinksTo` 不再被 JournalView 引用
+- 书写区改为单栏纯文本 `textarea`（`font-serif` 衬线 + 横格背景），所见即所得
+- 保留氛围要素：纸张/书脊质感、翻页（±1 天/回今天/未来标记）、大日期+星期+农历、当日心情、AI 温柔评语、标签 chips（仅展示，不强制语法）
+- 右侧保留「今日关联」（任务/习惯/番茄，按 viewDate 过滤）；移除了反向链接块
+- 导出仍为 Markdown（不影响书写体验）
+
+### 关键决策
+- 日记 = 纯文字记录；Markdown 仅作为「导出」格式保留，不进入书写界面
+- 标签 `#灵感` 仍可写、可筛选、可随导出带出，但不再高亮为编辑语法
+
+### 相关文件
+- `src/components/JournalView.tsx`
+
+### 验证
+- `npm run typecheck` 零报错（清理了未用的 JOURNAL_TEMPLATES / DATE_RE / Sparkles import）
+
+## Session 8 (2026-07-10)
+
+### 背景
+用户反馈：日记页左侧「列表」太显眼，冲淡写日记的沉浸感，希望改成「上边一个滑条选哪一天」。本次将左侧列表下沉，改为顶部日期滑条。
+
+### 完成项（布局重构：列表 → 顶部日期滑条）
+- 移除左侧大列表（日记/随记分组 + 搜索 + 标签常驻），改为**顶部一行**：模式切换（日记/随记）+ 可横滑日期滑条 + 搜索框 + 标签下拉（点击展开云）+ 新建按钮
+- 日期滑条：生成过去 60 天 ~ 未来 7 天连续日期 chips，有日记的日子点亮圆点，当天高亮绿底，点击 `setCurrentDate` 跳天
+- 随记模式：中间改为卡片网格（点击进入纸内编辑），不再依赖左侧列表
+- 纸内翻页箭头（±1 天/回今天）与顶部滑条并存，两种跳天方式
+- 右侧关联（心情/任务/习惯/番茄）保留
+
+### 关键决策
+- 滑条范围固定 60 天前 ~ 7 天后，覆盖绝大多数翻阅场景；超范围需翻页箭头或后续可加「跳到最早」
+- 标签从常驻改为下拉，进一步弱化视觉权重，突出日记本主体
+- 移除了未用的 `filteredDaily`/`dailyNotes`/`CalendarDays` 引用
+
+### 相关文件
+- `src/components/JournalView.tsx`
+
+### 验证
+- `npm run typecheck` 零报错
+
+### 待办（继续打磨）
+- 滑条可自动滚动定位当前天到可视区（scrollIntoView）
+- 超范围日期（早于 60 天前）可通过翻页箭头到达，但滑条不显示；可加「跳到最早一篇」快捷
