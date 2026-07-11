@@ -8,6 +8,25 @@ import { useTranslation } from "../i18n/LanguageContext";
 import { storageManager, getAttachmentPath } from "../utils/storage";
 import { callAI } from "../utils/aiEngine";
 
+/** 「暖评」内置默认系统提示词：先深度思考，再写一段克制而真诚的温暖回应 */
+export function buildDefaultCommentPrompt(lang: string): string {
+  return `你是"暖评"——用户日记本里一位真正懂他的老友，兼有敏锐的洞察与克制的温柔。
+
+请先在心里认真、慢慢地把这篇日记读两遍，做一次深度思考（不要把思考过程写出来）：
+1. 事实：今天真正发生了什么？哪些是具体的行动、选择或转折点？
+2. 情绪：字里行间藏着怎样的心情？有没有没说出口、却在语气里的东西？
+3. 需要：此刻的他最需要被回应的是什么——是被肯定、被安慰、被陪伴，还是只想被静静听见？
+4. 意义：把今天放进更长的时间里看，它说明了他怎样的努力、成长或坚持？
+
+然后用${lang}写一段简短、温暖、真诚的回应（3-5 句，约 60-100 字）：
+- 先具体地"看见"他今天某个真实的细节，而不是泛泛的安慰
+- 温和地映照他的情绪，不评判、不说教、不灌鸡汤、不讲大道理
+- 若有疲惫或低落，给轻轻的安慰与陪伴；若有进展，认真替他高兴
+- 语气像朋友面对面说话，自然、不客套、不夸张
+- 至多用 1 个 emoji，也可以不用
+- 只返回回应文本本身，不要任何前缀、标题、引号或解释`;
+}
+
 const MOOD_EMOJIS: { value: number; emoji: string; label: string }[] = [
   { value: 1, emoji: "😞", label: "很差" },
   { value: 2, emoji: "😔", label: "不好" },
@@ -194,6 +213,8 @@ interface JournalViewProps {
   journal: JournalEntry[];
   onUpsert: (entry: JournalEntry) => void;
   onDelete: (id: string) => void;
+  addTodoEnabled: boolean;
+  onToggleAddTodo: (value: boolean) => void;
   tasks: Task[];
   habits: { id: string; title: string; emoji: string }[];
   habitLogs: Record<string, string[]>;
@@ -207,7 +228,7 @@ interface JournalViewProps {
   onSetMoodAttachments: (date: string, attachments: Attachment[]) => void;
 }
 
-export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitLogs, moods, moodNotes, moodAttachments, pomodoroLogs, aiConfig, onSetMood, onSetMoodNote, onSetMoodAttachments }: JournalViewProps) {
+export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitLogs, moods, moodNotes, moodAttachments, pomodoroLogs, aiConfig, onSetMood, onSetMoodNote, onSetMoodAttachments, addTodoEnabled, onToggleAddTodo }: JournalViewProps) {
   const { t, locale } = useTranslation();
   const j = t.journal as Record<string, string>;
   const today = getLocalDateString();
@@ -218,8 +239,10 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [tagOpen, setTagOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const activeDateRef = useRef<HTMLButtonElement>(null);
 
   const dailyEntryMap = useMemo(() => {
     const m = new Map<string, JournalEntry>();
@@ -247,6 +270,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
   useEffect(() => {
     setDraftTitle(selected?.title || "");
     setDraftContent(selected?.content || "");
+    setConfirmDelete(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
@@ -330,7 +354,10 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
     setAiLoading(true); setAiError(null);
     try {
       const lang = locale === "zh-CN" ? "简体中文" : "English";
-      const system = `你是一个温柔、包容的日记伙伴。用户刚写完今天的日记，请认真读它，并用${lang}回复一段简短、温暖、共情的回应（3-5 句，不超过 90 字）。\n要求：\n- 像懂他的朋友，温和地看见他的情绪与努力，不评判、不说教\n- 肯定今天的微小进展；若日记里有疲惫或低落，给予轻轻的安慰与陪伴\n- 可以适当用 1 个 emoji，但不要堆砌\n- 只返回回应文本本身，不要任何前缀、引号或解释`;
+      const custom = aiConfig?.journalCommentPrompt?.trim();
+      const system = custom
+        ? custom.replace(/\$\{lang\}/g, lang)
+        : buildDefaultCommentPrompt(lang);
       const result = await callAI(aiConfig, system, `这是用户今天的日记：\n${draftContent}`);
       if (result) commit({ aiComment: result });
     } catch (e: any) {
@@ -352,6 +379,12 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
     }
     return days;
   }, [today]);
+
+  // 日期滑条自动居中定位到当前选中日期
+  useEffect(() => {
+    if (mode !== "diary") return;
+    activeDateRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [currentDate, mode]);
 
   const filteredNotes = useMemo(() => {
     let list = notes;
@@ -421,12 +454,31 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
           />
         )}
         {selected && (
-          <button
-            onClick={() => { onDelete(selected.id); if (mode === "diary") setCurrentDate(currentDate); else setSelectedNoteId(null); }}
-            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#F5DFDB] text-[#A34E36] hover:bg-[#FCF2F0] cursor-pointer transition-colors flex items-center gap-1"
-          >
-            <Trash2 className="w-3.5 h-3.5" />{j.delete}
-          </button>
+          confirmDelete ? (
+            <div className="ml-auto flex items-center gap-1.5">
+              <span className="text-[10px] text-[#A34E36]">{j.confirmDelete || "确定删除？"}</span>
+              <button
+                onClick={() => { onDelete(selected.id); setConfirmDelete(false); if (mode === "diary") setCurrentDate(currentDate); else setSelectedNoteId(null); }}
+                className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-[#A34E36] text-white hover:bg-[#8A4029] cursor-pointer transition-colors"
+              >
+                {j.delete}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-[10px] px-2 py-1 rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] cursor-pointer transition-colors"
+              >
+                {j.cancel || "取消"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="ml-auto p-1.5 rounded-lg text-slate-300 hover:text-[#A34E36] hover:bg-[#FCF2F0] cursor-pointer transition-colors"
+              title={j.delete}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )
         )}
       </div>
 
@@ -450,7 +502,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
 
       <div className="rounded-xl bg-gradient-to-br from-[#F0F5F1] to-[#FCEFF4] border border-[#E4EEE6] p-4">
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#E8A0BF] mb-2">
-          <Sparkles className="w-3.5 h-3.5" />{j.aiCommentTitle || "AI 的温柔回应"}
+          <Sparkles className="w-3.5 h-3.5" />{j.aiCommentTitle || "暖评"}
         </div>
         {selected?.aiComment ? (
           <>
@@ -461,7 +513,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
           </>
         ) : (
           <button onClick={generateAiComment} disabled={aiLoading} className="text-[11px] font-semibold px-3 py-2 rounded-lg bg-white border border-[#E4EEE6] text-[#4D7C5D] hover:bg-[#EAF1EC] transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />{aiLoading ? (j.aiThinking || "正在温柔回应...") : (j.aiGenerate || "完成今天，听听 AI 的温柔回应")}
+            <Sparkles className="w-3.5 h-3.5" />{aiLoading ? (j.aiThinking || "正在写暖评...") : (j.aiGenerate || "完成今天，收下今天的暖评")}
           </button>
         )}
         {aiError && <p className="text-[10px] text-red-500 mt-2">{aiError}</p>}
@@ -497,6 +549,19 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
           </button>
         </div>
 
+        <button
+          onClick={() => onToggleAddTodo(!addTodoEnabled)}
+          className={`flex items-center gap-1.5 text-[11px] font-bold rounded-xl px-3 py-1.5 cursor-pointer transition-colors border ${
+            addTodoEnabled
+              ? "text-white bg-[#4D7C5D] hover:bg-[#3F684C] border-[#4D7C5D]"
+              : "text-[#4D7C5D] bg-[#F0F5F1] hover:bg-[#E4EEE6] border-[#C4D7B2]"
+          }`}
+          title={j.addTodoHint || "开启后，每一天的日记都会加入当日待办"}
+        >
+          <ListChecks className="w-3.5 h-3.5" />
+          {addTodoEnabled ? "✓ " : ""}{j.addTodo}
+        </button>
+
         {mode === "diary" && (
           <div ref={stripRef} className="flex-1 overflow-x-auto custom-scrollbar flex items-center gap-1.5 pb-1">
             {dateStrip.map((ds) => {
@@ -507,6 +572,7 @@ export function JournalView({ journal, onUpsert, onDelete, tasks, habits, habitL
               return (
                 <button
                   key={ds}
+                  ref={active ? activeDateRef : undefined}
                   onClick={() => setCurrentDate(ds)}
                   className={`flex-shrink-0 flex flex-col items-center px-2.5 py-1 rounded-xl transition-colors cursor-pointer border ${
                     active

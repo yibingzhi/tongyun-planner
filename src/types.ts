@@ -39,6 +39,7 @@ export interface Task {
   tags?: string[];
   dependsOn?: string[];  // task IDs that must be completed first
   attachments?: Attachment[];
+  journalId?: string;    // 关联自某篇日记（addToTodo 时创建）
 }
 
 export interface PomodoroLog {
@@ -129,6 +130,7 @@ export interface CustomizationConfig {
   aiEndpoint?: string;
   aiModel?: string;
   aiAutoCategorize?: boolean;
+  journalCommentPrompt?: string; // 暖评自定义系统提示词（留空则用内置默认）
   enableAutoBackup?: boolean;
   syncInterval?: number; // seconds: 15, 30, 60, 300, 900, 1800, 3600, 0(manual)
 }

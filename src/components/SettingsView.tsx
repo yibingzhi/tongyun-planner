@@ -6,10 +6,12 @@ import { storageManager, type StorageBackendType } from "../utils/storage";
 import { syncEngine } from "../utils/sync/engine";
 import { normalizeSyncData, applySyncData } from "../utils/sync/types";
 import { PLANNER_COLORS } from "../constants";
+import { openExternal } from "../utils/openExternal";
 import type { SelectOption } from "../constants";
 import { StickyPin } from "./StickyPin";
 import { CustomSelect } from "./CustomSelect";
 import { testAIConnection, generatePraiseBatch } from "../utils/aiEngine";
+import { buildDefaultCommentPrompt } from "./JournalView";
 import { useTranslation } from "../i18n/LanguageContext";
 import { safeJsonParse } from "../utils/json";
 import { audioEngine } from "../utils/audioEngine";
@@ -928,6 +930,41 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
               );
             })()}
 
+            {/* 暖评系统提示词 */}
+            <div className="bg-[#FAF8F5]/80 border border-[#EFEBE4] p-3 rounded-xl space-y-2">
+              <div>
+                <label className="text-[10px] font-bold text-[#8B6E3C] uppercase block">
+                  {s.journalPromptTitle}
+                </label>
+                <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{s.journalPromptDesc}</p>
+              </div>
+              <textarea
+                value={config.journalCommentPrompt || ""}
+                onChange={(e) => handleStyleChange("journalCommentPrompt", e.target.value)}
+                placeholder={s.journalPromptPlaceholder}
+                rows={6}
+                className="w-full bg-white border border-[#EFEBE4] px-2.5 py-2 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4D7C5D] resize-y leading-relaxed custom-scrollbar"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleStyleChange("journalCommentPrompt", buildDefaultCommentPrompt("${lang}"))}
+                  className="text-[10px] font-bold px-2.5 py-1.5 rounded-lg border border-[#C4D7B2] text-[#4D7C5D] bg-[#F0F5F1] hover:bg-[#E4EEE6] cursor-pointer transition-colors"
+                >
+                  {s.journalPromptFillDefault}
+                </button>
+                {config.journalCommentPrompt && (
+                  <button
+                    type="button"
+                    onClick={() => handleStyleChange("journalCommentPrompt", "")}
+                    className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-[#EFEBE4] text-slate-500 hover:bg-[#FAF8F5] cursor-pointer transition-colors"
+                  >
+                    {s.journalPromptReset}
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* 保存 & 测试连接 */}
             <div className="flex gap-3 pt-1 sticky bottom-0 bg-white/90 backdrop-blur-sm pb-1">
               <button
@@ -1236,6 +1273,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* 坚果云 WebDAV 配置 */}
             {syncBackend === "webdav" && (
               <div className="space-y-3">
+                <div className="rounded-xl bg-[#F7F5F0] dark:bg-slate-800/60 border border-[#EFEBE4] dark:border-slate-700 p-3 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="mb-1.5">服务器地址一般为 <code className="text-slate-700 dark:text-slate-200">https://dav.jianguoyun.com/dav/</code>。密码<b>不是</b>登录密码，需在坚果云网页端「设置 → 安全」中生成<b>应用专用密码</b>。</p>
+                  <button type="button" onClick={() => openExternal("https://help.jianguoyun.com/?p=2066")} className="inline-flex items-center gap-1 text-[#4D7C5D] dark:text-[#6DAF7E] hover:underline font-medium">查看坚果云 WebDAV 开启教程 ↗</button>
+                </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{s.syncUrl}</label>
                   <input
@@ -1283,6 +1324,10 @@ export const SettingsView: React.FC<SettingsViewProps> = React.memo(({
             {/* Supabase 配置 */}
             {syncBackend === "supabase" && (
               <div className="space-y-3">
+                <div className="rounded-xl bg-[#F7F5F0] dark:bg-slate-800/60 border border-[#EFEBE4] dark:border-slate-700 p-3 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="mb-1.5">在 Supabase 新建项目后，进入 <b>Project Settings → API</b>，复制 <b>Project URL</b> 与 <b>anon public key</b> 填入下方。建议开启 Row Level Security 保护数据。</p>
+                  <button type="button" onClick={() => openExternal("https://supabase.com/docs/guides/api")} className="inline-flex items-center gap-1 text-[#4D7C5D] dark:text-[#6DAF7E] hover:underline font-medium">查看 Supabase 配置教程 ↗</button>
+                </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Supabase URL</label>
                   <input

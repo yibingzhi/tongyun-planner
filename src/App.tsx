@@ -120,6 +120,13 @@ function AppInner() {
   const [journal, setJournal] = useState<JournalEntry[]>(() =>
     safeJsonParse(localStorage.getItem("tongyun_journal") || "[]", [])
   );
+  const [journalAddTodo, setJournalAddTodo] = useState<boolean>(() =>
+    safeJsonParse(localStorage.getItem("tongyun_journal_add_todo") || "false", false)
+  );
+  const handleToggleJournalAddTodo = useCallback((value: boolean) => {
+    setJournalAddTodo(value);
+    localStorage.setItem("tongyun_journal_add_todo", JSON.stringify(value));
+  }, []);
   const handleUpsertJournal = useCallback((entry: JournalEntry) => {
     setJournal((prev) => {
       const idx = prev.findIndex((e) => e.id === entry.id);
@@ -185,6 +192,44 @@ function AppInner() {
       return updated;
     });
   }, []);
+
+  // 全局开关：是否把每一天的日记加入当日待办 → 同步生成/移除关联任务
+  const journalTodoTitle = useCallback((entry: JournalEntry) => {
+    const firstLine = entry.content.split("\n").map((l) => l.trim()).find((l) => l.length > 0);
+    if (firstLine) return firstLine.length > 40 ? firstLine.slice(0, 40) + "…" : firstLine;
+    return `日记 ${entry.date}`;
+  }, []);
+
+  useEffect(() => {
+    const currentTasks = tasksHook.tasks;
+    for (const entry of journal) {
+      if (!entry.isDaily) continue;
+      const existing = currentTasks.find((t) => t.journalId === entry.id);
+      if (journalAddTodo) {
+        const title = journalTodoTitle(entry);
+        if (!existing) {
+          tasksHook.handleAddTask({
+            title,
+            description: entry.content.slice(0, 200),
+            notes: "",
+            category: "important-not-urgent",
+            dueDate: entry.date,
+            isExplicit: true,
+            tags: ["日记"],
+          }).then((res) => {
+            if (res?.taskId) tasksHook.handleEditTask(res.taskId, { journalId: entry.id });
+          });
+        } else if (existing.title !== title || existing.description !== (entry.content.slice(0, 200) || undefined)) {
+          tasksHook.handleEditTask(existing.id, {
+            title,
+            description: entry.content.slice(0, 200) || undefined,
+          });
+        }
+      } else if (existing) {
+        tasksHook.handleDeleteTask(existing.id);
+      }
+    }
+  }, [journal, tasksHook.tasks, journalAddTodo]);
 
   // ============ handler ref 转发 (#4) ============
   // initStore 的 useEffect 依赖为 []，但需要在跨窗口 listener 里调用最新的 hook 函数。
@@ -997,6 +1042,8 @@ function AppInner() {
         journal={journal}
         handleUpsertJournal={handleUpsertJournal}
         handleDeleteJournal={handleDeleteJournal}
+        journalAddTodo={journalAddTodo}
+        handleToggleJournalAddTodo={handleToggleJournalAddTodo}
         celebrationMessage={celebrationMessage}
     setCelebrationMessage={setCelebrationMessage}
     syncStatus={syncStatus}
@@ -1077,6 +1124,8 @@ interface MainLayoutProps {
   journal: JournalEntry[];
   handleUpsertJournal: (entry: JournalEntry) => void;
   handleDeleteJournal: (id: string) => void;
+  journalAddTodo: boolean;
+  handleToggleJournalAddTodo: (value: boolean) => void;
   celebrationMessage: string | null;
   setCelebrationMessage: (msg: string | null) => void;
   syncStatus: "synced" | "syncing" | "error";
@@ -1105,6 +1154,7 @@ const MainLayout = React.memo(function MainLayout({
   handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
   handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
   journal, handleUpsertJournal, handleDeleteJournal,
+  journalAddTodo, handleToggleJournalAddTodo,
   celebrationMessage, setCelebrationMessage,
   syncStatus, lastBackupTime,
   calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
@@ -1266,7 +1316,7 @@ const MainLayout = React.memo(function MainLayout({
             <ListView tasks={tasks} searchQuery={aiHook.searchQuery} setSearchQuery={aiHook.setSearchQuery} categoryFilter={aiHook.categoryFilter} setCategoryFilter={aiHook.setCategoryFilter} tagFilter={aiHook.tagFilter} setTagFilter={aiHook.setTagFilter} handleComplete={wrappedHandleComplete} handleDeleteTask={handleDeleteTask} expandedNoteId={expandedNoteId} setExpandedNoteId={setExpandedNoteId} editingNotes={editingNotes} setEditingNotes={setEditingNotes} handleSaveNotes={handleSaveNotes} handleStartFocus={pomodoroHandleStartFocus} handleAddTask={handleAddTaskWithAI} handleToggleFavorite={handleToggleFavorite} handleTogglePin={handleTogglePin} onTaskClick={handleTaskClick} />
           )}
           {activeTab === "calendar" && (
-            <CalendarView tasks={tasks} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
+            <CalendarView tasks={tasks} moods={moods} handleComplete={wrappedHandleComplete} calendarYear={calendarYear} setCalendarYear={setCalendarYear} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth} selectedCalendarDate={selectedCalendarDate} setSelectedCalendarDate={setSelectedCalendarDate} handleAddTask={handleAddTaskWithAI} />
           )}
           {activeTab === "notes" && (
             <StickyNotesView stickyNotes={notesHook.stickyNotes} handleAddNote={notesHook.handleAddNote} handleEditNoteText={notesHook.handleEditNoteText} handleChangeNoteColor={notesHook.handleChangeNoteColor} handleDeleteNote={notesHook.handleDeleteNote} pinType={customizationHook.customizationConfig.pinType} onPinNoteToDesktop={handlePinNoteToDesktop} />
@@ -1298,6 +1348,8 @@ const MainLayout = React.memo(function MainLayout({
               journal={journal}
               onUpsert={handleUpsertJournal}
               onDelete={handleDeleteJournal}
+              addTodoEnabled={journalAddTodo}
+              onToggleAddTodo={handleToggleJournalAddTodo}
               tasks={tasks}
               habits={habits}
               habitLogs={habitLogs}
@@ -1344,6 +1396,7 @@ const MainLayout = React.memo(function MainLayout({
           handleAddHabit, handleDeleteHabit, handleToggleHabitLog,
            handleSetMood, handleSetMoodNote, handleSetMoodAttachments, handlePinNoteToDesktop,
            journal, handleUpsertJournal, handleDeleteJournal,
+           journalAddTodo, handleToggleJournalAddTodo,
            calendarYear, setCalendarYear, calendarMonth, setCalendarMonth,
            selectedCalendarDate, setSelectedCalendarDate,
            resetTasks, handleClearCompleted,
